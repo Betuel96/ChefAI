@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   ChefHat,
   Home,
@@ -11,6 +11,8 @@ import {
   CalendarDays,
   Sparkles,
   LogIn,
+  LogOut,
+  UserCircle,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -24,6 +26,12 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Separator } from '../ui/separator';
+import { useAuth } from '@/hooks/use-auth';
+import { auth } from '@/lib/firebase';
+import { signOut } from 'firebase/auth';
+import { useToast } from '@/hooks/use-toast';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { Skeleton } from '../ui/skeleton';
 
 const menuItems = [
   { href: '/', label: 'Panel', icon: Home },
@@ -37,6 +45,26 @@ const menuItems = [
 export function AppSidebar() {
   const pathname = usePathname();
   const { isOpen } = useSidebar();
+  const { user, loading } = useAuth();
+  const router = useRouter();
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      toast({
+        title: 'Sesión Cerrada',
+        description: 'Has cerrado sesión correctamente.',
+      });
+      router.push('/login');
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'No se pudo cerrar la sesión. Inténtalo de nuevo.',
+        variant: 'destructive',
+      });
+    }
+  };
 
   return (
     <Sidebar>
@@ -49,6 +77,25 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu>
+          {loading && isOpen && (
+            <div className="flex flex-col items-start gap-2 px-2 pb-4 border-b mb-4">
+               <Skeleton className="h-10 w-10 rounded-full" />
+               <Skeleton className="h-4 w-32" />
+               <Skeleton className="h-3 w-40" />
+            </div>
+          )}
+          {user && isOpen && (
+             <div className="flex flex-col items-start gap-2 px-2 pb-4 border-b mb-4">
+               <Avatar>
+                  <AvatarImage src={user.photoURL || undefined} />
+                  <AvatarFallback>
+                    {user.displayName ? user.displayName.charAt(0).toUpperCase() : <UserCircle />}
+                  </AvatarFallback>
+                </Avatar>
+               <div className="text-sm font-medium">{user.displayName}</div>
+               <div className="text-xs text-muted-foreground">{user.email}</div>
+             </div>
+          )}
           {menuItems.map((item) => (
             <SidebarMenuItem key={item.href}>
               <Link href={item.href}>
@@ -63,17 +110,26 @@ export function AppSidebar() {
             </SidebarMenuItem>
           ))}
           <Separator className="my-2" />
-          <SidebarMenuItem>
-            <Link href="/login">
-              <SidebarMenuButton
-                isActive={pathname === '/login' || pathname === '/signup'}
-                tooltip="Acceder"
-              >
-                <LogIn />
-                <span>Acceder / Registrarse</span>
-              </SidebarMenuButton>
-            </Link>
-          </SidebarMenuItem>
+          {user ? (
+             <SidebarMenuItem>
+                <SidebarMenuButton onClick={handleLogout} tooltip="Cerrar Sesión">
+                  <LogOut />
+                  <span>Cerrar Sesión</span>
+                </SidebarMenuButton>
+             </SidebarMenuItem>
+          ) : !loading ? (
+            <SidebarMenuItem>
+              <Link href="/login">
+                <SidebarMenuButton
+                  isActive={pathname === '/login' || pathname === '/signup'}
+                  tooltip="Acceder"
+                >
+                  <LogIn />
+                  <span>Acceder / Registrarse</span>
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
+          ) : null }
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
