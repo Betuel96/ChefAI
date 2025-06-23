@@ -18,8 +18,8 @@ import type { Recipe } from '@/types';
 import { Separator } from '@/components/ui/separator';
 
 const formSchema = z.object({
-  ingredients: z.string().min(10, 'Please list at least a few ingredients.'),
-  servings: z.coerce.number().int().min(1, 'Must serve at least 1 person.').max(20, 'Cannot serve more than 20 people.'),
+  ingredients: z.string().min(10, 'Por favor, enumera al menos algunos ingredientes.'),
+  servings: z.coerce.number().int().min(1, 'Debe servir al menos para 1 persona.').max(20, 'No puede servir para más de 20 personas.'),
 });
 
 export default function RecipeGeneratorPage() {
@@ -45,8 +45,8 @@ export default function RecipeGeneratorPage() {
     } catch (error) {
       console.error(error);
       toast({
-        title: 'Error Generating Recipe',
-        description: 'Something went wrong. Please try again.',
+        title: 'Error al Generar la Receta',
+        description: 'Algo salió mal. Por favor, inténtalo de nuevo.',
         variant: 'destructive',
       });
     }
@@ -59,13 +59,13 @@ export default function RecipeGeneratorPage() {
       if (!savedRecipes.some(r => r.name === generatedRecipe.name)) {
         setSavedRecipes([...savedRecipes, generatedRecipe]);
         toast({
-          title: 'Recipe Saved!',
-          description: `"${generatedRecipe.name}" has been added to your recipes.`,
+          title: '¡Receta Guardada!',
+          description: `Se ha añadido "${generatedRecipe.name}" a tus recetas.`,
         });
       } else {
          toast({
-          title: 'Already Saved',
-          description: `A recipe named "${generatedRecipe.name}" is already in your list.`,
+          title: 'Ya Guardada',
+          description: `Una receta llamada "${generatedRecipe.name}" ya está en tu lista.`,
           variant: 'default',
         });
       }
@@ -76,14 +76,14 @@ export default function RecipeGeneratorPage() {
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
       <div className="space-y-6">
         <header>
-          <h1 className="font-headline text-4xl font-bold text-primary">Recipe Generator</h1>
-          <p className="text-muted-foreground mt-2 text-lg">Turn your ingredients into a delicious meal!</p>
+          <h1 className="font-headline text-4xl font-bold text-primary">Generador de Recetas</h1>
+          <p className="text-muted-foreground mt-2 text-lg">¡Convierte tus ingredientes en una comida deliciosa!</p>
         </header>
 
         <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle className="font-headline">Your Ingredients</CardTitle>
-            <CardDescription>Enter what you have, and we'll create a recipe for you.</CardDescription>
+            <CardTitle className="font-headline">Tus Ingredientes</CardTitle>
+            <CardDescription>Ingresa lo que tienes y crearemos una receta para ti.</CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...form}>
@@ -93,9 +93,9 @@ export default function RecipeGeneratorPage() {
                   name="ingredients"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Available Ingredients</FormLabel>
+                      <FormLabel>Ingredientes Disponibles</FormLabel>
                       <FormControl>
-                        <Textarea placeholder="e.g., chicken breast, rice, broccoli, soy sauce" {...field} rows={4} />
+                        <Textarea placeholder="ej., pechuga de pollo, arroz, brócoli, salsa de soja" {...field} rows={4} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -106,7 +106,7 @@ export default function RecipeGeneratorPage() {
                   name="servings"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Number of Servings</FormLabel>
+                      <FormLabel>Número de Porciones</FormLabel>
                       <FormControl>
                         <Input type="number" min="1" max="20" {...field} />
                       </FormControl>
@@ -115,7 +115,7 @@ export default function RecipeGeneratorPage() {
                   )}
                 />
                 <Button type="submit" disabled={isLoading} className="w-full">
-                  {isLoading ? 'Generating...' : 'Generate Recipe'}
+                  {isLoading ? 'Generando...' : 'Generar Receta'}
                   <Sparkles className="ml-2 h-4 w-4" />
                 </Button>
               </form>
@@ -125,7 +125,7 @@ export default function RecipeGeneratorPage() {
       </div>
 
       <div className="space-y-6">
-        <h2 className="font-headline text-3xl font-bold text-primary text-center">Generated Recipe</h2>
+        <h2 className="font-headline text-3xl font-bold text-primary text-center">Receta Generada</h2>
         <Card className="shadow-lg min-h-[400px]">
           <CardHeader>
             {generatedRecipe ? (
@@ -133,7 +133,7 @@ export default function RecipeGeneratorPage() {
                 <CardTitle className="font-headline text-2xl flex items-center gap-2"><ChefHat /> {generatedRecipe.name}</CardTitle>
               </>
             ) : (
-              <CardTitle className="font-headline text-2xl">Your recipe will appear here</CardTitle>
+              <CardTitle className="font-headline text-2xl">Tu receta aparecerá aquí</CardTitle>
             )}
           </CardHeader>
           <CardContent className="space-y-4">
@@ -149,24 +149,24 @@ export default function RecipeGeneratorPage() {
             {generatedRecipe && (
               <div className="space-y-6">
                 <div>
-                  <h3 className="font-headline text-xl font-semibold text-accent">Instructions</h3>
+                  <h3 className="font-headline text-xl font-semibold text-accent">Instrucciones</h3>
                   <p className="whitespace-pre-wrap">{generatedRecipe.instructions}</p>
                 </div>
                 <Separator/>
                 <div>
-                  <h3 className="font-headline text-xl font-semibold text-accent">Additional Ingredients</h3>
+                  <h3 className="font-headline text-xl font-semibold text-accent">Ingredientes Adicionales</h3>
                   <p className="whitespace-pre-wrap">{generatedRecipe.additionalIngredients}</p>
                 </div>
                  <Separator/>
                 <div>
-                  <h3 className="font-headline text-xl font-semibold text-accent">Equipment Needed</h3>
+                  <h3 className="font-headline text-xl font-semibold text-accent">Equipo Necesario</h3>
                   <p className="whitespace-pre-wrap">{generatedRecipe.equipment}</p>
                 </div>
               </div>
             )}
             {!isLoading && !generatedRecipe && (
               <div className="text-center text-muted-foreground py-10">
-                <p>Fill out the form and click "Generate Recipe" to get started.</p>
+                <p>Completa el formulario y haz clic en "Generar Receta" para comenzar.</p>
               </div>
             )}
           </CardContent>
@@ -174,7 +174,7 @@ export default function RecipeGeneratorPage() {
             <CardFooter>
               <Button onClick={handleSaveRecipe} className="w-full" variant="secondary">
                 <BookHeart className="mr-2 h-4 w-4" />
-                Save Recipe
+                Guardar Receta
               </Button>
             </CardFooter>
           )}

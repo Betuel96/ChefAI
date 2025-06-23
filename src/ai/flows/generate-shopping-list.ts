@@ -14,7 +14,7 @@ import {z} from 'genkit';
 const GenerateShoppingListInputSchema = z.object({
   mealPlan: z
     .string()
-    .describe('A meal plan, which is a list of meals for each day.'),
+    .describe('Un plan de comidas, que es una lista de comidas para cada día.'),
 });
 export type GenerateShoppingListInput = z.infer<typeof GenerateShoppingListInputSchema>;
 
@@ -22,7 +22,7 @@ const GenerateShoppingListOutputSchema = z.object({
   shoppingList: z
     .string()
     .describe(
-      'A shopping list generated from the meal plan, including pantry staples.'
+      'Una lista de compras generada a partir del plan de comidas, incluyendo productos básicos de despensa.'
     ),
 });
 export type GenerateShoppingListOutput = z.infer<typeof GenerateShoppingListOutputSchema>;
@@ -35,13 +35,13 @@ const prompt = ai.definePrompt({
   name: 'generateShoppingListPrompt',
   input: {schema: GenerateShoppingListInputSchema},
   output: {schema: GenerateShoppingListOutputSchema},
-  prompt: `You are a helpful AI assistant that generates shopping lists from meal plans.
+  prompt: `Eres un asistente de IA útil que genera listas de compras a partir de planes de comidas.
 
-  Given the following meal plan:
+  Dado el siguiente plan de comidas:
   {{mealPlan}}
 
-  Generate a comprehensive shopping list including all necessary ingredients and common pantry staples.
-  Format the list clearly and concisely.
+  Genera una lista de compras completa que incluya todos los ingredientes necesarios y productos básicos de despensa comunes.
+  Formatea la lista de manera clara y concisa.
   `,
 });
 

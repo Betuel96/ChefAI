@@ -29,21 +29,21 @@ export default function ShoppingListPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <header>
-        <h1 className="font-headline text-4xl font-bold text-primary">Shopping List</h1>
-        <p className="text-muted-foreground mt-2 text-lg">Your generated shopping list. Check items as you buy them.</p>
+        <h1 className="font-headline text-4xl font-bold text-primary">Lista de Compras</h1>
+        <p className="text-muted-foreground mt-2 text-lg">Tu lista de compras generada. Marca los artículos a medida que los compras.</p>
       </header>
       
       <Card className="shadow-lg">
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle className="font-headline flex items-center gap-2"><ShoppingCart /> Your List</CardTitle>
+            <CardTitle className="font-headline flex items-center gap-2"><ShoppingCart /> Tu Lista</CardTitle>
             <CardDescription>
-              {checkedItems.length} of {shoppingList.length} items purchased.
+              {checkedItems.length} de {shoppingList.length} artículos comprados.
             </CardDescription>
           </div>
           {shoppingList.length > 0 && (
             <Button variant="destructive" size="sm" onClick={handleClearList}>
-              <Trash2 className="mr-2 h-4 w-4" /> Clear List
+              <Trash2 className="mr-2 h-4 w-4" /> Limpiar Lista
             </Button>
           )}
         </CardHeader>
@@ -72,7 +72,7 @@ export default function ShoppingListPage() {
 
               {checkedItems.length > 0 && (
                 <div className="space-y-2">
-                   <h3 className="text-sm font-medium text-muted-foreground px-3 pt-2">Purchased</h3>
+                   <h3 className="text-sm font-medium text-muted-foreground px-3 pt-2">Comprados</h3>
                   {checkedItems.map(item => (
                     <div key={item.id} className="flex items-center space-x-3 bg-muted/50 p-3 rounded-md">
                       <Checkbox
@@ -93,8 +93,8 @@ export default function ShoppingListPage() {
             </div>
           ) : (
             <div className="text-center text-muted-foreground py-10">
-              <p>Your shopping list is empty.</p>
-              <p>Generate one from the Weekly Planner or a saved recipe.</p>
+              <p>Tu lista de compras está vacía.</p>
+              <p>Genera una desde el Planificador Semanal o una receta guardada.</p>
             </div>
           )}
         </CardContent>

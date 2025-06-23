@@ -24,12 +24,12 @@ import {
 import { Button } from '@/components/ui/button';
 
 const menuItems = [
-  { href: '/', label: 'Dashboard', icon: Home },
-  { href: '/generator', label: 'Recipe Generator', icon: Sparkles },
-  { href: '/planner', label: 'Weekly Planner', icon: CalendarDays },
-  { href: '/shopping-list', label: 'Shopping List', icon: ShoppingCart },
-  { href: '/my-recipes', label: 'My Recipes', icon: BookHeart },
-  { href: '/my-menus', label: 'My Menus', icon: MenuSquare },
+  { href: '/', label: 'Panel', icon: Home },
+  { href: '/generator', label: 'Generador de Recetas', icon: Sparkles },
+  { href: '/planner', label: 'Planificador Semanal', icon: CalendarDays },
+  { href: '/shopping-list', label: 'Lista de Compras', icon: ShoppingCart },
+  { href: '/my-recipes', label: 'Mis Recetas', icon: BookHeart },
+  { href: '/my-menus', label: 'Mis Menús', icon: MenuSquare },
 ];
 
 export function AppSidebar() {

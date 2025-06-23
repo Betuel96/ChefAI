@@ -18,45 +18,45 @@ import {z} from 'genkit';
 const CreateWeeklyMealPlanInputSchema = z.object({
   ingredients: z
     .string()
-    .describe('A comma-separated list of ingredients the user wants to use.'),
+    .describe('Una lista de ingredientes separados por comas que el usuario quiere usar.'),
   dietaryPreferences: z
     .string()
     .optional()
     .describe(
-      'The dietary preferences of the user, such as vegetarian, vegan, gluten-free, etc.'
+      'Las preferencias dietéticas del usuario, como vegetariano, vegano, sin gluten, etc.'
     ),
   numberOfDays: z
     .number()
     .min(1)
     .max(7)
-    .describe('The number of days for which to generate the meal plan.'),
+    .describe('El número de días para los que se generará el plan de comidas.'),
   numberOfPeople: z
     .number()
     .min(1)
-    .describe('The number of people the meal plan should serve.'),
+    .describe('El número de personas para las que debe servir el plan de comidas.'),
 });
 export type CreateWeeklyMealPlanInput = z.infer<typeof CreateWeeklyMealPlanInputSchema>;
 
 const MealSchema = z.object({
-  name: z.string().describe('The name of the meal.'),
-  ingredients: z.string().describe('The ingredients required for the meal.'),
-  instructions: z.string().describe('The instructions to prepare the meal.'),
+  name: z.string().describe('El nombre de la comida.'),
+  ingredients: z.string().describe('Los ingredientes necesarios para la comida.'),
+  instructions: z.string().describe('Las instrucciones para preparar la comida.'),
 });
 
 const DailyMealPlanSchema = z.object({
-  breakfast: MealSchema.describe('The breakfast for the day.'),
-  lunch: MealSchema.describe('The lunch for the day.'),
-  dinner: MealSchema.describe('The dinner for the day.'),
+  breakfast: MealSchema.describe('El desayuno del día.'),
+  lunch: MealSchema.describe('El almuerzo del día.'),
+  dinner: MealSchema.describe('La cena del día.'),
 });
 
 const WeeklyMealPlanSchema = z.record(
-  z.string().regex(/^Day [1-7]$/), // Key: "Day 1", "Day 2", etc.
+  z.string().regex(/^Día [1-7]$/), // Key: "Día 1", "Día 2", etc.
   DailyMealPlanSchema
 );
 
 const CreateWeeklyMealPlanOutputSchema = z.object({
   weeklyMealPlan: WeeklyMealPlanSchema.describe(
-    'A weekly meal plan consisting of breakfast, lunch, and dinner recipes for each day.'
+    'Un plan de comidas semanal que consiste en recetas de desayuno, almuerzo y cena para cada día.'
   ),
 });
 
@@ -72,16 +72,16 @@ const prompt = ai.definePrompt({
   name: 'createWeeklyMealPlanPrompt',
   input: {schema: CreateWeeklyMealPlanInputSchema},
   output: {schema: CreateWeeklyMealPlanOutputSchema},
-  prompt: `You are a meal planning assistant. Generate a weekly meal plan based on the provided ingredients, dietary preferences, number of days, and number of people.
+  prompt: `Eres un asistente de planificación de comidas. Genera un plan de comidas semanal basado en los ingredientes, preferencias dietéticas, número de días y número de personas proporcionados.
 
-Ingredients: {{{ingredients}}}
-Dietary Preferences: {{{dietaryPreferences}}}
-Number of Days: {{{numberOfDays}}}
-Number of People: {{{numberOfPeople}}}
+Ingredientes: {{{ingredients}}}
+Preferencias Dietéticas: {{{dietaryPreferences}}}
+Número de Días: {{{numberOfDays}}}
+Número de Personas: {{{numberOfPeople}}}
 
-Generate a meal plan with breakfast, lunch, and dinner for each day. The meal plan should include the name of each meal, a list of ingredients, and instructions on how to prepare the meal. Adhere to the specified dietary preferences, make sure ingredients are in reasonable quantities for the number of people specified, and create a diverse and appealing meal plan that minimizes ingredient overlap and food waste.
+Genera un plan de comidas con desayuno, almuerzo y cena para cada día. El plan de comidas debe incluir el nombre de cada comida, una lista de ingredientes e instrucciones sobre cómo preparar la comida. Adhiérete a las preferencias dietéticas especificadas, asegúrate de que los ingredientes estén en cantidades razonables para el número de personas especificado y crea un plan de comidas diverso y atractivo que minimice la superposición de ingredientes y el desperdicio de alimentos. Usa "Día 1", "Día 2", etc. para las claves del día.
 
-Return the meal plan in the following JSON format:
+Devuelve el plan de comidas en el siguiente formato JSON:
 
 {{output}}
 `,
@@ -98,4 +98,3 @@ const createWeeklyMealPlanFlow = ai.defineFlow(
     return output!;
   }
 );
-

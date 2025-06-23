@@ -33,7 +33,7 @@ export default function MyMenusPage() {
     setLoadingMenuId(menuId);
     try {
       const mealPlanString = Object.entries(menu.weeklyMealPlan)
-        .map(([day, meals]) => `${day}:\n- Breakfast: ${meals.breakfast.name}\n- Lunch: ${meals.lunch.name}\n- Dinner: ${meals.dinner.name}`)
+        .map(([day, meals]) => `${day}:\n- Desayuno: ${meals.breakfast.name}\n- Almuerzo: ${meals.lunch.name}\n- Cena: ${meals.dinner.name}`)
         .join('\n\n');
       
       const result = await generateShoppingList({ mealPlan: mealPlanString });
@@ -45,14 +45,14 @@ export default function MyMenusPage() {
       setShoppingList(items);
 
       toast({
-        title: 'Shopping List Generated!',
-        description: `Redirecting you to your new list...`,
+        title: '¡Lista de Compras Generada!',
+        description: `Redirigiéndote a tu nueva lista...`,
       });
       router.push('/shopping-list');
     } catch (error) {
        toast({
-        title: 'Error Generating List',
-        description: 'Could not generate shopping list. Please try again.',
+        title: 'Error al Generar la Lista',
+        description: 'No se pudo generar la lista de compras. Por favor, inténtalo de nuevo.',
         variant: 'destructive',
       });
     } finally {
@@ -63,14 +63,14 @@ export default function MyMenusPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <header>
-        <h1 className="font-headline text-4xl font-bold text-primary">My Saved Menus</h1>
-        <p className="text-muted-foreground mt-2 text-lg">Your collection of weekly meal plans.</p>
+        <h1 className="font-headline text-4xl font-bold text-primary">Mis Menús Guardados</h1>
+        <p className="text-muted-foreground mt-2 text-lg">Tu colección de planes de comidas semanales.</p>
       </header>
 
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle className="font-headline flex items-center gap-2"><MenuSquare /> Your Meal Plans</CardTitle>
-          <CardDescription>{savedMenus.length} menu(s) saved.</CardDescription>
+          <CardTitle className="font-headline flex items-center gap-2"><MenuSquare /> Tus Planes de Comidas</CardTitle>
+          <CardDescription>{savedMenus.length} menú(s) guardado(s).</CardDescription>
         </CardHeader>
         <CardContent>
           {savedMenus.length > 0 ? (
@@ -79,16 +79,16 @@ export default function MyMenusPage() {
                 <AccordionItem value={menu.id || `menu-${index}`} key={menu.id || `menu-${index}`} className="border-b-0">
                   <Card>
                     <AccordionTrigger className="p-4 font-headline text-lg hover:no-underline">
-                      Meal Plan from {new Date(menu.id).toLocaleDateString()}
+                      Plan de Comida del {new Date(menu.id).toLocaleDateString()}
                     </AccordionTrigger>
                     <AccordionContent className="p-6 pt-0 space-y-4">
                       {Object.entries(menu.weeklyMealPlan).map(([day, meals]) => (
                         <div key={day} className="py-2">
                           <h4 className="font-headline font-bold text-accent text-lg">{day}</h4>
                           <ul className="list-disc list-inside text-muted-foreground">
-                            <li><strong>Breakfast:</strong> {meals.breakfast.name}</li>
-                            <li><strong>Lunch:</strong> {meals.lunch.name}</li>
-                            <li><strong>Dinner:</strong> {meals.dinner.name}</li>
+                            <li><strong>Desayuno:</strong> {meals.breakfast.name}</li>
+                            <li><strong>Almuerzo:</strong> {meals.lunch.name}</li>
+                            <li><strong>Cena:</strong> {meals.dinner.name}</li>
                           </ul>
                         </div>
                       ))}
@@ -98,7 +98,7 @@ export default function MyMenusPage() {
                         disabled={loadingMenuId === menu.id}
                       >
                         <ShoppingCart className="mr-2 h-4 w-4" />
-                        {loadingMenuId === menu.id ? 'Generating...' : 'Create Shopping List'}
+                        {loadingMenuId === menu.id ? 'Generando...' : 'Crear Lista de Compras'}
                       </Button>
                     </AccordionContent>
                   </Card>
@@ -107,8 +107,8 @@ export default function MyMenusPage() {
             </Accordion>
           ) : (
             <div className="text-center text-muted-foreground py-10">
-              <p>You haven't saved any menus yet.</p>
-              <p>Go to the Weekly Planner to create and save a new plan.</p>
+              <p>Aún no has guardado ningún menú.</p>
+              <p>Ve al Planificador Semanal para crear y guardar un nuevo plan.</p>
             </div>
           )}
         </CardContent>

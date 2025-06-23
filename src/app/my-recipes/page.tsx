@@ -27,7 +27,7 @@ export default function MyRecipesPage() {
   const handleGenerateList = async (recipe: Recipe) => {
     setLoadingRecipeId(recipe.name);
     try {
-      const ingredientsString = `${recipe.name} ingredients:\n- ${recipe.additionalIngredients.split(',').join('\n- ')}`;
+      const ingredientsString = `Ingredientes para ${recipe.name}:\n- ${recipe.additionalIngredients.split(',').join('\n- ')}`;
       const result = await generateShoppingList({ mealPlan: ingredientsString });
       const items = result.shoppingList.split('\n').filter(item => item.trim() !== '').map(item => ({
         id: crypto.randomUUID(),
@@ -37,14 +37,14 @@ export default function MyRecipesPage() {
       setShoppingList(items);
 
       toast({
-        title: 'Shopping List Generated!',
-        description: `Based on "${recipe.name}". Redirecting...`,
+        title: '¡Lista de Compras Generada!',
+        description: `Basada en "${recipe.name}". Redirigiendo...`,
       });
       router.push('/shopping-list');
     } catch (error) {
       toast({
-        title: 'Error Generating List',
-        description: 'Could not generate shopping list. Please try again.',
+        title: 'Error al Generar la Lista',
+        description: 'No se pudo generar la lista de compras. Por favor, inténtalo de nuevo.',
         variant: 'destructive',
       });
     } finally {
@@ -56,14 +56,14 @@ export default function MyRecipesPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <header>
-        <h1 className="font-headline text-4xl font-bold text-primary">My Saved Recipes</h1>
-        <p className="text-muted-foreground mt-2 text-lg">All your favorite recipes in one place.</p>
+        <h1 className="font-headline text-4xl font-bold text-primary">Mis Recetas Guardadas</h1>
+        <p className="text-muted-foreground mt-2 text-lg">Todas tus recetas favoritas en un solo lugar.</p>
       </header>
 
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle className="font-headline flex items-center gap-2"><BookHeart /> Your Recipe Book</CardTitle>
-          <CardDescription>{savedRecipes.length} recipe(s) saved.</CardDescription>
+          <CardTitle className="font-headline flex items-center gap-2"><BookHeart /> Tu Libro de Recetas</CardTitle>
+          <CardDescription>{savedRecipes.length} receta(s) guardada(s).</CardDescription>
         </CardHeader>
         <CardContent>
           {savedRecipes.length > 0 ? (
@@ -76,17 +76,17 @@ export default function MyRecipesPage() {
                     </AccordionTrigger>
                     <AccordionContent className="p-6 pt-0 space-y-6">
                       <div>
-                        <h3 className="font-headline text-xl font-semibold text-accent">Instructions</h3>
+                        <h3 className="font-headline text-xl font-semibold text-accent">Instrucciones</h3>
                         <p className="whitespace-pre-wrap">{recipe.instructions}</p>
                       </div>
                       <Separator/>
                       <div>
-                        <h3 className="font-headline text-xl font-semibold text-accent">Additional Ingredients</h3>
+                        <h3 className="font-headline text-xl font-semibold text-accent">Ingredientes Adicionales</h3>
                         <p className="whitespace-pre-wrap">{recipe.additionalIngredients}</p>
                       </div>
                       <Separator/>
                       <div>
-                        <h3 className="font-headline text-xl font-semibold text-accent">Equipment Needed</h3>
+                        <h3 className="font-headline text-xl font-semibold text-accent">Equipo Necesario</h3>
                         <p className="whitespace-pre-wrap">{recipe.equipment}</p>
                       </div>
                       <Button 
@@ -95,7 +95,7 @@ export default function MyRecipesPage() {
                         disabled={loadingRecipeId === recipe.name}
                       >
                         <ShoppingCart className="mr-2 h-4 w-4" />
-                        {loadingRecipeId === recipe.name ? 'Generating...' : 'Create Shopping List'}
+                        {loadingRecipeId === recipe.name ? 'Generando...' : 'Crear Lista de Compras'}
                       </Button>
                     </AccordionContent>
                   </Card>
@@ -104,8 +104,8 @@ export default function MyRecipesPage() {
             </Accordion>
           ) : (
             <div className="text-center text-muted-foreground py-10">
-              <p>You haven't saved any recipes yet.</p>
-              <p>Go to the Recipe Generator to create and save new recipes.</p>
+              <p>Aún no has guardado ninguna receta.</p>
+              <p>Ve al Generador de Recetas para crear y guardar nuevas recetas.</p>
             </div>
           )}
         </CardContent>

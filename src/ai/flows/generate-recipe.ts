@@ -14,22 +14,22 @@ import {z} from 'genkit';
 const GenerateRecipeInputSchema = z.object({
   ingredients: z
     .string()
-    .describe('A comma-separated list of ingredients available.'),
+    .describe('Una lista de ingredientes disponibles separados por comas.'),
   servings: z
     .number()
     .int()
     .positive()
-    .describe('The number of servings the recipe should make.'),
+    .describe('El número de porciones que debe tener la receta.'),
 });
 export type GenerateRecipeInput = z.infer<typeof GenerateRecipeInputSchema>;
 
 const GenerateRecipeOutputSchema = z.object({
-  name: z.string().describe('The name of the recipe.'),
-  instructions: z.string().describe('Step-by-step instructions for preparing the recipe.'),
+  name: z.string().describe('El nombre de la receta.'),
+  instructions: z.string().describe('Instrucciones paso a paso para preparar la receta.'),
   additionalIngredients: z
     .string()
-    .describe('A list of additional ingredients needed, with quantities.'),
-  equipment: z.string().describe('A list of kitchen equipment needed.'),
+    .describe('Una lista de ingredientes adicionales necesarios, con cantidades.'),
+  equipment: z.string().describe('Una lista de utensilios de cocina necesarios.'),
 });
 export type GenerateRecipeOutput = z.infer<typeof GenerateRecipeOutputSchema>;
 
@@ -41,15 +41,15 @@ const prompt = ai.definePrompt({
   name: 'generateRecipePrompt',
   input: {schema: GenerateRecipeInputSchema},
   output: {schema: GenerateRecipeOutputSchema},
-  prompt: `You are a world-class chef. Generate a recipe based on the ingredients provided by the user, and the number of servings they need.
+  prompt: `Eres un chef de talla mundial. Genera una receta basada en los ingredientes proporcionados por el usuario y el número de porciones que necesita.
 
-Ingredients: {{{ingredients}}}
-Servings: {{{servings}}}
+Ingredientes: {{{ingredients}}}
+Porciones: {{{servings}}}
 
-Recipe Name:
-Instructions:
-Additional Ingredients (with quantities):
-Equipment:
+Nombre de la Receta:
+Instrucciones:
+Ingredientes Adicionales (con cantidades):
+Equipo:
 `,config: {
     safetySettings: [
       {
