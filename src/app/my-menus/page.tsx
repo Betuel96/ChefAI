@@ -1,10 +1,10 @@
+
 'use client';
 
-import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { generateShoppingList } from '@/ai/flows/generate-shopping-list';
-import type { WeeklyPlan, ShoppingListCategory, DailyMealPlan } from '@/types';
+import type { WeeklyPlan, ShoppingListCategory, DailyMealPlan, SavedWeeklyPlan } from '@/types';
 import { Button } from '@/components/ui/button';
 import {
   Accordion,
@@ -24,14 +24,14 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { MenuSquare, ShoppingCart, Trash2 } from 'lucide-react';
+import { MenuSquare, ShoppingCart, Trash2, LogIn } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
-// Add an ID to the weekly plan for keying
-interface SavedWeeklyPlan extends WeeklyPlan {
-  id: string;
-}
+import { useAuth } from '@/hooks/use-auth';
+import { getMenus, deleteMenu } from '@/lib/menus';
+import { Skeleton } from '@/components/ui/skeleton';
+import Link from 'next/link';
+import { useLocalStorage } from '@/hooks/use-local-storage';
 
 const MealCard = ({ meal }: { meal: DailyMealPlan['breakfast'] }) => (
   <Card className="mt-4 border-accent/20">
@@ -59,24 +59,37 @@ const MealCard = ({ meal }: { meal: DailyMealPlan['breakfast'] }) => (
 );
 
 export default function MyMenusPage() {
-  const [savedMenus, setSavedMenus] = useLocalStorage<SavedWeeklyPlan[]>('savedMenus', []);
+  const { user, loading: authLoading } = useAuth();
+  const [savedMenus, setSavedMenus] = useState<SavedWeeklyPlan[]>([]);
+  const [pageLoading, setPageLoading] = useState(true);
   const [, setShoppingList] = useLocalStorage<ShoppingListCategory[]>('shoppingList', []);
   const [loadingMenuId, setLoadingMenuId] = useState<string | null>(null);
   const router = useRouter();
   const { toast } = useToast();
 
   useEffect(() => {
-    const menusNeedId = savedMenus.some(menu => !menu.id);
-    if (menusNeedId) {
-      const updatedMenus = savedMenus.map(menu => {
-        if (!menu.id) {
-          return { ...menu, id: crypto.randomUUID() };
-        }
-        return menu;
-      });
-      setSavedMenus(updatedMenus);
+    if (authLoading) {
+      setPageLoading(true);
+      return;
     }
-  }, [savedMenus, setSavedMenus]);
+    if (user) {
+      setPageLoading(true);
+      getMenus(user.uid)
+        .then(setSavedMenus)
+        .catch(() => {
+          toast({
+            title: 'Error al Cargar Menús',
+            description: 'No se pudieron obtener tus menús guardados. Inténtalo de nuevo.',
+            variant: 'destructive',
+          });
+        })
+        .finally(() => setPageLoading(false));
+    } else {
+      setSavedMenus([]);
+      setPageLoading(false);
+    }
+  }, [user, authLoading, toast]);
+
 
   const handleGenerateList = async (menu: WeeklyPlan) => {
     const menuId = (menu as SavedWeeklyPlan).id;
@@ -133,14 +146,136 @@ export default function MyMenusPage() {
     }
   };
 
-  const handleDeleteMenu = (menuIdToDelete: string) => {
-    const updatedMenus = savedMenus.filter((menu) => menu.id !== menuIdToDelete);
-    setSavedMenus(updatedMenus);
-    toast({
-      title: 'Menú Eliminado',
-      description: 'El plan de comidas ha sido eliminado de tus menús guardados.',
-    });
+  const handleDeleteMenu = async (menuIdToDelete: string) => {
+    if (!user) return;
+    
+    const originalMenus = [...savedMenus];
+    setSavedMenus(savedMenus.filter((menu) => menu.id !== menuIdToDelete));
+
+    try {
+      await deleteMenu(user.uid, menuIdToDelete);
+      toast({
+        title: 'Menú Eliminado',
+        description: 'El plan de comidas ha sido eliminado de tu cuenta.',
+      });
+    } catch (error) {
+      setSavedMenus(originalMenus);
+      toast({
+        title: 'Error al Eliminar',
+        description: 'No se pudo eliminar el menú. Inténtalo de nuevo.',
+        variant: 'destructive',
+      });
+    }
   };
+
+  const renderContent = () => {
+    if (pageLoading) {
+      return (
+         <div className="space-y-2">
+            <Skeleton className="h-14 w-full" />
+            <Skeleton className="h-14 w-full" />
+            <Skeleton className="h-14 w-full" />
+         </div>
+      );
+    }
+
+    if (!user) {
+       return (
+        <div className="text-center text-muted-foreground py-10 flex flex-col items-center">
+            <LogIn className="w-16 h-16 mb-4" />
+            <h3 className="font-headline text-2xl font-semibold mb-2 text-foreground">Inicia Sesión para Ver tus Menús</h3>
+            <p className="mb-6">Guarda tus planes de comidas y accede a ellos desde cualquier lugar.</p>
+            <Button asChild>
+                <Link href="/login">Acceder / Registrarse</Link>
+            </Button>
+        </div>
+      );
+    }
+
+    if (savedMenus.length === 0) {
+      return (
+        <div className="text-center text-muted-foreground py-10">
+          <p>Aún no has guardado ningún menú en tu cuenta.</p>
+          <p>Ve al Planificador Semanal para crear y guardar un nuevo plan.</p>
+        </div>
+      );
+    }
+
+    return (
+      <Accordion type="multiple" className="w-full space-y-2">
+        {savedMenus.map((menu, index) => (
+          <AccordionItem value={menu.id} key={menu.id} className="border-b-0">
+            <Card>
+              <AccordionTrigger className="p-4 font-headline text-lg hover:no-underline">
+                Plan de Comida Guardado #{index + 1}
+              </AccordionTrigger>
+              <AccordionContent className="p-6 pt-0 space-y-4">
+                {Array.isArray(menu.weeklyMealPlan) &&
+                  menu.weeklyMealPlan.map((dailyPlan) => (
+                    <div key={dailyPlan.day} className="py-2 border-b last:border-b-0">
+                      <h4 className="font-headline font-bold text-accent text-lg mb-2">{dailyPlan.day}</h4>
+                      <Tabs defaultValue="breakfast" className="w-full">
+                        <TabsList className="grid w-full grid-cols-4">
+                          <TabsTrigger value="breakfast">Desayuno</TabsTrigger>
+                          <TabsTrigger value="lunch">Almuerzo</TabsTrigger>
+                          <TabsTrigger value="comida">Comida</TabsTrigger>
+                          <TabsTrigger value="dinner">Cena</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="breakfast">
+                          {dailyPlan.breakfast && <MealCard meal={dailyPlan.breakfast} />}
+                        </TabsContent>
+                        <TabsContent value="lunch">
+                          {dailyPlan.lunch && <MealCard meal={dailyPlan.lunch} />}
+                        </TabsContent>
+                        <TabsContent value="comida">
+                          {dailyPlan.comida && <MealCard meal={dailyPlan.comida} />}
+                        </TabsContent>
+                        <TabsContent value="dinner">
+                          {dailyPlan.dinner && <MealCard meal={dailyPlan.dinner} />}
+                        </TabsContent>
+                      </Tabs>
+                    </div>
+                  ))}
+                <div className="flex flex-col sm:flex-row gap-2 mt-6 pt-6 border-t">
+                  <Button
+                    onClick={() => handleGenerateList(menu)}
+                    className="w-full sm:w-auto flex-grow"
+                    disabled={loadingMenuId === menu.id}
+                  >
+                    <ShoppingCart className="mr-2 h-4 w-4" />
+                    {loadingMenuId === menu.id ? 'Generando...' : 'Crear Lista de Compras'}
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" className="w-full sm:w-auto">
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Eliminar Menú
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Esta acción no se puede deshacer. Esto eliminará permanentemente
+                          este plan de comidas.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleDeleteMenu(menu.id)}>
+                          Continuar
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </AccordionContent>
+            </Card>
+          </AccordionItem>
+        ))}
+      </Accordion>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -154,88 +289,10 @@ export default function MyMenusPage() {
           <CardTitle className="font-headline flex items-center gap-2">
             <MenuSquare /> Tus Planes de Comidas
           </CardTitle>
-          <CardDescription>{savedMenus.length} menú(s) guardado(s).</CardDescription>
+          {!pageLoading && user && <CardDescription>{savedMenus.length} menú(s) guardado(s) en tu cuenta.</CardDescription>}
         </CardHeader>
         <CardContent>
-          {savedMenus.length > 0 ? (
-            <Accordion type="multiple" className="w-full space-y-2">
-              {savedMenus.map((menu, index) => (
-                <AccordionItem value={menu.id || `menu-${index}`} key={menu.id || `menu-${index}`} className="border-b-0">
-                  <Card>
-                    <AccordionTrigger className="p-4 font-headline text-lg hover:no-underline">
-                      Plan de Comida #{index + 1}
-                    </AccordionTrigger>
-                    <AccordionContent className="p-6 pt-0 space-y-4">
-                      {Array.isArray(menu.weeklyMealPlan) &&
-                        menu.weeklyMealPlan.map((dailyPlan) => (
-                          <div key={dailyPlan.day} className="py-2 border-b last:border-b-0">
-                            <h4 className="font-headline font-bold text-accent text-lg mb-2">{dailyPlan.day}</h4>
-                            <Tabs defaultValue="breakfast" className="w-full">
-                              <TabsList className="grid w-full grid-cols-4">
-                                <TabsTrigger value="breakfast">Desayuno</TabsTrigger>
-                                <TabsTrigger value="lunch">Almuerzo</TabsTrigger>
-                                <TabsTrigger value="comida">Comida</TabsTrigger>
-                                <TabsTrigger value="dinner">Cena</TabsTrigger>
-                              </TabsList>
-                              <TabsContent value="breakfast">
-                                {dailyPlan.breakfast && <MealCard meal={dailyPlan.breakfast} />}
-                              </TabsContent>
-                              <TabsContent value="lunch">
-                                {dailyPlan.lunch && <MealCard meal={dailyPlan.lunch} />}
-                              </TabsContent>
-                              <TabsContent value="comida">
-                                {dailyPlan.comida && <MealCard meal={dailyPlan.comida} />}
-                              </TabsContent>
-                              <TabsContent value="dinner">
-                                {dailyPlan.dinner && <MealCard meal={dailyPlan.dinner} />}
-                              </TabsContent>
-                            </Tabs>
-                          </div>
-                        ))}
-                      <div className="flex flex-col sm:flex-row gap-2 mt-6 pt-6 border-t">
-                        <Button
-                          onClick={() => handleGenerateList(menu)}
-                          className="w-full sm:w-auto flex-grow"
-                          disabled={loadingMenuId === menu.id}
-                        >
-                          <ShoppingCart className="mr-2 h-4 w-4" />
-                          {loadingMenuId === menu.id ? 'Generando...' : 'Crear Lista de Compras'}
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="destructive" className="w-full sm:w-auto">
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Eliminar Menú
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Esta acción no se puede deshacer. Esto eliminará permanentemente
-                                este plan de comidas.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDeleteMenu(menu.id)}>
-                                Continuar
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </AccordionContent>
-                  </Card>
-                </AccordionItem>
-              ))}
-            </Accordion>
-          ) : (
-            <div className="text-center text-muted-foreground py-10">
-              <p>Aún no has guardado ningún menú.</p>
-              <p>Ve al Planificador Semanal para crear y guardar un nuevo plan.</p>
-            </div>
-          )}
+          {renderContent()}
         </CardContent>
       </Card>
     </div>

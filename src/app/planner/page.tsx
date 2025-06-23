@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -29,6 +30,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { useAuth } from '@/hooks/use-auth';
+import { addMenu } from '@/lib/menus';
 
 const formSchema = z.object({
   ingredients: z.string().min(10, 'Por favor, enumera al menos algunos ingredientes.'),
@@ -77,11 +80,12 @@ export default function MealPlannerPage() {
   const [isSimulatingAd, setIsSimulatingAd] = useState(false);
   const [showAdDialog, setShowAdDialog] = useState(false);
   const { toast } = useToast();
-  const [savedMenus, setSavedMenus] = useLocalStorage<WeeklyPlan[]>('savedMenus', []);
   const [, setShoppingList] = useLocalStorage<ShoppingListCategory[]>('shoppingList', []);
   const [generationCount, setGenerationCount] = useLocalStorage<number>('planGenerationCount', 0);
   const [isPremium] = useLocalStorage<boolean>('isPremium', false);
   const router = useRouter();
+  const { user } = useAuth();
+  const [isSaving, setIsSaving] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -130,14 +134,33 @@ export default function MealPlannerPage() {
     }, 2000); // Simulate 2 second ad watch
   };
 
-  const handleSaveMenu = () => {
-    if (mealPlan) {
-      const newMenuWithId = { ...mealPlan, id: new Date().toISOString() };
-      setSavedMenus([...savedMenus, newMenuWithId]);
+  const handleSaveMenu = async () => {
+    if (!mealPlan) return;
+
+    if (!user) {
+      toast({
+        title: 'Inicia Sesión para Guardar',
+        description: 'Crea una cuenta o inicia sesión para guardar tus menús en la nube.',
+        variant: 'default',
+      });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await addMenu(user.uid, mealPlan);
       toast({
         title: '¡Menú Guardado!',
-        description: 'Tu nuevo plan de comidas ha sido guardado.',
+        description: 'Tu nuevo plan de comidas ha sido guardado en tu cuenta.',
       });
+    } catch (error) {
+      toast({
+        title: 'Error al Guardar',
+        description: `No se pudo guardar el menú. Inténtalo de nuevo.`,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -196,7 +219,7 @@ export default function MealPlannerPage() {
     }
   };
   
-  const anyLoading = isLoading || isGeneratingList || isSimulatingAd;
+  const anyLoading = isLoading || isGeneratingList || isSimulatingAd || isSaving;
   const generationsLeft = FREE_GENERATIONS_LIMIT - generationCount;
 
   return (
@@ -350,7 +373,13 @@ export default function MealPlannerPage() {
             {mealPlan && (
               <CardFooter className="flex flex-col sm:flex-row gap-2">
                 <Button onClick={handleSaveMenu} variant="secondary" className="w-full" disabled={anyLoading}>
-                  <BookHeart className="mr-2 h-4 w-4" /> Guardar Menú
+                  {isSaving ? (
+                     <>Guardando...</>
+                  ) : (
+                    <>
+                      <BookHeart className="mr-2 h-4 w-4" /> Guardar Menú
+                    </>
+                  )}
                 </Button>
                 <Button onClick={handleGenerateShoppingList} className="w-full" disabled={anyLoading}>
                   <ShoppingCart className="mr-2 h-4 w-4" /> 
