@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { generateRecipe } from '@/ai/flows/generate-recipe';
+import { generateRecipeImage } from '@/ai/flows/generate-recipe-image';
 import { addRecipe } from '@/lib/recipes';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Button } from '@/components/ui/button';
@@ -14,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { BookHeart, ChefHat, Sparkles, Gem, LogIn } from 'lucide-react';
+import { BookHeart, ChefHat, Sparkles, Gem, LogIn, Image as ImageIcon } from 'lucide-react';
 import type { Recipe } from '@/types';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -41,7 +42,9 @@ const FREE_GENERATIONS_LIMIT = 2;
 export default function RecipeGeneratorPage() {
   const { user } = useAuth();
   const [generatedRecipe, setGeneratedRecipe] = useState<Recipe | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSimulatingAd, setIsSimulatingAd] = useState(false);
   const [showAdDialog, setShowAdDialog] = useState(false);
@@ -62,21 +65,35 @@ export default function RecipeGeneratorPage() {
   const runGeneration = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
     setGeneratedRecipe(null);
+    setImageUrl(null);
+    setIsGeneratingImage(false);
+
     try {
+      // 1. Generate recipe text first
       const recipe = await generateRecipe(values);
       setGeneratedRecipe(recipe);
+      setIsLoading(false); // UI now shows the text recipe
+      setIsGeneratingImage(true); // UI now shows image loading placeholder
+
       if (!isPremium) {
         setGenerationCount(generationCount + 1);
       }
+
+      // 2. Generate image in the background
+      const imageResult = await generateRecipeImage({ recipeName: recipe.name });
+      setImageUrl(imageResult.imageUrl);
+      setIsGeneratingImage(false); // UI now shows the final image
+
     } catch (error) {
-      console.error(error);
-      toast({
-        title: 'Error al Generar la Receta',
-        description: 'Algo salió mal. Por favor, inténtalo de nuevo.',
-        variant: 'destructive',
-      });
+        console.error(error);
+        toast({
+            title: 'Error al Generar',
+            description: 'No se pudo completar la generación. Por favor, inténtalo de nuevo.',
+            variant: 'destructive',
+        });
+        setIsLoading(false);
+        setIsGeneratingImage(false);
     }
-    setIsLoading(false);
   };
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
@@ -110,6 +127,8 @@ export default function RecipeGeneratorPage() {
     
     setIsSaving(true);
     try {
+      // Note: This currently only saves the text part of the recipe.
+      // Image saving will be implemented in the next step.
       await addRecipe(user.uid, generatedRecipe);
       toast({
         title: '¡Receta Guardada!',
@@ -126,8 +145,16 @@ export default function RecipeGeneratorPage() {
     }
   }
 
+  const getButtonText = () => {
+    if (isLoading) return 'Generando Receta...';
+    if (isSimulatingAd) return 'Viendo Anuncio...';
+    if (isGeneratingImage) return 'Generando Imagen...';
+    return 'Generar Receta';
+  }
+
+  const anyTextLoading = isLoading || isSimulatingAd;
+  const anyLoading = anyTextLoading || isGeneratingImage || isSaving;
   const generationsLeft = FREE_GENERATIONS_LIMIT - generationCount;
-  const anyLoading = isLoading || isSimulatingAd || isSaving;
 
   return (
     <>
@@ -173,7 +200,7 @@ export default function RecipeGeneratorPage() {
                     )}
                   />
                   <Button type="submit" disabled={anyLoading} className="w-full">
-                    {isLoading ? 'Generando...' : isSimulatingAd ? 'Viendo Anuncio...' : 'Generar Receta'}
+                    {getButtonText()}
                     <Sparkles className="ml-2 h-4 w-4" />
                   </Button>
                 </form>
@@ -218,7 +245,7 @@ export default function RecipeGeneratorPage() {
               )}
             </CardHeader>
             <CardContent className="space-y-4">
-              {isLoading && (
+              {anyTextLoading && !generatedRecipe && (
                 <div className="space-y-4 p-2">
                   <Skeleton className="h-8 w-3/4" />
                   <Skeleton className="h-4 w-1/2" />
@@ -234,24 +261,41 @@ export default function RecipeGeneratorPage() {
                 </div>
               )}
               {generatedRecipe && (
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="font-headline text-xl font-semibold text-accent">Instrucciones</h3>
-                    <p className="whitespace-pre-wrap">{generatedRecipe.instructions}</p>
+                <>
+                  {isGeneratingImage && (
+                    <div className="flex flex-col justify-center items-center h-56 bg-muted rounded-lg animate-pulse mb-4">
+                      <ImageIcon className="w-10 h-10 text-muted-foreground mb-2" />
+                      <p className="text-muted-foreground">Generando imagen...</p>
+                    </div>
+                  )}
+                  {imageUrl && (
+                    <div className="mb-4 rounded-lg overflow-hidden shadow-inner">
+                        <img
+                            src={imageUrl}
+                            alt={`Imagen de ${generatedRecipe.name}`}
+                            className="w-full h-auto object-cover"
+                        />
+                    </div>
+                  )}
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="font-headline text-xl font-semibold text-accent">Instrucciones</h3>
+                      <p className="whitespace-pre-wrap">{generatedRecipe.instructions}</p>
+                    </div>
+                    <Separator/>
+                    <div>
+                      <h3 className="font-headline text-xl font-semibold text-accent">Ingredientes Adicionales</h3>
+                      <p className="whitespace-pre-wrap">{generatedRecipe.additionalIngredients}</p>
+                    </div>
+                    <Separator/>
+                    <div>
+                      <h3 className="font-headline text-xl font-semibold text-accent">Equipo Necesario</h3>
+                      <p className="whitespace-pre-wrap">{generatedRecipe.equipment}</p>
+                    </div>
                   </div>
-                  <Separator/>
-                  <div>
-                    <h3 className="font-headline text-xl font-semibold text-accent">Ingredientes Adicionales</h3>
-                    <p className="whitespace-pre-wrap">{generatedRecipe.additionalIngredients}</p>
-                  </div>
-                  <Separator/>
-                  <div>
-                    <h3 className="font-headline text-xl font-semibold text-accent">Equipo Necesario</h3>
-                    <p className="whitespace-pre-wrap">{generatedRecipe.equipment}</p>
-                  </div>
-                </div>
+                </>
               )}
-              {!anyLoading && !generatedRecipe && (
+              {!isLoading && !isSimulatingAd && !generatedRecipe && (
                 <div className="text-center text-muted-foreground py-10">
                   <p>Completa el formulario y haz clic en "Generar Receta" para comenzar.</p>
                 </div>
@@ -259,7 +303,7 @@ export default function RecipeGeneratorPage() {
             </CardContent>
             {generatedRecipe && (
               <CardFooter>
-                <Button onClick={handleSaveRecipe} className="w-full" variant="secondary" disabled={isSaving}>
+                <Button onClick={handleSaveRecipe} className="w-full" variant="secondary" disabled={isSaving || isGeneratingImage}>
                   {isSaving ? (
                     <>Guardando...</>
                   ) : (
