@@ -32,7 +32,7 @@ export default function ProPage() {
           </div>
           <CardTitle className="font-headline text-4xl text-primary">ChefAI Pro</CardTitle>
           <CardDescription className="text-lg">
-            Desbloquea todo el potencial de tu asistente de cocina.
+            Únete a nuestro plan de suscripción Pro y desbloquea todo el potencial de tu asistente de cocina.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -44,14 +44,25 @@ export default function ProPage() {
               </li>
             ))}
           </ul>
+          
+          <div className="text-center my-4">
+            <span className="text-4xl font-bold font-headline">$9.99</span>
+            <span className="text-muted-foreground">/mes</span>
+          </div>
+          
           {isPremium ? (
             <div className="text-center p-4 bg-green-100 dark:bg-green-900/50 rounded-lg">
               <p className="font-semibold text-green-700 dark:text-green-300">¡Ya eres un miembro Pro! Gracias por tu apoyo.</p>
             </div>
           ) : (
-            <Button onClick={handleUpgrade} className="w-full text-lg py-6">
-              ¡Actualizar a Pro Ahora!
-            </Button>
+            <>
+              <Button onClick={handleUpgrade} className="w-full text-lg py-6">
+                Suscribirse a Pro
+              </Button>
+              <p className="text-xs text-muted-foreground text-center mt-2">
+                La suscripción se renueva automáticamente. Cancela en cualquier momento.
+              </p>
+            </>
           )}
         </CardContent>
       </Card>
