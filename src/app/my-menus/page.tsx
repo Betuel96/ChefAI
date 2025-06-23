@@ -2,7 +2,7 @@
 
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { generateShoppingList } from '@/ai/flows/generate-shopping-list';
 import type { WeeklyPlan, ShoppingListCategory, DailyMealPlan } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -64,6 +64,19 @@ export default function MyMenusPage() {
   const [loadingMenuId, setLoadingMenuId] = useState<string | null>(null);
   const router = useRouter();
   const { toast } = useToast();
+
+  useEffect(() => {
+    const menusNeedId = savedMenus.some(menu => !menu.id);
+    if (menusNeedId) {
+      const updatedMenus = savedMenus.map(menu => {
+        if (!menu.id) {
+          return { ...menu, id: crypto.randomUUID() };
+        }
+        return menu;
+      });
+      setSavedMenus(updatedMenus);
+    }
+  }, [savedMenus, setSavedMenus]);
 
   const handleGenerateList = async (menu: WeeklyPlan) => {
     const menuId = (menu as SavedWeeklyPlan).id;
@@ -150,7 +163,7 @@ export default function MyMenusPage() {
                 <AccordionItem value={menu.id || `menu-${index}`} key={menu.id || `menu-${index}`} className="border-b-0">
                   <Card>
                     <AccordionTrigger className="p-4 font-headline text-lg hover:no-underline">
-                      Plan de Comida del {new Date(menu.id).toLocaleDateString()}
+                      Plan de Comida #{index + 1}
                     </AccordionTrigger>
                     <AccordionContent className="p-6 pt-0 space-y-4">
                       {Array.isArray(menu.weeklyMealPlan) &&
