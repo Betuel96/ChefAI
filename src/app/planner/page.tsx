@@ -18,7 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import type { WeeklyPlan, ShoppingListCategory, DailyMealPlan } from '@/types';
-import { BookHeart, CalendarDays, ShoppingCart, Sparkles } from 'lucide-react';
+import { BookHeart, CalendarDays, Gem, ShoppingCart, Sparkles } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   AlertDialog,
@@ -396,12 +396,18 @@ export default function MealPlannerPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>¡Límite gratuito alcanzado!</AlertDialogTitle>
             <AlertDialogDescription>
-              Has utilizado tu generación de plan gratuita. Para generar otro, por favor mira un anuncio corto.
+               Has utilizado tu generación de plan gratuita. Para seguir creando, mira un anuncio o actualiza a Pro para tener generaciones ilimitadas.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleWatchAd}>Ver Anuncio y Continuar</AlertDialogAction>
+           <AlertDialogFooter className='sm:justify-between gap-2'>
+            <Button variant="outline" onClick={() => router.push('/pro')}>
+              <Gem className="mr-2 h-4 w-4" />
+              Actualizar a Pro
+            </Button>
+            <div className='flex flex-col-reverse sm:flex-row sm:justify-end gap-2'>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={handleWatchAd}>Ver Anuncio y Continuar</AlertDialogAction>
+            </div>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

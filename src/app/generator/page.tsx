@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { BookHeart, ChefHat, Sparkles, Gem, LogIn, Image as ImageIcon } from 'lucide-react';
+import { BookHeart, ChefHat, Sparkles, Gem, Image as ImageIcon } from 'lucide-react';
 import type { Recipe } from '@/types';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -28,9 +28,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/use-auth';
+import { useRouter } from 'next/navigation';
 
 const formSchema = z.object({
   ingredients: z.string().min(10, 'Por favor, enumera al menos algunos ingredientes.'),
@@ -41,6 +40,7 @@ const FREE_GENERATIONS_LIMIT = 2;
 
 export default function RecipeGeneratorPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [generatedRecipe, setGeneratedRecipe] = useState<Recipe | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -50,7 +50,7 @@ export default function RecipeGeneratorPage() {
   const [showAdDialog, setShowAdDialog] = useState(false);
   
   const [generationCount, setGenerationCount] = useLocalStorage<number>('recipeGenerationCount', 0);
-  const [isPremium, setIsPremium] = useLocalStorage<boolean>('isPremium', false);
+  const [isPremium] = useLocalStorage<boolean>('isPremium', false);
   
   const { toast } = useToast();
   
@@ -212,22 +212,6 @@ export default function RecipeGeneratorPage() {
               </CardFooter>
             )}
           </Card>
-
-          <Card className="shadow-lg">
-            <CardHeader>
-              <CardTitle className="font-headline">Simulación de Plan</CardTitle>
-              <CardDescription>Activa para simular que eres un usuario Pro y saltarte los límites.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center space-x-2">
-                <Switch id="premium-mode" checked={isPremium} onCheckedChange={setIsPremium} />
-                <Label htmlFor="premium-mode" className='flex items-center'>
-                  <Gem className="mr-2 h-4 w-4 text-primary" />
-                  Modo ChefAI Pro {isPremium ? "Activado" : "Desactivado"}
-                </Label>
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
         <div className="space-y-6">
@@ -322,12 +306,18 @@ export default function RecipeGeneratorPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>¡Límite gratuito alcanzado!</AlertDialogTitle>
             <AlertDialogDescription>
-              Has utilizado tus {FREE_GENERATIONS_LIMIT} generaciones de recetas gratuitas. Para generar otra, por favor mira un anuncio corto.
+              Has utilizado tus {FREE_GENERATIONS_LIMIT} generaciones gratuitas. Para seguir creando, mira un anuncio o actualiza a Pro para tener generaciones ilimitadas.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleWatchAd}>Ver Anuncio y Continuar</AlertDialogAction>
+          <AlertDialogFooter className='sm:justify-between gap-2'>
+            <Button variant="outline" onClick={() => router.push('/pro')}>
+              <Gem className="mr-2 h-4 w-4" />
+              Actualizar a Pro
+            </Button>
+            <div className='flex flex-col-reverse sm:flex-row sm:justify-end gap-2'>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={handleWatchAd}>Ver Anuncio y Continuar</AlertDialogAction>
+            </div>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
