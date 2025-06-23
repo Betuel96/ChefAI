@@ -44,7 +44,7 @@ const MealSchema = z.object({
   instructions: z.string().optional().describe('Las instrucciones para preparar la comida.'),
 });
 
-export const DailyMealPlanSchema = z.object({
+const DailyMealPlanSchema = z.object({
   day: z.string().describe('El día de la semana (p. ej., "Día 1").'),
   breakfast: MealSchema.describe('El desayuno del día.'),
   lunch: MealSchema.describe('El almuerzo del día.'),
