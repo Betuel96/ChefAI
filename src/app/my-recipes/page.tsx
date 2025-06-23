@@ -253,7 +253,7 @@ export default function MyRecipesPage() {
         ))}
         </Accordion>
     );
-  }
+  };
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
