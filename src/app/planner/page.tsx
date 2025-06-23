@@ -76,8 +76,8 @@ export default function MealPlannerPage() {
     if (!mealPlan) return;
     setIsLoading(true);
     try {
-      const mealPlanString = Object.entries(mealPlan.weeklyMealPlan)
-        .map(([day, meals]) => `${day}:\n- Desayuno: ${meals.breakfast.name}\n- Almuerzo: ${meals.lunch.name}\n- Cena: ${meals.dinner.name}`)
+      const mealPlanString = mealPlan.weeklyMealPlan
+        .map(plan => `${plan.day}:\n- Desayuno: ${plan.breakfast.name}\n- Almuerzo: ${plan.lunch.name}\n- Cena: ${plan.dinner.name}`)
         .join('\n\n');
       
       const result = await generateShoppingList({ mealPlan: mealPlanString });
@@ -201,21 +201,21 @@ export default function MealPlannerPage() {
             )}
             {mealPlan && (
               <Accordion type="single" collapsible className="w-full">
-                {Object.entries(mealPlan.weeklyMealPlan).map(([day, meals]) => (
-                  <AccordionItem value={day} key={day}>
-                    <AccordionTrigger className="font-headline text-lg">{day}</AccordionTrigger>
+                {mealPlan.weeklyMealPlan.map((dailyPlan) => (
+                  <AccordionItem value={dailyPlan.day} key={dailyPlan.day}>
+                    <AccordionTrigger className="font-headline text-lg">{dailyPlan.day}</AccordionTrigger>
                     <AccordionContent className="space-y-4 pl-4">
                       <div>
                         <h4 className="font-semibold text-accent">Desayuno</h4>
-                        <p>{meals.breakfast.name}</p>
+                        <p>{dailyPlan.breakfast.name}</p>
                       </div>
                       <div>
                         <h4 className="font-semibold text-accent">Almuerzo</h4>
-                        <p>{meals.lunch.name}</p>
+                        <p>{dailyPlan.lunch.name}</p>
                       </div>
                       <div>
                         <h4 className="font-semibold text-accent">Cena</h4>
-                        <p>{meals.dinner.name}</p>
+                        <p>{dailyPlan.dinner.name}</p>
                       </div>
                     </AccordionContent>
                   </AccordionItem>

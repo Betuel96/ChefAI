@@ -10,6 +10,7 @@
  * @exports createWeeklyMealPlan - The main function to trigger the meal plan creation flow.
  * @exports CreateWeeklyMealPlanInput - The input type for the createWeeklyMealPlan function.
  * @exports CreateWeeklyMealPlanOutput - The output type for the createWeeklyMealPlan function.
+ * @exports DailyMealPlan - The type for a single day's meal plan.
  */
 
 import {ai} from '@/ai/genkit';
@@ -43,20 +44,19 @@ const MealSchema = z.object({
   instructions: z.string().optional().describe('Las instrucciones para preparar la comida.'),
 });
 
-const DailyMealPlanSchema = z.object({
+export const DailyMealPlanSchema = z.object({
+  day: z.string().describe('El día de la semana (p. ej., "Día 1").'),
   breakfast: MealSchema.describe('El desayuno del día.'),
   lunch: MealSchema.describe('El almuerzo del día.'),
   dinner: MealSchema.describe('La cena del día.'),
 });
+export type DailyMealPlan = z.infer<typeof DailyMealPlanSchema>;
 
-const WeeklyMealPlanSchema = z.record(
-  z.string(), // Key: "Día 1", "Día 2", etc.
-  DailyMealPlanSchema
-);
+const WeeklyMealPlanSchema = z.array(DailyMealPlanSchema);
 
 const CreateWeeklyMealPlanOutputSchema = z.object({
   weeklyMealPlan: WeeklyMealPlanSchema.describe(
-    'Un plan de comidas semanal que consiste en recetas de desayuno, almuerzo y cena para cada día.'
+    'Un plan de comidas semanal que consiste en un array de recetas de desayuno, almuerzo y cena para cada día.'
   ),
 });
 
@@ -82,12 +82,13 @@ const prompt = ai.definePrompt({
 
 **Instrucciones:**
 1.  Crea un plan que cubra desayuno, almuerzo y cena para cada uno de los \`{{{numberOfDays}}}\` días.
-2.  Para cada comida, proporciona el nombre de la receta. Opcionalmente, puedes incluir los ingredientes y las instrucciones.
-3.  Utiliza los ingredientes disponibles como base principal para las recetas.
-4.  Respeta estrictamente las preferencias dietéticas.
-5.  Asegúrate de que el plan sea variado y minimice el desperdicio de alimentos.
-6.  La salida DEBE ser un objeto JSON válido. La clave principal de nivel superior debe ser "weeklyMealPlan".
-7.  Dentro de "weeklyMealPlan", crea un objeto donde cada clave es una cadena que representa el día (por ejemplo, "Día 1", "Día 2").
+2.  La respuesta DEBE ser un objeto JSON válido. La clave de nivel superior debe ser \`weeklyMealPlan\`.
+3.  El valor de \`weeklyMealPlan\` DEBE ser un ARRAY de objetos.
+4.  Cada objeto en el array representa un día y debe contener las siguientes claves: \`day\` (p. ej., "Día 1"), \`breakfast\`, \`lunch\`, y \`dinner\`.
+5.  Para cada comida (\`breakfast\`, \`lunch\`, \`dinner\`), proporciona un objeto con la clave \`name\` para el nombre de la receta.
+6.  Utiliza los ingredientes disponibles como base principal para las recetas.
+7.  Respeta estrictamente las preferencias dietéticas.
+8.  Asegúrate de que el plan sea variado y minimice el desperdicio de alimentos.
 `,
   config: {
     safetySettings: [

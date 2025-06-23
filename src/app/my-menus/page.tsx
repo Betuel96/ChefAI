@@ -32,8 +32,8 @@ export default function MyMenusPage() {
     const menuId = (menu as SavedWeeklyPlan).id;
     setLoadingMenuId(menuId);
     try {
-      const mealPlanString = Object.entries(menu.weeklyMealPlan)
-        .map(([day, meals]) => `${day}:\n- Desayuno: ${meals.breakfast.name}\n- Almuerzo: ${meals.lunch.name}\n- Cena: ${meals.dinner.name}`)
+      const mealPlanString = menu.weeklyMealPlan
+        .map(plan => `${plan.day}:\n- Desayuno: ${plan.breakfast.name}\n- Almuerzo: ${plan.lunch.name}\n- Cena: ${plan.dinner.name}`)
         .join('\n\n');
       
       const result = await generateShoppingList({ mealPlan: mealPlanString });
@@ -82,13 +82,13 @@ export default function MyMenusPage() {
                       Plan de Comida del {new Date(menu.id).toLocaleDateString()}
                     </AccordionTrigger>
                     <AccordionContent className="p-6 pt-0 space-y-4">
-                      {Object.entries(menu.weeklyMealPlan).map(([day, meals]) => (
-                        <div key={day} className="py-2">
-                          <h4 className="font-headline font-bold text-accent text-lg">{day}</h4>
+                      {Array.isArray(menu.weeklyMealPlan) && menu.weeklyMealPlan.map((dailyPlan) => (
+                        <div key={dailyPlan.day} className="py-2">
+                          <h4 className="font-headline font-bold text-accent text-lg">{dailyPlan.day}</h4>
                           <ul className="list-disc list-inside text-muted-foreground">
-                            <li><strong>Desayuno:</strong> {meals.breakfast.name}</li>
-                            <li><strong>Almuerzo:</strong> {meals.lunch.name}</li>
-                            <li><strong>Cena:</strong> {meals.dinner.name}</li>
+                            <li><strong>Desayuno:</strong> {dailyPlan.breakfast.name}</li>
+                            <li><strong>Almuerzo:</strong> {dailyPlan.lunch.name}</li>
+                            <li><strong>Cena:</strong> {dailyPlan.dinner.name}</li>
                           </ul>
                         </div>
                       ))}

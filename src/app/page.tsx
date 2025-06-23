@@ -6,28 +6,34 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useLocalStorage } from '@/hooks/use-local-storage';
-import type { WeeklyPlan } from '@/types';
+import type { WeeklyPlan, DailyMealPlan } from '@/types';
 import { UtensilsCrossed } from 'lucide-react';
 
 export default function Dashboard() {
   const [savedMenus] = useLocalStorage<WeeklyPlan[]>('savedMenus', []);
-  const [todaysPlan, setTodaysPlan] = useState<WeeklyPlan['weeklyMealPlan']['Día 1'] | null>(null);
+  const [todaysPlan, setTodaysPlan] = useState<DailyMealPlan | null>(null);
 
   useEffect(() => {
     if (savedMenus.length > 0) {
       const lastMenu = savedMenus[savedMenus.length - 1];
-      const today = new Date();
-      // In a real app, you might match dates. Here we'll just show the first day of the last plan as an example.
-      // To properly get today's plan, we'd need start dates for menus.
-      // For this demo, let's find a plan for today's day of the week.
-      const dayIndex = today.getDay(); // Sunday - 0, Monday - 1, etc.
-      const dayKey = `Día ${dayIndex + 1}` as keyof WeeklyPlan['weeklyMealPlan'];
-      
-      if (lastMenu.weeklyMealPlan[dayKey]) {
-        setTodaysPlan(lastMenu.weeklyMealPlan[dayKey]);
-      } else if (lastMenu.weeklyMealPlan['Día 1']) {
-        // Fallback to Day 1 if today's day is not in the plan
-        setTodaysPlan(lastMenu.weeklyMealPlan['Día 1']);
+      const weeklyPlanArray = lastMenu.weeklyMealPlan;
+
+      if(Array.isArray(weeklyPlanArray) && weeklyPlanArray.length > 0) {
+        const today = new Date();
+        // Note: getDay() is locale-dependent. Sunday is 0, Monday is 1...
+        // We'll create a key like "Día 2" for Monday. This might not match perfectly if a plan
+        // starts mid-week, but for a demo, it shows the concept.
+        const dayKey = `Día ${today.getDay() + 1}`;
+        
+        // Find the plan for today's day of the week
+        let planForToday = weeklyPlanArray.find(p => p.day === dayKey);
+        
+        // If no plan for today, fallback to the first day of the saved plan.
+        if (!planForToday) {
+          planForToday = weeklyPlanArray[0];
+        }
+        
+        setTodaysPlan(planForToday);
       }
     }
   }, [savedMenus]);
