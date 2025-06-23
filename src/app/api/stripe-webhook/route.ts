@@ -21,6 +21,8 @@ export async function POST(req: Request) {
     return new NextResponse(`Webhook Error: ${err.message}`, { status: 400 });
   }
 
+  console.log(`✅ Webhook recibido: ${event.type}`);
+
   // Handle the checkout.session.completed event
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session;
@@ -31,6 +33,8 @@ export async function POST(req: Request) {
       console.error('❌ Error: No se encontró el userId en los metadatos de la sesión de Stripe.');
       return new NextResponse('Webhook Error: Faltan metadatos del usuario.', { status: 400 });
     }
+    
+    console.log(`⏳ Procesando suscripción para el usuario: ${userId}`);
 
     try {
       if (!db) throw new Error('Firestore no está inicializado.');
