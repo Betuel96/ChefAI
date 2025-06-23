@@ -40,33 +40,33 @@ export type CreateWeeklyMealPlanInput = z.infer<typeof CreateWeeklyMealPlanInput
 
 const MealSchema = z.object({
   name: z.string().describe('El nombre de la comida.'),
-  ingredients: z.string().optional().describe('Los ingredientes necesarios para la comida.'),
-  instructions: z.string().optional().describe('Las instrucciones para preparar la comida.'),
+  ingredients: z
+    .string()
+    .describe('Una lista de ingredientes para la receta, separados por saltos de línea.'),
+  instructions: z
+    .string()
+    .describe(
+      'Las instrucciones paso a paso para la receta, numeradas y separadas por saltos de línea.'
+    ),
 });
 
 const DailyMealPlanSchema = z.object({
   day: z.string().describe('El día de la semana (p. ej., "Día 1").'),
-  breakfast: MealSchema.describe('El desayuno del día.'),
-  lunch: MealSchema.describe('El almuerzo del día.'),
-  dinner: MealSchema.describe('La cena del día.'),
+  breakfast: MealSchema.describe('La receta de desayuno del día.'),
+  lunch: MealSchema.describe('La receta de almuerzo del día.'),
+  dinner: MealSchema.describe('La receta de cena del día.'),
 });
 export type DailyMealPlan = z.infer<typeof DailyMealPlanSchema>;
 
-const WeeklyMealPlanSchema = z.array(DailyMealPlanSchema);
-
 const CreateWeeklyMealPlanOutputSchema = z.object({
-  weeklyMealPlan: WeeklyMealPlanSchema.describe(
-    'Un plan de comidas semanal que consiste en un array de recetas de desayuno, almuerzo y cena para cada día.'
-  ),
+  weeklyMealPlan: z
+    .array(DailyMealPlanSchema)
+    .describe(
+      'Un plan de comidas semanal que consiste en un array de recetas de desayuno, almuerzo y cena para cada día.'
+    ),
 });
 
 export type CreateWeeklyMealPlanOutput = z.infer<typeof CreateWeeklyMealPlanOutputSchema>;
-
-export async function createWeeklyMealPlan(
-  input: CreateWeeklyMealPlanInput
-): Promise<CreateWeeklyMealPlanOutput> {
-  return createWeeklyMealPlanFlow(input);
-}
 
 const prompt = ai.definePrompt({
   name: 'createWeeklyMealPlanPrompt',
@@ -85,7 +85,10 @@ const prompt = ai.definePrompt({
 2.  La respuesta DEBE ser un objeto JSON válido. La clave de nivel superior debe ser \`weeklyMealPlan\`.
 3.  El valor de \`weeklyMealPlan\` DEBE ser un ARRAY de objetos.
 4.  Cada objeto en el array representa un día y debe contener las siguientes claves: \`day\` (p. ej., "Día 1"), \`breakfast\`, \`lunch\`, y \`dinner\`.
-5.  Para cada comida (\`breakfast\`, \`lunch\`, \`dinner\`), proporciona un objeto con la clave \`name\` para el nombre de la receta.
+5.  Para cada comida (\`breakfast\`, \`lunch\`, \`dinner\`), proporciona un objeto con las siguientes claves:
+    - \`name\`: El nombre de la receta.
+    - \`ingredients\`: Una lista de ingredientes necesarios, cada uno en una nueva línea (separados por \\n).
+    - \`instructions\`: Los pasos de la preparación, **numerados**, y cada paso en una nueva línea (separados por \\n).
 6.  Utiliza los ingredientes disponibles como base principal para las recetas.
 7.  Respeta estrictamente las preferencias dietéticas.
 8.  Asegúrate de que el plan sea variado y minimice el desperdicio de alimentos.
@@ -120,9 +123,17 @@ const createWeeklyMealPlanFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await prompt(input);
-    if (!output) {
-      throw new Error('La IA no pudo generar un plan de comidas. Por favor, intenta de nuevo.');
+    if (!output?.weeklyMealPlan) {
+      throw new Error(
+        'La IA no pudo generar un plan de comidas en el formato esperado. Por favor, intenta de nuevo.'
+      );
     }
     return output;
   }
 );
+
+export async function createWeeklyMealPlan(
+  input: CreateWeeklyMealPlanInput
+): Promise<CreateWeeklyMealPlanOutput> {
+  return createWeeklyMealPlanFlow(input);
+}

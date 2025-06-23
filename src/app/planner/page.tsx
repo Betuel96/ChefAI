@@ -16,8 +16,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import type { WeeklyPlan, ShoppingListItem } from '@/types';
-import { BookHeart, CalendarDays, ChefHat, ShoppingCart, Sparkles } from 'lucide-react';
+import type { WeeklyPlan, ShoppingListItem, DailyMealPlan } from '@/types';
+import { BookHeart, CalendarDays, ShoppingCart, Sparkles } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const formSchema = z.object({
   ingredients: z.string().min(10, 'Por favor, enumera al menos algunos ingredientes.'),
@@ -25,6 +26,31 @@ const formSchema = z.object({
   numberOfDays: z.coerce.number().int().min(1).max(7),
   numberOfPeople: z.coerce.number().int().min(1).max(20),
 });
+
+const MealCard = ({ meal }: { meal: DailyMealPlan['breakfast'] }) => (
+  <Card className="mt-4 border-accent/20">
+    <CardHeader>
+      <CardTitle className="font-headline text-xl">{meal.name}</CardTitle>
+    </CardHeader>
+    <CardContent className="space-y-4">
+      <div>
+        <h5 className="font-headline font-semibold text-accent">Ingredientes</h5>
+        <ul className="list-disc list-inside mt-2 text-muted-foreground">
+          {meal.ingredients
+            .split('\n')
+            .filter((ing) => ing.trim() !== '')
+            .map((ing, i) => (
+              <li key={i}>{ing}</li>
+            ))}
+        </ul>
+      </div>
+      <div>
+        <h5 className="font-headline font-semibold text-accent">Instrucciones</h5>
+        <p className="whitespace-pre-wrap mt-2 text-muted-foreground">{meal.instructions}</p>
+      </div>
+    </CardContent>
+  </Card>
+);
 
 export default function MealPlannerPage() {
   const [mealPlan, setMealPlan] = useState<WeeklyPlan | null>(null);
@@ -51,7 +77,7 @@ export default function MealPlannerPage() {
       const plan = await createWeeklyMealPlan(values);
       setMealPlan(plan);
     } catch (error) {
-      console.error("Error al generar plan semanal:", error);
+      console.error('Error al generar plan semanal:', error);
       toast({
         title: 'Error al Generar el Plan',
         description: error instanceof Error ? error.message : 'Algo salió mal. Por favor, inténtalo de nuevo.',
@@ -60,7 +86,7 @@ export default function MealPlannerPage() {
     }
     setIsLoading(false);
   }
-  
+
   const handleSaveMenu = () => {
     if (mealPlan) {
       const newMenuWithId = { ...mealPlan, id: new Date().toISOString() };
@@ -77,15 +103,21 @@ export default function MealPlannerPage() {
     setIsLoading(true);
     try {
       const mealPlanString = mealPlan.weeklyMealPlan
-        .map(plan => `${plan.day}:\n- Desayuno: ${plan.breakfast.name}\n- Almuerzo: ${plan.lunch.name}\n- Cena: ${plan.dinner.name}`)
+        .map(
+          (plan) =>
+            `${plan.day}:\n- Desayuno: ${plan.breakfast.name}\n- Almuerzo: ${plan.lunch.name}\n- Cena: ${plan.dinner.name}`
+        )
         .join('\n\n');
-      
+
       const result = await generateShoppingList({ mealPlan: mealPlanString });
-      const items = result.shoppingList.split('\n').filter(item => item.trim() !== '').map(item => ({
-        id: crypto.randomUUID(),
-        name: item.replace(/^- /g, '').trim(),
-        checked: false,
-      }));
+      const items = result.shoppingList
+        .split('\n')
+        .filter((item) => item.trim() !== '')
+        .map((item) => ({
+          id: crypto.randomUUID(),
+          name: item.replace(/^- /g, '').trim(),
+          checked: false,
+        }));
       setShoppingList(items);
 
       toast({
@@ -94,7 +126,7 @@ export default function MealPlannerPage() {
       });
       router.push('/shopping-list');
     } catch (error) {
-       toast({
+      toast({
         title: 'Error al Generar la Lista',
         description: 'No se pudo generar la lista de compras. Por favor, inténtalo de nuevo.',
         variant: 'destructive',
@@ -196,7 +228,9 @@ export default function MealPlannerPage() {
           <CardContent>
             {isLoading && !mealPlan && (
               <div className="space-y-4 p-2">
-                {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+                {[...Array(3)].map((_, i) => (
+                  <Skeleton key={i} className="h-12 w-full" />
+                ))}
               </div>
             )}
             {mealPlan && (
@@ -204,19 +238,23 @@ export default function MealPlannerPage() {
                 {mealPlan.weeklyMealPlan.map((dailyPlan) => (
                   <AccordionItem value={dailyPlan.day} key={dailyPlan.day}>
                     <AccordionTrigger className="font-headline text-lg">{dailyPlan.day}</AccordionTrigger>
-                    <AccordionContent className="space-y-4 pl-4">
-                      <div>
-                        <h4 className="font-semibold text-accent">Desayuno</h4>
-                        <p>{dailyPlan.breakfast.name}</p>
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-accent">Almuerzo</h4>
-                        <p>{dailyPlan.lunch.name}</p>
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-accent">Cena</h4>
-                        <p>{dailyPlan.dinner.name}</p>
-                      </div>
+                    <AccordionContent className="space-y-4 px-1">
+                      <Tabs defaultValue="breakfast" className="w-full">
+                        <TabsList className="grid w-full grid-cols-3">
+                          <TabsTrigger value="breakfast">Desayuno</TabsTrigger>
+                          <TabsTrigger value="lunch">Almuerzo</TabsTrigger>
+                          <TabsTrigger value="dinner">Cena</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="breakfast">
+                          <MealCard meal={dailyPlan.breakfast} />
+                        </TabsContent>
+                        <TabsContent value="lunch">
+                          <MealCard meal={dailyPlan.lunch} />
+                        </TabsContent>
+                        <TabsContent value="dinner">
+                          <MealCard meal={dailyPlan.dinner} />
+                        </TabsContent>
+                      </Tabs>
                     </AccordionContent>
                   </AccordionItem>
                 ))}
