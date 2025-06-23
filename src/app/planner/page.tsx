@@ -108,6 +108,7 @@ export default function MealPlannerPage() {
           .flatMap((day) => [
             ...day.breakfast.ingredients.split('\n'),
             ...day.lunch.ingredients.split('\n'),
+            ...day.comida.ingredients.split('\n'),
             ...day.dinner.ingredients.split('\n'),
           ])
           .filter((ing) => ing.trim() !== '') || [];
@@ -258,9 +259,10 @@ export default function MealPlannerPage() {
                     <AccordionTrigger className="font-headline text-lg">{dailyPlan.day}</AccordionTrigger>
                     <AccordionContent className="space-y-4 px-1">
                       <Tabs defaultValue="breakfast" className="w-full">
-                        <TabsList className="grid w-full grid-cols-3">
+                        <TabsList className="grid w-full grid-cols-4">
                           <TabsTrigger value="breakfast">Desayuno</TabsTrigger>
                           <TabsTrigger value="lunch">Almuerzo</TabsTrigger>
+                          <TabsTrigger value="comida">Comida</TabsTrigger>
                           <TabsTrigger value="dinner">Cena</TabsTrigger>
                         </TabsList>
                         <TabsContent value="breakfast">
@@ -268,6 +270,9 @@ export default function MealPlannerPage() {
                         </TabsContent>
                         <TabsContent value="lunch">
                           <MealCard meal={dailyPlan.lunch} />
+                        </TabsContent>
+                        <TabsContent value="comida">
+                          <MealCard meal={dailyPlan.comida} />
                         </TabsContent>
                         <TabsContent value="dinner">
                           <MealCard meal={dailyPlan.dinner} />

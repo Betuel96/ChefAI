@@ -64,6 +64,11 @@ export default function Dashboard() {
               </div>
               <Separator />
               <div>
+                <h3 className="font-headline text-xl font-semibold text-accent">Comida</h3>
+                <p className="text-lg">{todaysPlan.comida.name}</p>
+              </div>
+              <Separator />
+              <div>
                 <h3 className="font-headline text-xl font-semibold text-accent">Cena</h3>
                 <p className="text-lg">{todaysPlan.dinner.name}</p>
               </div>

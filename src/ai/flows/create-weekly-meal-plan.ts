@@ -53,7 +53,8 @@ const MealSchema = z.object({
 const DailyMealPlanSchema = z.object({
   day: z.string().describe('El día de la semana (p. ej., "Día 1").'),
   breakfast: MealSchema.describe('La receta de desayuno del día.'),
-  lunch: MealSchema.describe('La receta de almuerzo del día.'),
+  lunch: MealSchema.describe('La receta de almuerzo (comida ligera) del día.'),
+  comida: MealSchema.describe('La receta de la comida (plato principal) del día.'),
   dinner: MealSchema.describe('La receta de cena del día.'),
 });
 export type DailyMealPlan = z.infer<typeof DailyMealPlanSchema>;
@@ -62,58 +63,11 @@ const CreateWeeklyMealPlanOutputSchema = z.object({
   weeklyMealPlan: z
     .array(DailyMealPlanSchema)
     .describe(
-      'Un plan de comidas semanal que consiste en un array de recetas de desayuno, almuerzo y cena para cada día.'
+      'Un plan de comidas semanal que consiste en un array de recetas de desayuno, almuerzo, comida y cena para cada día.'
     ),
 });
 
 export type CreateWeeklyMealPlanOutput = z.infer<typeof CreateWeeklyMealPlanOutputSchema>;
-
-const prompt = ai.definePrompt({
-  name: 'createWeeklyMealPlanPrompt',
-  input: {schema: CreateWeeklyMealPlanInputSchema},
-  output: {schema: CreateWeeklyMealPlanOutputSchema},
-  prompt: `Eres un planificador de comidas experto. Tu tarea es crear un plan de comidas semanal basado en las siguientes preferencias del usuario.
-
-**Preferencias del Usuario:**
-- **Ingredientes disponibles:** {{{ingredients}}}
-- **Preferencias dietéticas:** {{#if dietaryPreferences}}{{{dietaryPreferences}}}{{else}}Ninguna{{/if}}
-- **Número de días:** {{{numberOfDays}}}
-- **Personas a servir:** {{{numberOfPeople}}}
-
-**Instrucciones:**
-1.  Crea un plan que cubra desayuno, almuerzo y cena para cada uno de los \`{{{numberOfDays}}}\` días.
-2.  La respuesta DEBE ser un objeto JSON válido. La clave de nivel superior debe ser \`weeklyMealPlan\`.
-3.  El valor de \`weeklyMealPlan\` DEBE ser un ARRAY de objetos.
-4.  Cada objeto en el array representa un día y debe contener las siguientes claves: \`day\` (p. ej., "Día 1"), \`breakfast\`, \`lunch\`, y \`dinner\`.
-5.  Para cada comida (\`breakfast\`, \`lunch\`, \`dinner\`), proporciona un objeto con las siguientes claves:
-    - \`name\`: El nombre de la receta.
-    - \`ingredients\`: Una lista de ingredientes necesarios, cada uno en una nueva línea (separados por \\n).
-    - \`instructions\`: Los pasos de la preparación, **numerados**, y cada paso en una nueva línea (separados por \\n).
-6.  Utiliza los ingredientes disponibles como base principal para las recetas.
-7.  Respeta estrictamente las preferencias dietéticas.
-8.  Asegúrate de que el plan sea variado y minimice el desperdicio de alimentos.
-`,
-  config: {
-    safetySettings: [
-      {
-        category: 'HARM_CATEGORY_HATE_SPEECH',
-        threshold: 'BLOCK_ONLY_HIGH',
-      },
-      {
-        category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
-        threshold: 'BLOCK_NONE',
-      },
-      {
-        category: 'HARM_CATEGORY_HARASSMENT',
-        threshold: 'BLOCK_MEDIUM_AND_ABOVE',
-      },
-      {
-        category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-        threshold: 'BLOCK_LOW_AND_ABOVE',
-      },
-    ],
-  },
-});
 
 const createWeeklyMealPlanFlow = ai.defineFlow(
   {
@@ -122,11 +76,56 @@ const createWeeklyMealPlanFlow = ai.defineFlow(
     outputSchema: CreateWeeklyMealPlanOutputSchema,
   },
   async input => {
+    const prompt = ai.definePrompt({
+      name: 'createWeeklyMealPlanPrompt',
+      input: {schema: CreateWeeklyMealPlanInputSchema},
+      output: {schema: CreateWeeklyMealPlanOutputSchema},
+      prompt: `Eres un planificador de comidas experto. Tu tarea es crear un plan de comidas semanal basado en las siguientes preferencias del usuario.
+
+**Preferencias del Usuario:**
+- **Ingredientes disponibles:** {{{ingredients}}}
+- **Preferencias dietéticas:** {{#if dietaryPreferences}}{{{dietaryPreferences}}}{{else}}Ninguna{{/if}}
+- **Número de días:** {{{numberOfDays}}}
+- **Personas a servir:** {{{numberOfPeople}}}
+
+**Instrucciones:**
+1.  Crea un plan que cubra desayuno, almuerzo (comida ligera), comida (plato principal) y cena para cada uno de los \`{{{numberOfDays}}}\` días.
+2.  La respuesta DEBE ser un objeto JSON válido. La clave de nivel superior debe ser \`weeklyMealPlan\`.
+3.  El valor de \`weeklyMealPlan\` DEBE ser un ARRAY de objetos.
+4.  Cada objeto en el array representa un día y debe contener las siguientes claves: \`day\`, \`breakfast\`, \`lunch\`, \`comida\`, y \`dinner\`.
+5.  Para cada comida (\`breakfast\`, \`lunch\`, \`comida\`, \`dinner\`), proporciona un objeto con las siguientes claves:
+    - \`name\`: El nombre de la receta.
+    - \`ingredients\`: Una lista de ingredientes necesarios, cada uno en una nueva línea (separados por \\n).
+    - \`instructions\`: Los pasos de la preparación, **numerados**, y cada paso en una nueva línea (separados por \\n).
+6.  Utiliza los ingredientes disponibles como base principal para las recetas.
+7.  Respeta estrictamente las preferencias dietéticas.
+8.  Asegúrate de que el plan sea variado y minimice el desperdicio de alimentos.
+`,
+      config: {
+        safetySettings: [
+          {
+            category: 'HARM_CATEGORY_HATE_SPEECH',
+            threshold: 'BLOCK_ONLY_HIGH',
+          },
+          {
+            category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
+            threshold: 'BLOCK_NONE',
+          },
+          {
+            category: 'HARM_CATEGORY_HARASSMENT',
+            threshold: 'BLOCK_MEDIUM_AND_ABOVE',
+          },
+          {
+            category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+            threshold: 'BLOCK_LOW_AND_ABOVE',
+          },
+        ],
+      },
+    });
+
     const {output} = await prompt(input);
-    if (!output?.weeklyMealPlan) {
-      throw new Error(
-        'La IA no pudo generar un plan de comidas en el formato esperado. Por favor, intenta de nuevo.'
-      );
+    if (!output) {
+      throw new Error('La IA no pudo generar un plan de comidas. Por favor, intenta de nuevo.');
     }
     return output;
   }

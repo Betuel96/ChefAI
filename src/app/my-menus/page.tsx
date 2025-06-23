@@ -27,7 +27,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { MenuSquare, ShoppingCart, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { validShoppingList } from '@/lib/utils';
 
 // Add an ID to the weekly plan for keying
 interface SavedWeeklyPlan extends WeeklyPlan {
@@ -75,6 +74,7 @@ export default function MyMenusPage() {
           .flatMap((day) => [
             ...day.breakfast.ingredients.split('\n'),
             ...day.lunch.ingredients.split('\n'),
+            ...day.comida.ingredients.split('\n'),
             ...day.dinner.ingredients.split('\n'),
           ])
           .filter((ing) => ing.trim() !== '') || [];
@@ -157,9 +157,10 @@ export default function MyMenusPage() {
                           <div key={dailyPlan.day} className="py-2 border-b last:border-b-0">
                             <h4 className="font-headline font-bold text-accent text-lg mb-2">{dailyPlan.day}</h4>
                             <Tabs defaultValue="breakfast" className="w-full">
-                              <TabsList className="grid w-full grid-cols-3">
+                              <TabsList className="grid w-full grid-cols-4">
                                 <TabsTrigger value="breakfast">Desayuno</TabsTrigger>
                                 <TabsTrigger value="lunch">Almuerzo</TabsTrigger>
+                                <TabsTrigger value="comida">Comida</TabsTrigger>
                                 <TabsTrigger value="dinner">Cena</TabsTrigger>
                               </TabsList>
                               <TabsContent value="breakfast">
@@ -167,6 +168,9 @@ export default function MyMenusPage() {
                               </TabsContent>
                               <TabsContent value="lunch">
                                 <MealCard meal={dailyPlan.lunch} />
+                              </TabsContent>
+                              <TabsContent value="comida">
+                                <MealCard meal={dailyPlan.comida} />
                               </TabsContent>
                               <TabsContent value="dinner">
                                 <MealCard meal={dailyPlan.dinner} />
