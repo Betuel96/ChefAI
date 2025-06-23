@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { generateRecipe } from '@/ai/flows/generate-recipe';
+import { addRecipe } from '@/lib/recipes';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { BookHeart, ChefHat, Sparkles, Gem } from 'lucide-react';
+import { BookHeart, ChefHat, Sparkles, Gem, LogIn } from 'lucide-react';
 import type { Recipe } from '@/types';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -28,6 +29,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { useAuth } from '@/hooks/use-auth';
 
 const formSchema = z.object({
   ingredients: z.string().min(10, 'Por favor, enumera al menos algunos ingredientes.'),
@@ -37,8 +39,10 @@ const formSchema = z.object({
 const FREE_GENERATIONS_LIMIT = 2;
 
 export default function RecipeGeneratorPage() {
+  const { user } = useAuth();
   const [generatedRecipe, setGeneratedRecipe] = useState<Recipe | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [isSimulatingAd, setIsSimulatingAd] = useState(false);
   const [showAdDialog, setShowAdDialog] = useState(false);
   
@@ -46,7 +50,6 @@ export default function RecipeGeneratorPage() {
   const [isPremium, setIsPremium] = useLocalStorage<boolean>('isPremium', false);
   
   const { toast } = useToast();
-  const [savedRecipes, setSavedRecipes] = useLocalStorage<Recipe[]>('savedRecipes', []);
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -93,26 +96,38 @@ export default function RecipeGeneratorPage() {
     }, 2000); // Simulate 2 second ad watch
   };
 
-  function handleSaveRecipe() {
-    if (generatedRecipe) {
-      if (!savedRecipes.some(r => r.name === generatedRecipe.name)) {
-        setSavedRecipes([...savedRecipes, generatedRecipe]);
-        toast({
-          title: '¡Receta Guardada!',
-          description: `Se ha añadido "${generatedRecipe.name}" a tus recetas.`,
-        });
-      } else {
-         toast({
-          title: 'Ya Guardada',
-          description: `Una receta llamada "${generatedRecipe.name}" ya está en tu lista.`,
-          variant: 'default',
-        });
-      }
+  async function handleSaveRecipe() {
+    if (!generatedRecipe) return;
+
+    if (!user) {
+      toast({
+        title: 'Inicia Sesión para Guardar',
+        description: 'Crea una cuenta o inicia sesión para guardar tus recetas en la nube.',
+        variant: 'default',
+      });
+      return;
+    }
+    
+    setIsSaving(true);
+    try {
+      await addRecipe(user.uid, generatedRecipe);
+      toast({
+        title: '¡Receta Guardada!',
+        description: `"${generatedRecipe.name}" se ha guardado en tu cuenta.`,
+      });
+    } catch (error) {
+       toast({
+        title: 'Error al Guardar',
+        description: `No se pudo guardar la receta. Inténtalo de nuevo.`,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSaving(false);
     }
   }
 
   const generationsLeft = FREE_GENERATIONS_LIMIT - generationCount;
-  const anyLoading = isLoading || isSimulatingAd;
+  const anyLoading = isLoading || isSimulatingAd || isSaving;
 
   return (
     <>
@@ -244,9 +259,15 @@ export default function RecipeGeneratorPage() {
             </CardContent>
             {generatedRecipe && (
               <CardFooter>
-                <Button onClick={handleSaveRecipe} className="w-full" variant="secondary">
-                  <BookHeart className="mr-2 h-4 w-4" />
-                  Guardar Receta
+                <Button onClick={handleSaveRecipe} className="w-full" variant="secondary" disabled={isSaving}>
+                  {isSaving ? (
+                    <>Guardando...</>
+                  ) : (
+                    <>
+                      <BookHeart className="mr-2 h-4 w-4" />
+                      Guardar Receta
+                    </>
+                  )}
                 </Button>
               </CardFooter>
             )}
