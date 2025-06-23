@@ -106,10 +106,10 @@ export default function MealPlannerPage() {
       const allIngredients =
         mealPlan.weeklyMealPlan
           .flatMap((day) => [
-            ...day.breakfast.ingredients.split('\n'),
-            ...day.lunch.ingredients.split('\n'),
-            ...day.comida.ingredients.split('\n'),
-            ...day.dinner.ingredients.split('\n'),
+            ...(day.breakfast?.ingredients?.split('\n') || []),
+            ...(day.lunch?.ingredients?.split('\n') || []),
+            ...(day.comida?.ingredients?.split('\n') || []),
+            ...(day.dinner?.ingredients?.split('\n') || []),
           ])
           .filter((ing) => ing.trim() !== '') || [];
 
@@ -121,6 +121,7 @@ export default function MealPlannerPage() {
           description: 'Este plan de comidas no tiene ingredientes para generar una lista.',
           variant: 'destructive',
         });
+        setIsGeneratingList(false);
         return;
       }
       
@@ -266,16 +267,16 @@ export default function MealPlannerPage() {
                           <TabsTrigger value="dinner">Cena</TabsTrigger>
                         </TabsList>
                         <TabsContent value="breakfast">
-                          <MealCard meal={dailyPlan.breakfast} />
+                          {dailyPlan.breakfast && <MealCard meal={dailyPlan.breakfast} />}
                         </TabsContent>
                         <TabsContent value="lunch">
-                          <MealCard meal={dailyPlan.lunch} />
+                          {dailyPlan.lunch && <MealCard meal={dailyPlan.lunch} />}
                         </TabsContent>
                         <TabsContent value="comida">
-                          <MealCard meal={dailyPlan.comida} />
+                          {dailyPlan.comida && <MealCard meal={dailyPlan.comida} />}
                         </TabsContent>
                         <TabsContent value="dinner">
-                          <MealCard meal={dailyPlan.dinner} />
+                          {dailyPlan.dinner && <MealCard meal={dailyPlan.dinner} />}
                         </TabsContent>
                       </Tabs>
                     </AccordionContent>

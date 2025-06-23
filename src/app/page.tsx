@@ -55,22 +55,22 @@ export default function Dashboard() {
             <div className="space-y-6">
               <div>
                 <h3 className="font-headline text-xl font-semibold text-accent">Desayuno</h3>
-                <p className="text-lg">{todaysPlan.breakfast.name}</p>
+                <p className="text-lg">{todaysPlan.breakfast?.name || 'No planificado'}</p>
               </div>
               <Separator />
               <div>
                 <h3 className="font-headline text-xl font-semibold text-accent">Almuerzo</h3>
-                <p className="text-lg">{todaysPlan.lunch.name}</p>
+                <p className="text-lg">{todaysPlan.lunch?.name || 'No planificado'}</p>
               </div>
               <Separator />
               <div>
                 <h3 className="font-headline text-xl font-semibold text-accent">Comida</h3>
-                <p className="text-lg">{todaysPlan.comida.name}</p>
+                <p className="text-lg">{todaysPlan.comida?.name || 'No planificada'}</p>
               </div>
               <Separator />
               <div>
                 <h3 className="font-headline text-xl font-semibold text-accent">Cena</h3>
-                <p className="text-lg">{todaysPlan.dinner.name}</p>
+                <p className="text-lg">{todaysPlan.dinner?.name || 'No planificada'}</p>
               </div>
             </div>
           ) : (
