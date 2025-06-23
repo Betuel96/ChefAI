@@ -127,9 +127,7 @@ export default function RecipeGeneratorPage() {
     
     setIsSaving(true);
     try {
-      // Note: This currently only saves the text part of the recipe.
-      // Image saving will be implemented in the next step.
-      await addRecipe(user.uid, generatedRecipe);
+      await addRecipe(user.uid, generatedRecipe, imageUrl);
       toast({
         title: '¡Receta Guardada!',
         description: `"${generatedRecipe.name}" se ha guardado en tu cuenta.`,

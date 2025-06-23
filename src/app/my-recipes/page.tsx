@@ -2,6 +2,7 @@
 
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { generateShoppingList } from '@/ai/flows/generate-shopping-list';
 import type { Recipe, SavedRecipe, ShoppingListCategory } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -23,7 +24,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BookHeart, LogIn, ShoppingCart, Trash2 } from 'lucide-react';
+import { BookHeart, LogIn, ShoppingCart, Trash2, UtensilsCrossed } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { Separator } from '@/components/ui/separator';
@@ -182,6 +183,23 @@ export default function MyRecipesPage() {
                 {recipe.name}
                 </AccordionTrigger>
                 <AccordionContent className="p-6 pt-0 space-y-6">
+                
+                {recipe.imageUrl ? (
+                  <div className="my-4 rounded-lg overflow-hidden shadow-inner aspect-video relative">
+                    <Image
+                      src={recipe.imageUrl}
+                      alt={`Imagen de ${recipe.name}`}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="my-4 rounded-lg flex flex-col items-center justify-center bg-muted aspect-video text-muted-foreground">
+                    <UtensilsCrossed className="w-10 h-10 mb-2" />
+                    <p>Sin imagen</p>
+                  </div>
+                )}
+
                 <div>
                     <h3 className="font-headline text-xl font-semibold text-accent">Instrucciones</h3>
                     <p className="whitespace-pre-wrap">{recipe.instructions}</p>
@@ -217,7 +235,7 @@ export default function MyRecipesPage() {
                         <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
                         <AlertDialogDescription>
                             Esta acción no se puede deshacer. Esto eliminará permanentemente la
-                            receta "{recipe.name}" de tus recetas guardadas.
+                            receta "{recipe.name}" y su imagen.
                         </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
