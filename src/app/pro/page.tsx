@@ -43,7 +43,8 @@ export default function ProPage() {
       });
 
       if (!response.ok) {
-        throw new Error('No se pudo iniciar el proceso de pago.');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'No se pudo iniciar el proceso de pago.');
       }
 
       const { url } = await response.json();
@@ -52,10 +53,10 @@ export default function ProPage() {
       } else {
         throw new Error('No se recibió la URL de pago.');
       }
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: 'Error',
-        description: 'No se pudo redirigir a la página de pago. Inténtalo de nuevo.',
+        description: error.message || 'No se pudo redirigir a la página de pago. Inténtalo de nuevo.',
         variant: 'destructive',
       });
       setIsRedirecting(false);
