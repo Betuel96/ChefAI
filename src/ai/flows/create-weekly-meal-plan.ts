@@ -50,7 +50,7 @@ const DailyMealPlanSchema = z.object({
 });
 
 const WeeklyMealPlanSchema = z.record(
-  z.string().regex(/^Día [1-7]$/), // Key: "Día 1", "Día 2", etc.
+  z.string(), // Key: "Día 1", "Día 2", etc.
   DailyMealPlanSchema
 );
 
@@ -72,18 +72,21 @@ const prompt = ai.definePrompt({
   name: 'createWeeklyMealPlanPrompt',
   input: {schema: CreateWeeklyMealPlanInputSchema},
   output: {schema: CreateWeeklyMealPlanOutputSchema},
-  prompt: `Eres un asistente de planificación de comidas. Genera un plan de comidas semanal basado en los ingredientes, preferencias dietéticas, número de días y número de personas proporcionados.
+  prompt: `Eres un planificador de comidas experto. Tu tarea es crear un plan de comidas semanal basado en las siguientes preferencias del usuario.
 
-Ingredientes: {{{ingredients}}}
-Preferencias Dietéticas: {{{dietaryPreferences}}}
-Número de Días: {{{numberOfDays}}}
-Número de Personas: {{{numberOfPeople}}}
+**Preferencias del Usuario:**
+- **Ingredientes disponibles:** {{{ingredients}}}
+- **Preferencias dietéticas:** {{#if dietaryPreferences}}{{{dietaryPreferences}}}{{else}}Ninguna{{/if}}
+- **Número de días:** {{{numberOfDays}}}
+- **Personas a servir:** {{{numberOfPeople}}}
 
-Genera un plan de comidas con desayuno, almuerzo y cena para cada día. El plan de comidas debe incluir el nombre de cada comida, una lista de ingredientes e instrucciones sobre cómo preparar la comida. Adhiérete a las preferencias dietéticas especificadas, asegúrate de que los ingredientes estén en cantidades razonables para el número de personas especificado y crea un plan de comidas diverso y atractivo que minimice la superposición de ingredientes y el desperdicio de alimentos. Usa "Día 1", "Día 2", etc. para las claves del día.
-
-Devuelve el plan de comidas en el siguiente formato JSON:
-
-{{output}}
+**Instrucciones:**
+1.  Crea un plan que cubra desayuno, almuerzo y cena para cada uno de los \`{{{numberOfDays}}}\` días.
+2.  Para cada comida, proporciona el nombre, los ingredientes necesarios y las instrucciones de preparación.
+3.  Utiliza los ingredientes disponibles como base principal para las recetas.
+4.  Respeta estrictamente las preferencias dietéticas.
+5.  Asegúrate de que el plan sea variado y minimice el desperdicio de alimentos.
+6.  Organiza la respuesta usando "Día 1", "Día 2", etc., como claves para cada día del plan.
 `,
   config: {
     safetySettings: [
