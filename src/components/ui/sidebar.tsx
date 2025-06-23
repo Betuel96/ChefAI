@@ -210,10 +210,7 @@ export const SidebarInset = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => {
-  const { isOpen, isMobile } = useSidebar();
-  if (isMobile) {
-    return <div ref={ref} className={cn('', className)} {...props} />;
-  }
+  const { isOpen } = useSidebar();
   return (
     <div
       ref={ref}

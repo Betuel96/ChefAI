@@ -20,8 +20,8 @@ import {
   SidebarMenuButton,
   SidebarFooter,
   SidebarTrigger,
+  useSidebar,
 } from '@/components/ui/sidebar';
-import { Button } from '@/components/ui/button';
 
 const menuItems = [
   { href: '/', label: 'Panel', icon: Home },
@@ -34,13 +34,14 @@ const menuItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const { isOpen } = useSidebar();
 
   return (
     <Sidebar>
       <SidebarHeader>
         <div className="flex items-center gap-2">
           <ChefHat className="w-8 h-8 text-primary" />
-          <h1 className="font-headline text-2xl font-bold">ChefAI</h1>
+          {isOpen && <h1 className="font-headline text-2xl font-bold">ChefAI</h1>}
         </div>
         <SidebarTrigger />
       </SidebarHeader>
