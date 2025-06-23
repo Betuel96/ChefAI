@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth, isFirebaseConfigured } from '@/lib/firebase';
+import { createUserDocument } from '@/lib/users';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -46,8 +47,12 @@ export default function SignupPage() {
 
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
-      if (userCredential.user) {
-        await updateProfile(userCredential.user, { displayName: values.name });
+      const user = userCredential.user;
+      if (user) {
+        // Update Firebase Auth profile
+        await updateProfile(user, { displayName: values.name });
+        // Create user document in Firestore
+        await createUserDocument(user.uid, values.name, values.email);
       }
       
       toast({

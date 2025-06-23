@@ -1,10 +1,14 @@
 // src/app/pro/page.tsx
 'use client';
 
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useLocalStorage } from '@/hooks/use-local-storage';
-import { CheckCircle, Gem } from 'lucide-react';
+import { useAuth } from '@/hooks/use-auth';
+import { CheckCircle, Gem, LogIn } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 const proFeatures = [
   'Generaciones ilimitadas de recetas',
@@ -15,13 +19,89 @@ const proFeatures = [
 ];
 
 export default function ProPage() {
-  const [isPremium, setIsPremium] = useLocalStorage<boolean>('isPremium', false);
+  const { user, loading } = useAuth();
+  const [isRedirecting, setIsRedirecting] = useState(false);
+  const { toast } = useToast();
+  const router = useRouter();
 
-  const handleUpgrade = () => {
-    // En una aplicación real, aquí se iniciaría el proceso de pago con Stripe, etc.
-    // Por ahora, simplemente activamos el estado premium.
-    setIsPremium(true);
+  const handleUpgrade = async () => {
+    if (!user) {
+      toast({
+        title: 'Debes Iniciar Sesión',
+        description: 'Por favor, inicia sesión para suscribirte a Pro.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    setIsRedirecting(true);
+    try {
+      const response = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.uid }),
+      });
+
+      if (!response.ok) {
+        throw new Error('No se pudo iniciar el proceso de pago.');
+      }
+
+      const { url } = await response.json();
+      if (url) {
+        window.location.href = url;
+      } else {
+        throw new Error('No se recibió la URL de pago.');
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'No se pudo redirigir a la página de pago. Inténtalo de nuevo.',
+        variant: 'destructive',
+      });
+      setIsRedirecting(false);
+    }
   };
+
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <div className="text-center p-4">
+          <p>Cargando estado de tu cuenta...</p>
+        </div>
+      );
+    }
+
+    if (!user) {
+        return (
+          <div className="text-center p-4 bg-muted/50 rounded-lg flex flex-col items-center gap-4">
+            <LogIn className="w-8 h-8 text-primary" />
+            <p className="font-semibold">Inicia sesión para gestionar tu suscripción Pro.</p>
+            <Button asChild>
+                <Link href="/login">Acceder / Registrarse</Link>
+            </Button>
+          </div>
+        )
+    }
+    
+    if (user.isPremium) {
+        return (
+            <div className="text-center p-4 bg-green-100 dark:bg-green-900/50 rounded-lg">
+                <p className="font-semibold text-green-700 dark:text-green-300">¡Ya eres un miembro Pro! Gracias por tu apoyo.</p>
+            </div>
+        )
+    }
+
+    return (
+        <>
+            <Button onClick={handleUpgrade} className="w-full text-lg py-6" disabled={isRedirecting}>
+                {isRedirecting ? 'Redirigiendo a pago...' : 'Suscribirse a Pro'}
+            </Button>
+            <p className="text-xs text-muted-foreground text-center mt-2">
+                La suscripción se renueva automáticamente. Cancela en cualquier momento.
+            </p>
+        </>
+    )
+  }
 
   return (
     <div className="flex justify-center items-center min-h-[calc(100vh-8rem)]">
@@ -50,20 +130,8 @@ export default function ProPage() {
             <span className="text-muted-foreground">/mes</span>
           </div>
           
-          {isPremium ? (
-            <div className="text-center p-4 bg-green-100 dark:bg-green-900/50 rounded-lg">
-              <p className="font-semibold text-green-700 dark:text-green-300">¡Ya eres un miembro Pro! Gracias por tu apoyo.</p>
-            </div>
-          ) : (
-            <>
-              <Button onClick={handleUpgrade} className="w-full text-lg py-6">
-                Suscribirse a Pro
-              </Button>
-              <p className="text-xs text-muted-foreground text-center mt-2">
-                La suscripción se renueva automáticamente. Cancela en cualquier momento.
-              </p>
-            </>
-          )}
+          {renderContent()}
+
         </CardContent>
       </Card>
     </div>

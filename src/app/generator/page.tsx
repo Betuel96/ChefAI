@@ -50,7 +50,6 @@ export default function RecipeGeneratorPage() {
   const [showAdDialog, setShowAdDialog] = useState(false);
   
   const [generationCount, setGenerationCount] = useLocalStorage<number>('recipeGenerationCount', 0);
-  const [isPremium] = useLocalStorage<boolean>('isPremium', false);
   
   const { toast } = useToast();
   
@@ -75,7 +74,7 @@ export default function RecipeGeneratorPage() {
       setIsLoading(false); // UI now shows the text recipe
       setIsGeneratingImage(true); // UI now shows image loading placeholder
 
-      if (!isPremium) {
+      if (!user?.isPremium) {
         setGenerationCount(generationCount + 1);
       }
 
@@ -97,7 +96,7 @@ export default function RecipeGeneratorPage() {
   };
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    if (isPremium || generationCount < FREE_GENERATIONS_LIMIT) {
+    if (user?.isPremium || generationCount < FREE_GENERATIONS_LIMIT) {
       runGeneration(values);
     } else {
       setShowAdDialog(true);
@@ -204,7 +203,7 @@ export default function RecipeGeneratorPage() {
                 </form>
               </Form>
             </CardContent>
-            {!isPremium && (
+            {!user?.isPremium && (
               <CardFooter className='justify-center'>
                  <p className="text-sm text-muted-foreground">
                     Te queda{generationsLeft === 1 ? '' : 'n'} {generationsLeft > 0 ? generationsLeft : 0} generaci{generationsLeft === 1 ? 'ón' : 'ones'} gratuita{generationsLeft === 1 ? '' : 's'}.

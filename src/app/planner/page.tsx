@@ -82,7 +82,6 @@ export default function MealPlannerPage() {
   const { toast } = useToast();
   const [, setShoppingList] = useLocalStorage<ShoppingListCategory[]>('shoppingList', []);
   const [generationCount, setGenerationCount] = useLocalStorage<number>('planGenerationCount', 0);
-  const [isPremium] = useLocalStorage<boolean>('isPremium', false);
   const router = useRouter();
   const { user } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
@@ -103,7 +102,7 @@ export default function MealPlannerPage() {
     try {
       const plan = await createWeeklyMealPlan(values);
       setMealPlan(plan);
-      if (!isPremium) {
+      if (!user?.isPremium) {
         setGenerationCount(generationCount + 1);
       }
     } catch (error) {
@@ -118,7 +117,7 @@ export default function MealPlannerPage() {
   };
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    if (isPremium || generationCount < FREE_GENERATIONS_LIMIT) {
+    if (user?.isPremium || generationCount < FREE_GENERATIONS_LIMIT) {
       runGeneration(values);
     } else {
       setShowAdDialog(true);
@@ -300,7 +299,7 @@ export default function MealPlannerPage() {
                 </form>
               </Form>
             </CardContent>
-            {!isPremium && (
+            {!user?.isPremium && (
               <CardFooter className="justify-center">
                 <p className="text-sm text-muted-foreground">
                     Te queda{generationsLeft === 1 ? '' : 'n'} {generationsLeft > 0 ? generationsLeft : 0} generaci{generationsLeft === 1 ? 'ón' : 'ones'} gratuita{generationsLeft === 1 ? '' : 's'}.
@@ -407,10 +406,4 @@ export default function MealPlannerPage() {
             <div className='flex flex-col-reverse sm:flex-row sm:justify-end gap-2'>
               <AlertDialogCancel>Cancelar</AlertDialogCancel>
               <AlertDialogAction onClick={handleWatchAd}>Ver Anuncio y Continuar</AlertDialogAction>
-            </div>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
-  );
-}
+            
