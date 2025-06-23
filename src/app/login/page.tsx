@@ -50,9 +50,26 @@ export default function LoginPage() {
       router.push('/');
     } catch (error: any) {
       console.error(error);
+      let description = 'Ocurrió un error inesperado. Por favor, inténtalo de nuevo.';
+      
+      switch (error.code) {
+        case 'auth/invalid-credential':
+          description = 'El correo electrónico o la contraseña no son correctos.';
+          break;
+        case 'auth/user-disabled':
+          description = 'Este usuario ha sido deshabilitado.';
+          break;
+        case 'auth/too-many-requests':
+          description = 'El acceso a esta cuenta se ha deshabilitado temporalmente debido a demasiados intentos fallidos. Inténtalo más tarde.';
+          break;
+        default:
+          description = 'Ocurrió un error inesperado al iniciar sesión.';
+          break;
+      }
+
       toast({
         title: 'Error al Iniciar Sesión',
-        description: 'Las credenciales no son correctas. Por favor, inténtalo de nuevo.',
+        description: description,
         variant: 'destructive',
       });
     }
