@@ -11,14 +11,25 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BookHeart, ShoppingCart } from 'lucide-react';
+import { BookHeart, ShoppingCart, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { Separator } from '@/components/ui/separator';
 
 export default function MyRecipesPage() {
-  const [savedRecipes] = useLocalStorage<Recipe[]>('savedRecipes', []);
+  const [savedRecipes, setSavedRecipes] = useLocalStorage<Recipe[]>('savedRecipes', []);
   const [, setShoppingList] = useLocalStorage<ShoppingListCategory[]>('shoppingList', []);
   const [loadingRecipeId, setLoadingRecipeId] = useState<string | null>(null);
   const router = useRouter();
@@ -76,6 +87,16 @@ export default function MyRecipesPage() {
     }
   };
 
+  const handleDeleteRecipe = (recipeNameToDelete: string) => {
+    const updatedRecipes = savedRecipes.filter(
+      (recipe) => recipe.name !== recipeNameToDelete
+    );
+    setSavedRecipes(updatedRecipes);
+    toast({
+      title: 'Receta Eliminada',
+      description: `"${recipeNameToDelete}" ha sido eliminada.`,
+    });
+  };
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -113,14 +134,39 @@ export default function MyRecipesPage() {
                         <h3 className="font-headline text-xl font-semibold text-accent">Equipo Necesario</h3>
                         <p className="whitespace-pre-wrap">{recipe.equipment}</p>
                       </div>
-                      <Button 
-                        onClick={() => handleGenerateList(recipe)} 
-                        className="mt-4 w-full sm:w-auto"
-                        disabled={loadingRecipeId === recipe.name}
-                      >
-                        <ShoppingCart className="mr-2 h-4 w-4" />
-                        {loadingRecipeId === recipe.name ? 'Generando...' : 'Crear Lista de Compras'}
-                      </Button>
+                      <div className="flex flex-col sm:flex-row gap-2 mt-6 pt-6 border-t">
+                        <Button 
+                          onClick={() => handleGenerateList(recipe)} 
+                          className="w-full flex-grow"
+                          disabled={loadingRecipeId === recipe.name}
+                        >
+                          <ShoppingCart className="mr-2 h-4 w-4" />
+                          {loadingRecipeId === recipe.name ? 'Generando...' : 'Crear Lista de Compras'}
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="destructive" className="w-full sm:w-auto">
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Eliminar Receta
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta acción no se puede deshacer. Esto eliminará permanentemente la
+                                receta "{recipe.name}" de tus recetas guardadas.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDeleteRecipe(recipe.name)}>
+                                Continuar
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </AccordionContent>
                   </Card>
                 </AccordionItem>

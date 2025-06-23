@@ -12,10 +12,22 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { MenuSquare, ShoppingCart } from 'lucide-react';
+import { MenuSquare, ShoppingCart, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { validShoppingList } from '@/lib/utils';
 
 // Add an ID to the weekly plan for keying
 interface SavedWeeklyPlan extends WeeklyPlan {
@@ -48,7 +60,7 @@ const MealCard = ({ meal }: { meal: DailyMealPlan['breakfast'] }) => (
 );
 
 export default function MyMenusPage() {
-  const [savedMenus] = useLocalStorage<SavedWeeklyPlan[]>('savedMenus', []);
+  const [savedMenus, setSavedMenus] = useLocalStorage<SavedWeeklyPlan[]>('savedMenus', []);
   const [, setShoppingList] = useLocalStorage<ShoppingListCategory[]>('shoppingList', []);
   const [loadingMenuId, setLoadingMenuId] = useState<string | null>(null);
   const router = useRouter();
@@ -107,6 +119,15 @@ export default function MyMenusPage() {
     }
   };
 
+  const handleDeleteMenu = (menuIdToDelete: string) => {
+    const updatedMenus = savedMenus.filter((menu) => menu.id !== menuIdToDelete);
+    setSavedMenus(updatedMenus);
+    toast({
+      title: 'Menú Eliminado',
+      description: 'El plan de comidas ha sido eliminado de tus menús guardados.',
+    });
+  };
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <header>
@@ -153,14 +174,39 @@ export default function MyMenusPage() {
                             </Tabs>
                           </div>
                         ))}
-                      <Button
-                        onClick={() => handleGenerateList(menu)}
-                        className="mt-4 w-full sm:w-auto"
-                        disabled={loadingMenuId === menu.id}
-                      >
-                        <ShoppingCart className="mr-2 h-4 w-4" />
-                        {loadingMenuId === menu.id ? 'Generando...' : 'Crear Lista de Compras'}
-                      </Button>
+                      <div className="flex flex-col sm:flex-row gap-2 mt-6 pt-6 border-t">
+                        <Button
+                          onClick={() => handleGenerateList(menu)}
+                          className="w-full sm:w-auto flex-grow"
+                          disabled={loadingMenuId === menu.id}
+                        >
+                          <ShoppingCart className="mr-2 h-4 w-4" />
+                          {loadingMenuId === menu.id ? 'Generando...' : 'Crear Lista de Compras'}
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="destructive" className="w-full sm:w-auto">
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Eliminar Menú
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta acción no se puede deshacer. Esto eliminará permanentemente
+                                este plan de comidas.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDeleteMenu(menu.id)}>
+                                Continuar
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </AccordionContent>
                   </Card>
                 </AccordionItem>
