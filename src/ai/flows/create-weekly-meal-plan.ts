@@ -39,8 +39,8 @@ export type CreateWeeklyMealPlanInput = z.infer<typeof CreateWeeklyMealPlanInput
 
 const MealSchema = z.object({
   name: z.string().describe('El nombre de la comida.'),
-  ingredients: z.string().describe('Los ingredientes necesarios para la comida.'),
-  instructions: z.string().describe('Las instrucciones para preparar la comida.'),
+  ingredients: z.string().optional().describe('Los ingredientes necesarios para la comida.'),
+  instructions: z.string().optional().describe('Las instrucciones para preparar la comida.'),
 });
 
 const DailyMealPlanSchema = z.object({
@@ -82,11 +82,12 @@ const prompt = ai.definePrompt({
 
 **Instrucciones:**
 1.  Crea un plan que cubra desayuno, almuerzo y cena para cada uno de los \`{{{numberOfDays}}}\` días.
-2.  Para cada comida, proporciona el nombre, los ingredientes necesarios y las instrucciones de preparación.
+2.  Para cada comida, proporciona el nombre de la receta. Opcionalmente, puedes incluir los ingredientes y las instrucciones.
 3.  Utiliza los ingredientes disponibles como base principal para las recetas.
 4.  Respeta estrictamente las preferencias dietéticas.
 5.  Asegúrate de que el plan sea variado y minimice el desperdicio de alimentos.
-6.  Organiza la respuesta usando "Día 1", "Día 2", etc., como claves para cada día del plan.
+6.  La salida DEBE ser un objeto JSON válido. La clave principal de nivel superior debe ser "weeklyMealPlan".
+7.  Dentro de "weeklyMealPlan", crea un objeto donde cada clave es una cadena que representa el día (por ejemplo, "Día 1", "Día 2").
 `,
   config: {
     safetySettings: [
@@ -118,6 +119,9 @@ const createWeeklyMealPlanFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await prompt(input);
-    return output!;
+    if (!output) {
+      throw new Error('La IA no pudo generar un plan de comidas. Por favor, intenta de nuevo.');
+    }
+    return output;
   }
 );

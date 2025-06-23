@@ -51,9 +51,10 @@ export default function MealPlannerPage() {
       const plan = await createWeeklyMealPlan(values);
       setMealPlan(plan);
     } catch (error) {
+      console.error("Error al generar plan semanal:", error);
       toast({
         title: 'Error al Generar el Plan',
-        description: 'Algo salió mal. Por favor, inténtalo de nuevo.',
+        description: error instanceof Error ? error.message : 'Algo salió mal. Por favor, inténtalo de nuevo.',
         variant: 'destructive',
       });
     }
