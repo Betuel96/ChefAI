@@ -71,7 +71,7 @@ const MealCard = ({ meal }: { meal: DailyMealPlan['breakfast'] }) => (
   </Card>
 );
 
-const FREE_GENERATIONS_LIMIT = 1;
+const FREE_GENERATIONS_LIMIT = 2;
 
 export default function MealPlannerPage() {
   const [mealPlan, setMealPlan] = useState<WeeklyPlan | null>(null);

@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -34,6 +35,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Skeleton } from '../ui/skeleton';
 import { Button } from '../ui/button';
+import { cn } from '@/lib/utils';
 
 const menuItems = [
   { href: '/', label: 'Panel', icon: Home },
@@ -136,7 +138,11 @@ export function AppSidebar() {
               <Link href="/pro">
                 <Button
                   variant={pathname === '/pro' ? 'secondary' : 'ghost'}
-                  className="h-12 w-full justify-start gap-3 px-4 bg-primary/10 hover:bg-primary/20 text-primary-foreground dark:text-amber-300"
+                  className={cn(
+                    'h-12 w-full justify-start gap-3 px-4',
+                    pathname !== '/pro' &&
+                      'bg-primary/10 text-primary hover:bg-primary/20'
+                  )}
                 >
                   <Gem />
                   <span>ChefAI Pro</span>
