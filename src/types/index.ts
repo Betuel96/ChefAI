@@ -10,3 +10,8 @@ export interface ShoppingListItem {
   name: string;
   checked: boolean;
 }
+
+export interface ShoppingListCategory {
+  category: string;
+  items: ShoppingListItem[];
+}

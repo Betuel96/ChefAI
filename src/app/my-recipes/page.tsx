@@ -3,7 +3,7 @@
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useRouter } from 'next/navigation';
 import { generateShoppingList } from '@/ai/flows/generate-shopping-list';
-import type { Recipe, ShoppingListItem } from '@/types';
+import type { Recipe, ShoppingListCategory } from '@/types';
 import { Button } from '@/components/ui/button';
 import {
   Accordion,
@@ -19,7 +19,7 @@ import { Separator } from '@/components/ui/separator';
 
 export default function MyRecipesPage() {
   const [savedRecipes] = useLocalStorage<Recipe[]>('savedRecipes', []);
-  const [, setShoppingList] = useLocalStorage<ShoppingListItem[]>('shoppingList', []);
+  const [, setShoppingList] = useLocalStorage<ShoppingListCategory[]>('shoppingList', []);
   const [loadingRecipeId, setLoadingRecipeId] = useState<string | null>(null);
   const router = useRouter();
   const { toast } = useToast();
@@ -27,14 +27,38 @@ export default function MyRecipesPage() {
   const handleGenerateList = async (recipe: Recipe) => {
     setLoadingRecipeId(recipe.name);
     try {
-      const ingredientsString = `Ingredientes para ${recipe.name}:\n- ${recipe.additionalIngredients.split(',').join('\n- ')}`;
-      const result = await generateShoppingList({ mealPlan: ingredientsString });
-      const items = result.shoppingList.split('\n').filter(item => item.trim() !== '').map(item => ({
-        id: crypto.randomUUID(),
-        name: item.replace(/^- /g, '').trim(),
-        checked: false,
+      // Combine all known ingredients into a single string for the AI
+      const ingredientsString = [
+        recipe.additionalIngredients,
+        // you could add other ingredient sources from the recipe object here
+      ]
+        .join('\n')
+        .split(/[\n,]/) // split by newline or comma
+        .map((s) => s.trim())
+        .filter((s) => s)
+        .join('\n');
+
+      if (!ingredientsString) {
+        toast({
+          title: 'No hay Ingredientes',
+          description: 'Esta receta no tiene ingredientes para generar una lista.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      const result = await generateShoppingList({ allIngredients: ingredientsString });
+
+      const categorizedList: ShoppingListCategory[] = result.shoppingList.map((category) => ({
+        ...category,
+        items: category.items.map((itemName) => ({
+          id: crypto.randomUUID(),
+          name: itemName,
+          checked: false,
+        })),
       }));
-      setShoppingList(items);
+      
+      setShoppingList(categorizedList);
 
       toast({
         title: '¡Lista de Compras Generada!',

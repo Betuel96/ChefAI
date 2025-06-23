@@ -16,7 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import type { WeeklyPlan, ShoppingListItem, DailyMealPlan } from '@/types';
+import type { WeeklyPlan, ShoppingListCategory, DailyMealPlan } from '@/types';
 import { BookHeart, CalendarDays, ShoppingCart, Sparkles } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -55,9 +55,10 @@ const MealCard = ({ meal }: { meal: DailyMealPlan['breakfast'] }) => (
 export default function MealPlannerPage() {
   const [mealPlan, setMealPlan] = useState<WeeklyPlan | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGeneratingList, setIsGeneratingList] = useState(false);
   const { toast } = useToast();
   const [savedMenus, setSavedMenus] = useLocalStorage<WeeklyPlan[]>('savedMenus', []);
-  const [, setShoppingList] = useLocalStorage<ShoppingListItem[]>('shoppingList', []);
+  const [, setShoppingList] = useLocalStorage<ShoppingListCategory[]>('shoppingList', []);
   const router = useRouter();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -100,25 +101,40 @@ export default function MealPlannerPage() {
 
   const handleGenerateShoppingList = async () => {
     if (!mealPlan) return;
-    setIsLoading(true);
+    setIsGeneratingList(true);
     try {
-      const mealPlanString = mealPlan.weeklyMealPlan
-        .map(
-          (plan) =>
-            `${plan.day}:\n- Desayuno: ${plan.breakfast.name}\n- Almuerzo: ${plan.lunch.name}\n- Cena: ${plan.dinner.name}`
-        )
-        .join('\n\n');
+      const allIngredients =
+        mealPlan.weeklyMealPlan
+          .flatMap((day) => [
+            ...day.breakfast.ingredients.split('\n'),
+            ...day.lunch.ingredients.split('\n'),
+            ...day.dinner.ingredients.split('\n'),
+          ])
+          .filter((ing) => ing.trim() !== '') || [];
 
-      const result = await generateShoppingList({ mealPlan: mealPlanString });
-      const items = result.shoppingList
-        .split('\n')
-        .filter((item) => item.trim() !== '')
-        .map((item) => ({
+      const allIngredientsString = allIngredients.join('\n');
+
+      if (!allIngredientsString) {
+        toast({
+          title: 'No hay Ingredientes',
+          description: 'Este plan de comidas no tiene ingredientes para generar una lista.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      const result = await generateShoppingList({ allIngredients: allIngredientsString });
+
+      const categorizedList: ShoppingListCategory[] = result.shoppingList.map((category) => ({
+        ...category,
+        items: category.items.map((itemName) => ({
           id: crypto.randomUUID(),
-          name: item.replace(/^- /g, '').trim(),
+          name: itemName,
           checked: false,
-        }));
-      setShoppingList(items);
+        })),
+      }));
+
+      setShoppingList(categorizedList);
 
       toast({
         title: '¡Lista de Compras Generada!',
@@ -132,9 +148,11 @@ export default function MealPlannerPage() {
         variant: 'destructive',
       });
     } finally {
-      setIsLoading(false);
+      setIsGeneratingList(false);
     }
   };
+  
+  const anyLoading = isLoading || isGeneratingList;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -206,7 +224,7 @@ export default function MealPlannerPage() {
                     )}
                   />
                 </div>
-                <Button type="submit" disabled={isLoading} className="w-full">
+                <Button type="submit" disabled={anyLoading} className="w-full">
                   {isLoading ? 'Generando Plan...' : 'Generar Plan de Comidas'}
                   <Sparkles className="ml-2 h-4 w-4" />
                 </Button>
@@ -268,11 +286,12 @@ export default function MealPlannerPage() {
           </CardContent>
           {mealPlan && (
             <CardFooter className="flex flex-col sm:flex-row gap-2">
-              <Button onClick={handleSaveMenu} variant="secondary" className="w-full" disabled={isLoading}>
+              <Button onClick={handleSaveMenu} variant="secondary" className="w-full" disabled={anyLoading}>
                 <BookHeart className="mr-2 h-4 w-4" /> Guardar Menú
               </Button>
-              <Button onClick={handleGenerateShoppingList} className="w-full" disabled={isLoading}>
-                <ShoppingCart className="mr-2 h-4 w-4" /> Generar Lista de Compras
+              <Button onClick={handleGenerateShoppingList} className="w-full" disabled={anyLoading}>
+                <ShoppingCart className="mr-2 h-4 w-4" /> 
+                {isGeneratingList ? 'Generando Lista...' : 'Generar Lista de Compras'}
               </Button>
             </CardFooter>
           )}

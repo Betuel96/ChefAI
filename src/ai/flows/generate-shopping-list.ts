@@ -12,22 +12,29 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const GenerateShoppingListInputSchema = z.object({
-  mealPlan: z
+  allIngredients: z
     .string()
-    .describe('Un plan de comidas, que es una lista de comidas para cada día.'),
+    .describe('Una lista completa de todos los ingredientes necesarios, separados por saltos de línea.'),
 });
 export type GenerateShoppingListInput = z.infer<typeof GenerateShoppingListInputSchema>;
 
+const ShoppingListCategorySchema = z.object({
+  category: z
+    .string()
+    .describe('El nombre de la categoría de la tienda (p. ej., "Frutas y Verduras", "Carnes").'),
+  items: z.array(z.string()).describe('Una lista de los ingredientes que pertenecen a esta categoría.'),
+});
+
 const GenerateShoppingListOutputSchema = z.object({
   shoppingList: z
-    .string()
-    .describe(
-      'Una lista de compras generada a partir del plan de comidas, incluyendo productos básicos de despensa.'
-    ),
+    .array(ShoppingListCategorySchema)
+    .describe('Una lista de compras categorizada generada a partir de los ingredientes proporcionados.'),
 });
 export type GenerateShoppingListOutput = z.infer<typeof GenerateShoppingListOutputSchema>;
 
-export async function generateShoppingList(input: GenerateShoppingListInput): Promise<GenerateShoppingListOutput> {
+export async function generateShoppingList(
+  input: GenerateShoppingListInput
+): Promise<GenerateShoppingListOutput> {
   return generateShoppingListFlow(input);
 }
 
@@ -35,14 +42,20 @@ const prompt = ai.definePrompt({
   name: 'generateShoppingListPrompt',
   input: {schema: GenerateShoppingListInputSchema},
   output: {schema: GenerateShoppingListOutputSchema},
-  prompt: `Eres un asistente de IA útil que genera listas de compras a partir de planes de comidas.
+  prompt: `Eres un asistente de compras experto. Tu tarea es crear una lista de compras categorizada a partir de una lista de ingredientes.
 
-  Dado el siguiente plan de comidas:
-  {{mealPlan}}
-
-  Genera una lista de compras completa que incluya todos los ingredientes necesarios y productos básicos de despensa comunes.
-  Formatea la lista de manera clara y concisa.
-  `,
+**Instrucciones:**
+1.  Analiza la siguiente lista de ingredientes:
+    {{{allIngredients}}}
+2.  Agrega y consolida todos los ingredientes duplicados. No incluyas cantidades, solo el nombre del ingrediente.
+3.  Organiza los ingredientes en categorías lógicas de supermercado. Usa las siguientes categorías si aplican: "Frutas y Verduras", "Carnes y Aves", "Pescados y Mariscos", "Lácteos y Huevos", "Panadería", "Productos Enlatados y Secos", "Condimentos y Especias", "Bebidas", "Otros".
+4.  La respuesta DEBE ser un objeto JSON válido.
+5.  La clave de nivel superior debe ser \`shoppingList\`.
+6.  El valor de \`shoppingList\` DEBE ser un ARRAY de objetos.
+7.  Cada objeto en el array representa una categoría y debe contener las siguientes claves:
+    - \`category\`: El nombre de la categoría (p. ej., "Frutas y Verduras").
+    - \`items\`: Un ARRAY de strings, donde cada string es un ingrediente individual de esa categoría.
+`,
   config: {
     safetySettings: [
       {

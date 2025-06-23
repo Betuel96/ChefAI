@@ -4,7 +4,7 @@ import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { generateShoppingList } from '@/ai/flows/generate-shopping-list';
-import type { WeeklyPlan, ShoppingListItem, DailyMealPlan } from '@/types';
+import type { WeeklyPlan, ShoppingListCategory, DailyMealPlan } from '@/types';
 import { Button } from '@/components/ui/button';
 import {
   Accordion,
@@ -49,7 +49,7 @@ const MealCard = ({ meal }: { meal: DailyMealPlan['breakfast'] }) => (
 
 export default function MyMenusPage() {
   const [savedMenus] = useLocalStorage<SavedWeeklyPlan[]>('savedMenus', []);
-  const [, setShoppingList] = useLocalStorage<ShoppingListItem[]>('shoppingList', []);
+  const [, setShoppingList] = useLocalStorage<ShoppingListCategory[]>('shoppingList', []);
   const [loadingMenuId, setLoadingMenuId] = useState<string | null>(null);
   const router = useRouter();
   const { toast } = useToast();
@@ -58,23 +58,38 @@ export default function MyMenusPage() {
     const menuId = (menu as SavedWeeklyPlan).id;
     setLoadingMenuId(menuId);
     try {
-      const mealPlanString = menu.weeklyMealPlan
-        .map(
-          (plan) =>
-            `${plan.day}:\n- Desayuno: ${plan.breakfast.name}\n- Almuerzo: ${plan.lunch.name}\n- Cena: ${plan.dinner.name}`
-        )
-        .join('\n\n');
+      const allIngredients =
+        menu.weeklyMealPlan
+          .flatMap((day) => [
+            ...day.breakfast.ingredients.split('\n'),
+            ...day.lunch.ingredients.split('\n'),
+            ...day.dinner.ingredients.split('\n'),
+          ])
+          .filter((ing) => ing.trim() !== '') || [];
 
-      const result = await generateShoppingList({ mealPlan: mealPlanString });
-      const items = result.shoppingList
-        .split('\n')
-        .filter((item) => item.trim() !== '')
-        .map((item) => ({
+      const allIngredientsString = allIngredients.join('\n');
+
+      if (!allIngredientsString) {
+        toast({
+          title: 'No hay Ingredientes',
+          description: 'Este plan de comidas no tiene ingredientes para generar una lista.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const result = await generateShoppingList({ allIngredients: allIngredientsString });
+
+      const categorizedList: ShoppingListCategory[] = result.shoppingList.map((category) => ({
+        ...category,
+        items: category.items.map((itemName) => ({
           id: crypto.randomUUID(),
-          name: item.replace(/^- /g, '').trim(),
+          name: itemName,
           checked: false,
-        }));
-      setShoppingList(items);
+        })),
+      }));
+
+      setShoppingList(categorizedList);
 
       toast({
         title: '¡Lista de Compras Generada!',
