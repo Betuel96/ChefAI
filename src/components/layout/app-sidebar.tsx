@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Separator } from '../ui/separator';
 import { useAuth } from '@/hooks/use-auth';
-import { auth } from '@/lib/firebase';
+import { auth as firebaseAuth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -51,12 +51,14 @@ export function AppSidebar() {
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
-      toast({
-        title: 'Sesión Cerrada',
-        description: 'Has cerrado sesión correctamente.',
-      });
-      router.push('/login');
+      if (firebaseAuth) {
+        await signOut(firebaseAuth);
+        toast({
+          title: 'Sesión Cerrada',
+          description: 'Has cerrado sesión correctamente.',
+        });
+        router.push('/login');
+      }
     } catch (error) {
       toast({
         title: 'Error',
