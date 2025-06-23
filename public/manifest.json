@@ -1,0 +1,21 @@
+{
+  "name": "ChefAI",
+  "short_name": "ChefAI",
+  "description": "Tu asistente de cocina personal con IA",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FDFBF8",
+  "theme_color": "#F7A849",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
