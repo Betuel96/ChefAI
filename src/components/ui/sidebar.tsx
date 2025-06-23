@@ -187,9 +187,7 @@ export const SidebarTrigger = React.forwardRef<
   HTMLButtonElement,
   React.ComponentProps<typeof Button>
 >(({ className, ...props }, ref) => {
-  const { isOpen, setIsOpen, isMobile } = useSidebar();
-
-  if (isMobile) return null;
+  const { isOpen, setIsOpen } = useSidebar();
 
   return (
     <Button
