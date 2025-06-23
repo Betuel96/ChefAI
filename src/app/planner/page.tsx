@@ -19,6 +19,16 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import type { WeeklyPlan, ShoppingListCategory, DailyMealPlan } from '@/types';
 import { BookHeart, CalendarDays, ShoppingCart, Sparkles } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const formSchema = z.object({
   ingredients: z.string().min(10, 'Por favor, enumera al menos algunos ingredientes.'),
@@ -30,35 +40,47 @@ const formSchema = z.object({
 const MealCard = ({ meal }: { meal: DailyMealPlan['breakfast'] }) => (
   <Card className="mt-4 border-accent/20">
     <CardHeader>
-      <CardTitle className="font-headline text-xl">{meal.name}</CardTitle>
+      <CardTitle className="font-headline text-xl">{meal?.name || 'No planificado'}</CardTitle>
     </CardHeader>
     <CardContent className="space-y-4">
-      <div>
-        <h5 className="font-headline font-semibold text-accent">Ingredientes</h5>
-        <ul className="list-disc list-inside mt-2 text-muted-foreground">
-          {meal.ingredients
-            .split('\n')
-            .filter((ing) => ing.trim() !== '')
-            .map((ing, i) => (
-              <li key={i}>{ing}</li>
-            ))}
-        </ul>
-      </div>
-      <div>
-        <h5 className="font-headline font-semibold text-accent">Instrucciones</h5>
-        <p className="whitespace-pre-wrap mt-2 text-muted-foreground">{meal.instructions}</p>
-      </div>
+      {meal ? (
+        <>
+          <div>
+            <h5 className="font-headline font-semibold text-accent">Ingredientes</h5>
+            <ul className="list-disc list-inside mt-2 text-muted-foreground">
+              {meal.ingredients
+                .split('\n')
+                .filter((ing) => ing.trim() !== '')
+                .map((ing, i) => (
+                  <li key={i}>{ing}</li>
+                ))}
+            </ul>
+          </div>
+          <div>
+            <h5 className="font-headline font-semibold text-accent">Instrucciones</h5>
+            <p className="whitespace-pre-wrap mt-2 text-muted-foreground">{meal.instructions}</p>
+          </div>
+        </>
+      ) : (
+        <p className="text-muted-foreground">No se ha planificado esta comida.</p>
+      )}
     </CardContent>
   </Card>
 );
+
+const FREE_GENERATIONS_LIMIT = 1;
 
 export default function MealPlannerPage() {
   const [mealPlan, setMealPlan] = useState<WeeklyPlan | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingList, setIsGeneratingList] = useState(false);
+  const [isSimulatingAd, setIsSimulatingAd] = useState(false);
+  const [showAdDialog, setShowAdDialog] = useState(false);
   const { toast } = useToast();
   const [savedMenus, setSavedMenus] = useLocalStorage<WeeklyPlan[]>('savedMenus', []);
   const [, setShoppingList] = useLocalStorage<ShoppingListCategory[]>('shoppingList', []);
+  const [generationCount, setGenerationCount] = useLocalStorage<number>('planGenerationCount', 0);
+  const [isPremium] = useLocalStorage<boolean>('isPremium', false);
   const router = useRouter();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -71,12 +93,15 @@ export default function MealPlannerPage() {
     },
   });
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  const runGeneration = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
     setMealPlan(null);
     try {
       const plan = await createWeeklyMealPlan(values);
       setMealPlan(plan);
+      if (!isPremium) {
+        setGenerationCount(generationCount + 1);
+      }
     } catch (error) {
       console.error('Error al generar plan semanal:', error);
       toast({
@@ -86,7 +111,24 @@ export default function MealPlannerPage() {
       });
     }
     setIsLoading(false);
-  }
+  };
+
+  const onSubmit = (values: z.infer<typeof formSchema>) => {
+    if (isPremium || generationCount < FREE_GENERATIONS_LIMIT) {
+      runGeneration(values);
+    } else {
+      setShowAdDialog(true);
+    }
+  };
+
+  const handleWatchAd = () => {
+    setIsSimulatingAd(true);
+    setShowAdDialog(false);
+    setTimeout(() => {
+      setIsSimulatingAd(false);
+      runGeneration(form.getValues());
+    }, 2000); // Simulate 2 second ad watch
+  };
 
   const handleSaveMenu = () => {
     if (mealPlan) {
@@ -154,59 +196,34 @@ export default function MealPlannerPage() {
     }
   };
   
-  const anyLoading = isLoading || isGeneratingList;
+  const anyLoading = isLoading || isGeneratingList || isSimulatingAd;
+  const generationsLeft = FREE_GENERATIONS_LIMIT - generationCount;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-      <div className="space-y-6">
-        <header>
-          <h1 className="font-headline text-4xl font-bold text-primary">Planificador Semanal</h1>
-          <p className="text-muted-foreground mt-2 text-lg">Planifica tus comidas para la semana con IA.</p>
-        </header>
+    <>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="space-y-6">
+          <header>
+            <h1 className="font-headline text-4xl font-bold text-primary">Planificador Semanal</h1>
+            <p className="text-muted-foreground mt-2 text-lg">Planifica tus comidas para la semana con IA.</p>
+          </header>
 
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle className="font-headline">Tus Preferencias</CardTitle>
-            <CardDescription>Dinos qué te gusta y crearemos un plan delicioso.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="ingredients"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Ingredientes Base</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder="ej., pasta, carne molida, tomates, cebollas" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="dietaryPreferences"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Preferencias Dietéticas (opcional)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="ej., vegetariano, sin gluten, bajo en carbohidratos" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="flex gap-4">
+          <Card className="shadow-lg">
+            <CardHeader>
+              <CardTitle className="font-headline">Tus Preferencias</CardTitle>
+              <CardDescription>Dinos qué te gusta y crearemos un plan delicioso.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                   <FormField
                     control={form.control}
-                    name="numberOfDays"
+                    name="ingredients"
                     render={({ field }) => (
-                      <FormItem className="flex-1">
-                        <FormLabel>Días</FormLabel>
+                      <FormItem>
+                        <FormLabel>Ingredientes Base</FormLabel>
                         <FormControl>
-                          <Input type="number" min="1" max="7" {...field} />
+                          <Textarea placeholder="ej., pasta, carne molida, tomates, cebollas" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -214,95 +231,151 @@ export default function MealPlannerPage() {
                   />
                   <FormField
                     control={form.control}
-                    name="numberOfPeople"
+                    name="dietaryPreferences"
                     render={({ field }) => (
-                      <FormItem className="flex-1">
-                        <FormLabel>Personas</FormLabel>
+                      <FormItem>
+                        <FormLabel>Preferencias Dietéticas (opcional)</FormLabel>
                         <FormControl>
-                          <Input type="number" min="1" max="20" {...field} />
+                          <Input placeholder="ej., vegetariano, sin gluten, bajo en carbohidratos" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+                  <div className="flex gap-4">
+                    <FormField
+                      control={form.control}
+                      name="numberOfDays"
+                      render={({ field }) => (
+                        <FormItem className="flex-1">
+                          <FormLabel>Días</FormLabel>
+                          <FormControl>
+                            <Input type="number" min="1" max="7" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="numberOfPeople"
+                      render={({ field }) => (
+                        <FormItem className="flex-1">
+                          <FormLabel>Personas</FormLabel>
+                          <FormControl>
+                            <Input type="number" min="1" max="20" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <Button type="submit" disabled={anyLoading} className="w-full">
+                    {isLoading ? 'Generando Plan...' : isSimulatingAd ? 'Viendo Anuncio...' : 'Generar Plan de Comidas'}
+                    <Sparkles className="ml-2 h-4 w-4" />
+                  </Button>
+                </form>
+              </Form>
+            </CardContent>
+            {!isPremium && (
+              <CardFooter className="justify-center">
+                <p className="text-sm text-muted-foreground">
+                    Te queda{generationsLeft === 1 ? '' : 'n'} {generationsLeft > 0 ? generationsLeft : 0} generaci{generationsLeft === 1 ? 'ón' : 'ones'} gratuita{generationsLeft === 1 ? '' : 's'}.
+                </p>
+              </CardFooter>
+            )}
+          </Card>
+        </div>
+
+        <div className="space-y-6">
+          <h2 className="font-headline text-3xl font-bold text-primary text-center">Tu Plan de Comidas</h2>
+          <Card className="shadow-lg min-h-[400px]">
+            <CardHeader>
+              <CardTitle className="font-headline">
+                <CalendarDays className="inline-block mr-2" />
+                Plan Generado
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoading && !mealPlan && (
+                <div className="space-y-4 p-2">
+                  {[...Array(3)].map((_, i) => (
+                    <Skeleton key={i} className="h-12 w-full" />
+                  ))}
                 </div>
-                <Button type="submit" disabled={anyLoading} className="w-full">
-                  {isLoading ? 'Generando Plan...' : 'Generar Plan de Comidas'}
-                  <Sparkles className="ml-2 h-4 w-4" />
-                </Button>
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="space-y-6">
-        <h2 className="font-headline text-3xl font-bold text-primary text-center">Tu Plan de Comidas</h2>
-        <Card className="shadow-lg min-h-[400px]">
-          <CardHeader>
-            <CardTitle className="font-headline">
-              <CalendarDays className="inline-block mr-2" />
-              Plan Generado
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoading && !mealPlan && (
-              <div className="space-y-4 p-2">
-                {[...Array(3)].map((_, i) => (
-                  <Skeleton key={i} className="h-12 w-full" />
-                ))}
-              </div>
-            )}
+              )}
+               {isSimulatingAd && (
+                <div className="text-center text-muted-foreground py-10">
+                  <p className="font-semibold">Cargando anuncio...</p>
+                  <p>Tu plan se generará en un momento.</p>
+                </div>
+              )}
+              {mealPlan && (
+                <Accordion type="single" collapsible className="w-full">
+                  {mealPlan.weeklyMealPlan.map((dailyPlan) => (
+                    <AccordionItem value={dailyPlan.day} key={dailyPlan.day}>
+                      <AccordionTrigger className="font-headline text-lg">{dailyPlan.day}</AccordionTrigger>
+                      <AccordionContent className="space-y-4 px-1">
+                        <Tabs defaultValue="breakfast" className="w-full">
+                          <TabsList className="grid w-full grid-cols-4">
+                            <TabsTrigger value="breakfast">Desayuno</TabsTrigger>
+                            <TabsTrigger value="lunch">Almuerzo</TabsTrigger>
+                            <TabsTrigger value="comida">Comida</TabsTrigger>
+                            <TabsTrigger value="dinner">Cena</TabsTrigger>
+                          </TabsList>
+                          <TabsContent value="breakfast">
+                             <MealCard meal={dailyPlan.breakfast} />
+                          </TabsContent>
+                          <TabsContent value="lunch">
+                            <MealCard meal={dailyPlan.lunch} />
+                          </TabsContent>
+                          <TabsContent value="comida">
+                            <MealCard meal={dailyPlan.comida} />
+                          </TabsContent>
+                          <TabsContent value="dinner">
+                            <MealCard meal={dailyPlan.dinner} />
+                          </TabsContent>
+                        </Tabs>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              )}
+              {!anyLoading && !mealPlan && (
+                <div className="text-center text-muted-foreground py-10">
+                  <p>Tu plan de comidas generado se mostrará aquí.</p>
+                </div>
+              )}
+            </CardContent>
             {mealPlan && (
-              <Accordion type="single" collapsible className="w-full">
-                {mealPlan.weeklyMealPlan.map((dailyPlan) => (
-                  <AccordionItem value={dailyPlan.day} key={dailyPlan.day}>
-                    <AccordionTrigger className="font-headline text-lg">{dailyPlan.day}</AccordionTrigger>
-                    <AccordionContent className="space-y-4 px-1">
-                      <Tabs defaultValue="breakfast" className="w-full">
-                        <TabsList className="grid w-full grid-cols-4">
-                          <TabsTrigger value="breakfast">Desayuno</TabsTrigger>
-                          <TabsTrigger value="lunch">Almuerzo</TabsTrigger>
-                          <TabsTrigger value="comida">Comida</TabsTrigger>
-                          <TabsTrigger value="dinner">Cena</TabsTrigger>
-                        </TabsList>
-                        <TabsContent value="breakfast">
-                          {dailyPlan.breakfast && <MealCard meal={dailyPlan.breakfast} />}
-                        </TabsContent>
-                        <TabsContent value="lunch">
-                          {dailyPlan.lunch && <MealCard meal={dailyPlan.lunch} />}
-                        </TabsContent>
-                        <TabsContent value="comida">
-                          {dailyPlan.comida && <MealCard meal={dailyPlan.comida} />}
-                        </TabsContent>
-                        <TabsContent value="dinner">
-                          {dailyPlan.dinner && <MealCard meal={dailyPlan.dinner} />}
-                        </TabsContent>
-                      </Tabs>
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
+              <CardFooter className="flex flex-col sm:flex-row gap-2">
+                <Button onClick={handleSaveMenu} variant="secondary" className="w-full" disabled={anyLoading}>
+                  <BookHeart className="mr-2 h-4 w-4" /> Guardar Menú
+                </Button>
+                <Button onClick={handleGenerateShoppingList} className="w-full" disabled={anyLoading}>
+                  <ShoppingCart className="mr-2 h-4 w-4" /> 
+                  {isGeneratingList ? 'Generando Lista...' : 'Generar Lista de Compras'}
+                </Button>
+              </CardFooter>
             )}
-            {!isLoading && !mealPlan && (
-              <div className="text-center text-muted-foreground py-10">
-                <p>Tu plan de comidas generado se mostrará aquí.</p>
-              </div>
-            )}
-          </CardContent>
-          {mealPlan && (
-            <CardFooter className="flex flex-col sm:flex-row gap-2">
-              <Button onClick={handleSaveMenu} variant="secondary" className="w-full" disabled={anyLoading}>
-                <BookHeart className="mr-2 h-4 w-4" /> Guardar Menú
-              </Button>
-              <Button onClick={handleGenerateShoppingList} className="w-full" disabled={anyLoading}>
-                <ShoppingCart className="mr-2 h-4 w-4" /> 
-                {isGeneratingList ? 'Generando Lista...' : 'Generar Lista de Compras'}
-              </Button>
-            </CardFooter>
-          )}
-        </Card>
+          </Card>
+        </div>
       </div>
-    </div>
+      
+      <AlertDialog open={showAdDialog} onOpenChange={setShowAdDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¡Límite gratuito alcanzado!</AlertDialogTitle>
+            <AlertDialogDescription>
+              Has utilizado tu generación de plan gratuita. Para generar otro, por favor mira un anuncio corto.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleWatchAd}>Ver Anuncio y Continuar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
