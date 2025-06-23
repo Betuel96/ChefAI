@@ -125,12 +125,33 @@ export default function MealPlannerPage() {
   };
 
   const handleWatchAd = () => {
+    // GUÍA DE IMPLEMENTACIÓN REAL:
+    // Esta función actualmente simula la visualización de un anuncio con un retardo.
+    // Para una implementación real, aquí es donde llamarías al SDK de tu red de anuncios
+    // (ej. Google AdMob para un "anuncio con recompensa").
+    //
+    // Ejemplo de cómo se vería con una red de anuncios ficticia:
+    //
+    // adNetwork.showRewardedAd({
+    //   onSuccess: () => {
+    //     // El usuario vio el anuncio completo.
+    //     // Procede con la generación del plan.
+    //     setIsSimulatingAd(false);
+    //     runGeneration(form.getValues());
+    //   },
+    //   onFailure: () => {
+    //     // El anuncio no se cargó o el usuario lo cerró.
+    //     setIsSimulatingAd(false);
+    //     toast({ title: 'Anuncio no completado', description: 'Inténtalo de nuevo para generar.'});
+    //   }
+    // });
+
     setIsSimulatingAd(true);
     setShowAdDialog(false);
     setTimeout(() => {
       setIsSimulatingAd(false);
       runGeneration(form.getValues());
-    }, 2000); // Simulate 2 second ad watch
+    }, 2000); // Simula un anuncio de 2 segundos
   };
 
   const handleSaveMenu = async () => {
@@ -406,4 +427,10 @@ export default function MealPlannerPage() {
             <div className='flex flex-col-reverse sm:flex-row sm:justify-end gap-2'>
               <AlertDialogCancel>Cancelar</AlertDialogCancel>
               <AlertDialogAction onClick={handleWatchAd}>Ver Anuncio y Continuar</AlertDialogAction>
-            
+            </div>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
