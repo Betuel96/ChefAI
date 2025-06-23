@@ -24,7 +24,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { MenuSquare, ShoppingCart, Trash2, LogIn } from 'lucide-react';
+import { MenuSquare, ShoppingCart, Trash2, LogIn, CalendarDays } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/use-auth';
@@ -194,9 +194,18 @@ export default function MyMenusPage() {
 
     if (savedMenus.length === 0) {
       return (
-        <div className="text-center text-muted-foreground py-10">
-          <p>Aún no has guardado ningún menú en tu cuenta.</p>
-          <p>Ve al Planificador Semanal para crear y guardar un nuevo plan.</p>
+        <div className="text-center text-muted-foreground py-10 flex flex-col items-center">
+          <MenuSquare className="w-16 h-16 mb-4" />
+          <h3 className="font-headline text-2xl font-semibold mb-2 text-foreground">No Tienes Menús Guardados</h3>
+          <p className="mb-6 max-w-sm">
+            Parece que aún no has creado ningún plan de comidas. ¡Empieza a planificar tu semana ahora!
+          </p>
+          <Button asChild>
+            <Link href="/planner">
+              <CalendarDays className="mr-2 h-4 w-4" />
+              Ir al Planificador Semanal
+            </Link>
+          </Button>
         </div>
       );
     }

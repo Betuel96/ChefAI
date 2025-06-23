@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useLocalStorage } from '@/hooks/use-local-storage';
@@ -24,7 +25,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BookHeart, LogIn, ShoppingCart, Trash2, UtensilsCrossed } from 'lucide-react';
+import { BookHeart, LogIn, ShoppingCart, Trash2, UtensilsCrossed, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { Separator } from '@/components/ui/separator';
@@ -167,9 +168,18 @@ export default function MyRecipesPage() {
 
     if (savedRecipes.length === 0) {
       return (
-        <div className="text-center text-muted-foreground py-10">
-            <p>Aún no has guardado ninguna receta en tu cuenta.</p>
-            <p>Ve al Generador de Recetas para crear y guardar nuevas recetas.</p>
+        <div className="text-center text-muted-foreground py-10 flex flex-col items-center">
+            <BookHeart className="w-16 h-16 mb-4" />
+            <h3 className="font-headline text-2xl font-semibold mb-2 text-foreground">Tu Libro de Recetas está Vacío</h3>
+            <p className="mb-6 max-w-sm">
+              ¿Listo para un poco de magia culinaria? ¡Ve al generador para crear tu primera receta!
+            </p>
+             <Button asChild>
+              <Link href="/generator">
+                <Sparkles className="mr-2 h-4 w-4" />
+                Ir al Generador de Recetas
+              </Link>
+            </Button>
         </div>
       );
     }
