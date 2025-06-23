@@ -10,6 +10,7 @@ import {
   ShoppingCart,
   CalendarDays,
   Sparkles,
+  LogIn,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -22,6 +23,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
+import { Separator } from '../ui/separator';
 
 const menuItems = [
   { href: '/', label: 'Panel', icon: Home },
@@ -60,6 +62,18 @@ export function AppSidebar() {
               </Link>
             </SidebarMenuItem>
           ))}
+          <Separator className="my-2" />
+          <SidebarMenuItem>
+            <Link href="/login">
+              <SidebarMenuButton
+                isActive={pathname === '/login' || pathname === '/signup'}
+                tooltip="Acceder"
+              >
+                <LogIn />
+                <span>Acceder / Registrarse</span>
+              </SidebarMenuButton>
+            </Link>
+          </SidebarMenuItem>
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
