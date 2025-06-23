@@ -6,27 +6,31 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Checkbox } from '@/components/ui/checkbox';
 import type { ShoppingListCategory } from '@/types';
 import { Trash2, ShoppingCart } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export default function ShoppingListPage() {
   const [shoppingList, setShoppingList] = useLocalStorage<ShoppingListCategory[]>('shoppingList', []);
 
+  // Filtra cualquier categoría o artículo no válido para evitar errores de ejecución
+  const validShoppingList = (Array.isArray(shoppingList) ? shoppingList : [])
+    .filter(category => category && Array.isArray(category.items));
+
   const handleToggleItem = (id: string) => {
-    setShoppingList(
-      shoppingList.map(category => ({
-        ...category,
-        items: category.items.map(item =>
-          item.id === id ? { ...item, checked: !item.checked } : item
-        ),
-      }))
-    );
+    const updatedList = validShoppingList.map(category => ({
+      ...category,
+      items: category.items.map(item =>
+        item.id === id ? { ...item, checked: !item.checked } : item
+      ),
+    }));
+    setShoppingList(updatedList);
   };
 
   const handleClearList = () => {
     setShoppingList([]);
   };
 
-  const totalItems = shoppingList.reduce((acc, category) => acc + category.items.length, 0);
-  const checkedItemsCount = shoppingList.reduce(
+  const totalItems = validShoppingList.reduce((acc, category) => acc + category.items.length, 0);
+  const checkedItemsCount = validShoppingList.reduce(
     (acc, category) => acc + category.items.filter(item => item.checked).length,
     0
   );
@@ -46,16 +50,16 @@ export default function ShoppingListPage() {
               {checkedItemsCount} de {totalItems} artículos comprados.
             </CardDescription>
           </div>
-          {shoppingList.length > 0 && (
+          {validShoppingList.length > 0 && (
             <Button variant="destructive" size="sm" onClick={handleClearList}>
               <Trash2 className="mr-2 h-4 w-4" /> Limpiar Lista
             </Button>
           )}
         </CardHeader>
         <CardContent>
-          {shoppingList.length > 0 ? (
+          {validShoppingList.length > 0 ? (
             <div className="space-y-6">
-              {shoppingList.map(category => (
+              {validShoppingList.map(category => (
                 <div key={category.category}>
                   <h3 className="font-headline text-xl font-semibold text-accent mb-3 border-b pb-2">
                     {category.category}
