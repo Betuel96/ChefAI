@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -104,26 +105,25 @@ export default function RecipeGeneratorPage() {
   };
 
   const handleWatchAd = () => {
-    // GUÍA DE IMPLEMENTACIÓN REAL:
-    // Esta función actualmente simula la visualización de un anuncio con un retardo.
-    // Para una implementación real, aquí es donde llamarías al SDK de tu red de anuncios
-    // (ej. Google AdMob para un "anuncio con recompensa").
+    // TODO: INTEGRACIÓN REAL DE ANUNCIOS
+    // 1. Una vez que tu app esté publicada y aprobada por una red de anuncios (ej. Google AdSense),
+    //    obtendrás un fragmento de código o una llamada a una función del SDK.
+    // 2. Reemplaza la simulación de `setTimeout` con la llamada real de tu red de anuncios.
+    //    La llamada a `runGeneration(form.getValues())` debe ocurrir en el callback de éxito del anuncio,
+    //    es decir, cuando el usuario ha visto el anuncio completo.
     //
-    // Ejemplo de cómo se vería con una red de anuncios ficticia:
+    // Ejemplo de cómo podría verse:
     //
-    // adNetwork.showRewardedAd({
-    //   onSuccess: () => {
-    //     // El usuario vio el anuncio completo.
-    //     // Procede con la generación de la receta.
-    //     setIsSimulatingAd(false);
-    //     runGeneration(form.getValues());
-    //   },
-    //   onFailure: () => {
-    //     // El anuncio no se cargó o el usuario lo cerró.
-    //     setIsSimulatingAd(false);
-    //     toast({ title: 'Anuncio no completado', description: 'Inténtalo de nuevo para generar.'});
-    //   }
-    // });
+    //   adNetwork.showRewardedAd({
+    //     onSuccess: () => {
+    //       setIsSimulatingAd(false);
+    //       runGeneration(form.getValues());
+    //     },
+    //     onFailure: () => {
+    //       setIsSimulatingAd(false);
+    //       toast({ title: 'Anuncio no completado', description: 'Inténtalo de nuevo para generar.' });
+    //     }
+    //   });
 
     setIsSimulatingAd(true);
     setShowAdDialog(false);
