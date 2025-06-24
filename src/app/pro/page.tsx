@@ -95,7 +95,7 @@ export default function ProPage() {
     return (
         <>
             <Button onClick={handleUpgrade} className="w-full text-lg py-6" disabled={isRedirecting}>
-                {isRedirecting ? 'Redirigiendo a pago...' : 'Suscribirse a Pro'}
+                {isRedirecting ? 'Redirigiendo a pago...' : 'Desbloquear ChefAI Pro'}
             </Button>
             <p className="text-xs text-muted-foreground text-center mt-2">
                 La suscripción se renueva automáticamente. Cancela en cualquier momento.
@@ -113,7 +113,7 @@ export default function ProPage() {
           </div>
           <CardTitle className="font-headline text-4xl text-primary">ChefAI Pro</CardTitle>
           <CardDescription className="text-lg">
-            Únete a nuestro plan de suscripción Pro y desbloquea todo el potencial de tu asistente de cocina.
+            Desbloquea todo el potencial de tu asistente de cocina con una suscripción mensual.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -125,12 +125,7 @@ export default function ProPage() {
               </li>
             ))}
           </ul>
-          
-          <div className="text-center my-4">
-            <span className="text-4xl font-bold font-headline">$9.99</span>
-            <span className="text-muted-foreground">/mes</span>
-          </div>
-          
+                    
           {renderContent()}
 
         </CardContent>
