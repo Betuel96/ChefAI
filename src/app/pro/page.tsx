@@ -128,6 +128,9 @@ export default function ProPage() {
                     
           {renderContent()}
 
+           <p className="text-xs text-muted-foreground text-center mt-4">
+            El uso "ilimitado" está sujeto a una política de uso justo para prevenir el abuso del servicio.
+          </p>
         </CardContent>
       </Card>
     </div>
