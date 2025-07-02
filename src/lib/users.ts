@@ -59,6 +59,9 @@ export async function signInWithGoogle(): Promise<void> {
       // Don't throw an error, just return. The user intentionally closed the popup.
       return;
     }
+    if (error.code === 'auth/unauthorized-domain') {
+      throw new Error("Este dominio no está autorizado. Ve a la consola de Firebase > Authentication > Settings > Authorized domains y añade tu dominio.");
+    }
     if (error.code === 'auth/account-exists-with-different-credential') {
       throw new Error("Ya existe una cuenta con este correo, pero con un método de inicio de sesión diferente.");
     }
