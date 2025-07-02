@@ -73,7 +73,9 @@ const prompt = ai.definePrompt({
   name: 'createWeeklyMealPlanPrompt',
   input: {schema: CreateWeeklyMealPlanInputSchema},
   output: {schema: CreateWeeklyMealPlanOutputSchema},
-  prompt: `Eres un planificador de comidas experto. Tu tarea es crear un plan de comidas semanal creativo y variado basado en las siguientes preferencias del usuario. Cada vez que generes un plan, intenta que sea diferente al anterior, incluso con las mismas preferencias.
+  prompt: `Eres un planificador de comidas experto y un genio culinario. Tu tarea es diseñar un plan de comidas semanal que sea emocionante, variado y delicioso, basándote en las preferencias del usuario.
+
+**Instrucción CRÍTICA:** ¡La variedad es la clave! Cada vez que generes un plan, DEBE ser significativamente diferente al anterior, incluso con las mismas preferencias. No repitas recetas entre planes. Varía los tipos de platos, las cocinas del mundo (italiana, mexicana, asiática, etc.) y los métodos de cocción para mantenerlo interesante.
 
 **Preferencias del Usuario:**
 - **Ingredientes disponibles:** {{{ingredients}}}
@@ -95,7 +97,7 @@ const prompt = ai.definePrompt({
 8.  Asegúrate de que el plan sea variado y minimice el desperdicio de alimentos.
 `,
   config: {
-    temperature: 0.9,
+    temperature: 1.0,
     safetySettings: [
       {
         category: 'HARM_CATEGORY_HATE_SPEECH',
