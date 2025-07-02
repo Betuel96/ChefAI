@@ -1,42 +1,39 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // Los perfiles de usuario pueden ser leídos por cualquiera (para ver nombres, fotos).
+    // Solo el propio usuario puede crear o actualizar su perfil.
     match /users/{userId} {
-      // Perfiles de usuario: cualquiera puede leerlos para ver perfiles.
-      // Solo el propio usuario puede escribir en su documento.
       allow read;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow create, update: if request.auth != null && request.auth.uid == userId;
 
-      // Recetas y menús guardados son privados para cada usuario.
-      match /recipes/{docId} {
-        allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+      // Las recetas y menús privados solo los puede gestionar su dueño.
+      match /recipes/{recipeId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
       }
-      match /menus/{docId} {
-        allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+      match /menus/{menuId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
       }
 
-      // Reglas para seguir/dejar de seguir
-      // Un usuario se añade a la lista de 'followers' de otro usuario.
+      // Lógica para seguir/dejar de seguir a usuarios.
       match /followers/{followerId} {
-         allow read;
-         // Solo el usuario que sigue puede crear/borrar su propia entrada en la lista.
-         allow write, delete: if request.auth != null && request.auth.uid == followerId;
+        allow read;
+        allow write: if request.auth != null && request.auth.uid == followerId;
       }
-      // Un usuario añade a otro a su lista de 'following'.
-       match /following/{followingId} {
-         allow read;
-         // Solo el usuario puede modificar su propia lista de a quién sigue.
-         allow write, delete: if request.auth != null && request.auth.uid == userId;
+      match /following/{followingId} {
+        allow read;
+        allow write: if request.auth != null && request.auth.uid == userId;
       }
     }
 
-    // Recetas públicas: cualquiera puede leerlas.
-    // Solo usuarios autenticados pueden crearlas.
-    // Solo el autor puede actualizarlas o borrarlas.
+    // Las recetas publicadas las puede leer cualquiera.
+    // Solo el autor original puede crearlas, actualizarlas o borrarlas.
     match /published_recipes/{recipeId} {
       allow read;
-      allow create: if request.auth != null;
-      allow update, delete: if request.auth != null && request.auth.uid == resource.data.publisherId;
+      allow create: if request.auth != null && request.resource.data.publisherId == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.publisherId == request.auth.uid;
     }
   }
 }
