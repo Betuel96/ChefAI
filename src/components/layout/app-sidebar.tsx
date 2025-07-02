@@ -15,6 +15,7 @@ import {
   LogOut,
   UserCircle,
   Gem,
+  Users,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -41,6 +42,7 @@ const menuItems = [
   { href: '/', label: 'Panel', icon: Home },
   { href: '/generator', label: 'Generador de Recetas', icon: Sparkles },
   { href: '/planner', label: 'Planificador Semanal', icon: CalendarDays },
+  { href: '/community', label: 'Comunidad', icon: Users },
   { href: '/shopping-list', label: 'Lista de Compras', icon: ShoppingCart },
 ];
 
@@ -110,7 +112,7 @@ export function AppSidebar() {
             <SidebarMenuItem key={item.href}>
               <Link href={item.href}>
                 <SidebarMenuButton
-                  isActive={pathname === item.href}
+                  isActive={pathname === item.href || (item.href === '/community' && pathname.startsWith('/profile'))}
                   tooltip={item.label}
                 >
                   <item.icon />

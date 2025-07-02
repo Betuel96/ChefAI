@@ -16,8 +16,9 @@ import { db, auth, googleProvider } from './firebase';
  * @param userId The ID of the user from Firebase Auth.
  * @param name The user's display name.
  * @param email The user's email address.
+ * @param photoURL The user's photo URL.
  */
-export async function createUserDocument(userId: string, name: string, email: string | null): Promise<void> {
+export async function createUserDocument(userId: string, name: string, email: string | null, photoURL: string | null = null): Promise<void> {
   if (!db) {
     throw new Error('Firestore is not initialized.');
   }
@@ -25,6 +26,7 @@ export async function createUserDocument(userId: string, name: string, email: st
   await setDoc(userDocRef, {
     name,
     email,
+    photoURL,
     isPremium: false,
     createdAt: serverTimestamp(),
   });
@@ -47,7 +49,7 @@ export async function signInWithGoogle(): Promise<void> {
 
     // If not, create a new document for the user
     if (!docSnap.exists()) {
-      await createUserDocument(user.uid, user.displayName || 'Usuario de Google', user.email);
+      await createUserDocument(user.uid, user.displayName || 'Usuario de Google', user.email, user.photoURL);
     }
     // If it exists, their data is already in Firestore. No action needed.
   } catch (error: any) {

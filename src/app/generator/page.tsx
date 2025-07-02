@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { generateRecipe } from '@/ai/flows/generate-recipe';
 import { generateRecipeImage } from '@/ai/flows/generate-recipe-image';
 import { addRecipe } from '@/lib/recipes';
+import { publishRecipe } from '@/lib/community';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { BookHeart, ChefHat, Sparkles, Gem, Image as ImageIcon, RefreshCw } from 'lucide-react';
+import { BookHeart, ChefHat, Sparkles, Gem, Image as ImageIcon, RefreshCw, Send } from 'lucide-react';
 import type { Recipe } from '@/types';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -46,6 +47,7 @@ export default function RecipeGeneratorPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
   const [isSimulatingAd, setIsSimulatingAd] = useState(false);
   const [showAdDialog, setShowAdDialog] = useState(false);
   
@@ -104,26 +106,6 @@ export default function RecipeGeneratorPage() {
   };
 
   const handleWatchAd = () => {
-    // TODO: INTEGRACIÓN REAL DE ANUNCIOS
-    // 1. Una vez que tu app esté publicada y aprobada por una red de anuncios (ej. Google AdSense),
-    //    obtendrás un fragmento de código o una llamada a una función del SDK.
-    // 2. Reemplaza la simulación de `setTimeout` con la llamada real de tu red de anuncios.
-    //    La llamada a `runGeneration(form.getValues())` debe ocurrir en el callback de éxito del anuncio,
-    //    es decir, cuando el usuario ha visto el anuncio completo.
-    //
-    // Ejemplo de cómo podría verse:
-    //
-    //   adNetwork.showRewardedAd({
-    //     onSuccess: () => {
-    //       setIsSimulatingAd(false);
-    //       runGeneration(form.getValues());
-    //     },
-    //     onFailure: () => {
-    //       setIsSimulatingAd(false);
-    //       toast({ title: 'Anuncio no completado', description: 'Inténtalo de nuevo para generar.' });
-    //     }
-    //   });
-
     setIsSimulatingAd(true);
     setShowAdDialog(false);
     setTimeout(() => {
@@ -133,9 +115,7 @@ export default function RecipeGeneratorPage() {
   };
 
   async function handleSaveRecipe() {
-    if (!generatedRecipe) return;
-
-    if (!user) {
+    if (!generatedRecipe || !user) {
       toast({
         title: 'Inicia Sesión para Guardar',
         description: 'Crea una cuenta o inicia sesión para guardar tus recetas en la nube.',
@@ -162,6 +142,35 @@ export default function RecipeGeneratorPage() {
     }
   }
 
+  async function handlePublishRecipe() {
+    if (!generatedRecipe || !user) {
+        toast({
+            title: 'Inicia Sesión para Publicar',
+            description: 'Debes iniciar sesión para compartir tus recetas con la comunidad.',
+            variant: 'default',
+        });
+        return;
+    }
+    setIsPublishing(true);
+    try {
+        await publishRecipe(user.uid, generatedRecipe, imageUrl);
+        toast({
+            title: '¡Receta Publicada!',
+            description: `"${generatedRecipe.name}" ahora es visible para la comunidad.`,
+        });
+        router.push('/community');
+    } catch (error) {
+        toast({
+            title: 'Error al Publicar',
+            description: 'No se pudo publicar la receta. Inténtalo de nuevo.',
+            variant: 'destructive',
+        });
+    } finally {
+        setIsPublishing(false);
+    }
+  }
+
+
   const getButtonText = () => {
     if (isLoading) return 'Generando Receta...';
     if (isSimulatingAd) return 'Viendo Anuncio...';
@@ -170,7 +179,7 @@ export default function RecipeGeneratorPage() {
   }
 
   const anyTextLoading = isLoading || isSimulatingAd;
-  const anyLoading = anyTextLoading || isGeneratingImage || isSaving;
+  const anyLoading = anyTextLoading || isGeneratingImage || isSaving || isPublishing;
   const generationsLeft = FREE_GENERATIONS_LIMIT - generationCount;
 
   return (
@@ -303,18 +312,30 @@ export default function RecipeGeneratorPage() {
               )}
             </CardContent>
             {generatedRecipe && (
-              <CardFooter className="flex flex-col sm:flex-row gap-2">
-                <Button onClick={handleSaveRecipe} className="w-full" variant="secondary" disabled={anyLoading}>
-                  {isSaving ? (
-                    <>Guardando...</>
-                  ) : (
-                    <>
-                      <BookHeart className="mr-2 h-4 w-4" />
-                      Guardar Receta
-                    </>
-                  )}
-                </Button>
-                 <Button onClick={() => onSubmit(form.getValues())} className="w-full" disabled={anyLoading}>
+              <CardFooter className="flex flex-col gap-2">
+                <div className="flex flex-col sm:flex-row gap-2 w-full">
+                    <Button onClick={handleSaveRecipe} className="w-full" variant="secondary" disabled={anyLoading || !user}>
+                      {isSaving ? (
+                        <>Guardando...</>
+                      ) : (
+                        <>
+                          <BookHeart className="mr-2 h-4 w-4" />
+                          Guardar Receta
+                        </>
+                      )}
+                    </Button>
+                    <Button onClick={handlePublishRecipe} className="w-full" disabled={anyLoading || !user}>
+                        {isPublishing ? (
+                            <>Publicando...</>
+                        ) : (
+                            <>
+                            <Send className="mr-2 h-4 w-4" />
+                            Publicar en Comunidad
+                            </>
+                        )}
+                    </Button>
+                </div>
+                 <Button onClick={() => onSubmit(form.getValues())} variant="outline" className="w-full" disabled={anyLoading}>
                   <RefreshCw className="mr-2 h-4 w-4" />
                   Generar Otra
                 </Button>

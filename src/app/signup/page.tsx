@@ -56,7 +56,7 @@ export default function SignupPage() {
       
       // Update Firebase Auth profile and create user document in Firestore
       await updateProfile(user, { displayName: values.name });
-      await createUserDocument(user.uid, values.name, values.email);
+      await createUserDocument(user.uid, values.name, values.email, user.photoURL);
       
       toast({
         title: '¡Cuenta Creada!',
