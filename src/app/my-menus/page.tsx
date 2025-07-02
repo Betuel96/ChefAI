@@ -69,7 +69,6 @@ export default function MyMenusPage() {
 
   useEffect(() => {
     if (authLoading) {
-      setPageLoading(true);
       return;
     }
     if (user) {
@@ -169,7 +168,7 @@ export default function MyMenusPage() {
   };
 
   const renderContent = () => {
-    if (pageLoading) {
+    if (authLoading || pageLoading) {
       return (
          <div className="space-y-2">
             <Skeleton className="h-14 w-full" />
@@ -298,7 +297,7 @@ export default function MyMenusPage() {
           <CardTitle className="font-headline flex items-center gap-2">
             <MenuSquare /> Tus Planes de Comidas
           </CardTitle>
-          {!pageLoading && user && <CardDescription>{savedMenus.length} menú(s) guardado(s) en tu cuenta.</CardDescription>}
+          {!authLoading && !pageLoading && user && <CardDescription>{savedMenus.length} menú(s) guardado(s) en tu cuenta.</CardDescription>}
         </CardHeader>
         <CardContent>
           {renderContent()}

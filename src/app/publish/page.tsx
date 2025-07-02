@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { PlusSquare, Send } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const formSchema = z.object({
   name: z.string().min(5, 'El nombre debe tener al menos 5 caracteres.'),
@@ -28,8 +29,39 @@ const formSchema = z.object({
   image: z.instanceof(File).optional(),
 });
 
+const LoadingSkeleton = () => (
+    <div className="max-w-2xl mx-auto space-y-8">
+        <header>
+            <Skeleton className="h-10 w-3/4" />
+            <Skeleton className="h-4 w-1/2 mt-2" />
+        </header>
+        <Card>
+            <CardHeader>
+                <Skeleton className="h-8 w-1/3" />
+                <Skeleton className="h-4 w-2/3" />
+            </CardHeader>
+            <CardContent className="space-y-6">
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-1/4" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+                 <div className="space-y-2">
+                    <Skeleton className="h-4 w-1/4" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+                 <div className="space-y-2">
+                    <Skeleton className="h-4 w-1/4" />
+                    <Skeleton className="h-20 w-full" />
+                </div>
+                <Skeleton className="h-12 w-full" />
+            </CardContent>
+        </Card>
+    </div>
+);
+
+
 export default function PublishPage() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const [isPublishing, setIsPublishing] = useState(false);
@@ -95,6 +127,10 @@ export default function PublishPage() {
     } finally {
       setIsPublishing(false);
     }
+  }
+
+  if (loading) {
+    return <LoadingSkeleton />;
   }
 
   if (!user) {

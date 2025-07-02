@@ -18,7 +18,7 @@ const AuthContext = createContext<AuthContextType>({
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AppUser>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Start as true
 
   useEffect(() => {
     if (!isFirebaseConfigured || !auth || !db) {
@@ -26,30 +26,46 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
+    // This listener handles auth state changes (login/logout)
     const unsubscribeAuth = onAuthStateChanged(auth, (authUser: User | null) => {
       if (authUser) {
-        // User is logged in, listen for account data changes
+        // User is authenticated with Firebase. Now get their profile from Firestore.
         const userDocRef = doc(db, 'users', authUser.uid);
-        const unsubscribeSnapshot = onSnapshot(userDocRef, (doc) => {
-          if (doc.exists()) {
-            const userAccountData = doc.data() as UserAccount;
+        
+        // This listener handles profile data changes (e.g., becoming premium)
+        const unsubscribeSnapshot = onSnapshot(userDocRef, (docSnapshot) => {
+          if (docSnapshot.exists()) {
+            // Combine auth user data with Firestore profile data
+            const userAccountData = docSnapshot.data() as UserAccount;
             setUser({ ...authUser, ...userAccountData });
           } else {
-            // This case might happen briefly during signup
+            // This can happen if the user document hasn't been created yet during signup.
+            // We'll treat them as logged in, but without extra profile data for now.
+            // The createUserDocument function will soon create the doc, and this listener will re-run.
             setUser(authUser as AppUser);
           }
-           setLoading(false);
+          // We have the full user state (or know it's pending creation), so loading is done.
+          setLoading(false);
+        }, (error) => {
+            // Handle errors fetching the document
+            console.error("Error fetching user profile:", error);
+            setUser(authUser as AppUser); // Fallback to authUser only
+            setLoading(false);
         });
 
-        // Return a cleanup function to unsubscribe from the snapshot listener
-        return () => unsubscribeSnapshot();
+        // This is a cleanup function. It will be called when the user logs out.
+        return () => {
+          unsubscribeSnapshot();
+        };
+
       } else {
-        // User is logged out
+        // User is logged out.
         setUser(null);
         setLoading(false);
       }
     });
 
+    // Cleanup the main auth listener on component unmount
     return () => unsubscribeAuth();
   }, []);
 

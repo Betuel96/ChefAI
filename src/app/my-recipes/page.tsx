@@ -46,7 +46,6 @@ export default function MyRecipesPage() {
 
   useEffect(() => {
     if (authLoading) {
-      setPageLoading(true);
       return;
     }
     if (user) {
@@ -143,7 +142,7 @@ export default function MyRecipesPage() {
   };
 
   const renderContent = () => {
-    if (pageLoading) {
+    if (authLoading || pageLoading) {
       return (
          <div className="space-y-2">
             <Skeleton className="h-14 w-full" />
@@ -275,7 +274,7 @@ export default function MyRecipesPage() {
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle className="font-headline flex items-center gap-2"><BookHeart /> Tu Libro de Recetas</CardTitle>
-          {!pageLoading && user && <CardDescription>{savedRecipes.length} receta(s) guardada(s) en tu cuenta.</CardDescription>}
+          {!authLoading && !pageLoading && user && <CardDescription>{savedRecipes.length} receta(s) guardada(s) en tu cuenta.</CardDescription>}
         </CardHeader>
         <CardContent>
           {renderContent()}
