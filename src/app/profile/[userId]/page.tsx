@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import { useParams } from 'next/navigation';
 import { getProfileData, getUserPublishedRecipes, followUser, unfollowUser, getFollowingStatus } from '@/lib/community';
 import type { ProfileData, PublishedRecipe } from '@/types';
 import { useAuth } from '@/hooks/use-auth';
@@ -72,8 +73,9 @@ const RecipeGrid = ({ recipes }: { recipes: PublishedRecipe[] }) => {
 };
 
 
-export default function ProfilePage({ params }: { params: { userId: string } }) {
+export default function ProfilePage() {
     const { user } = useAuth();
+    const params = useParams<{ userId: string }>();
     const [profile, setProfile] = useState<ProfileData | null>(null);
     const [recipes, setRecipes] = useState<PublishedRecipe[]>([]);
     const [isFollowing, setIsFollowing] = useState(false);
@@ -82,6 +84,10 @@ export default function ProfilePage({ params }: { params: { userId: string } }) 
     const isCurrentUser = user?.uid === params.userId;
 
     useEffect(() => {
+        if (!params.userId) {
+            return;
+        }
+
         const fetchData = async () => {
             setIsLoading(true);
             try {
@@ -109,7 +115,7 @@ export default function ProfilePage({ params }: { params: { userId: string } }) 
     }, [params.userId, user, isCurrentUser]);
 
     const handleFollowToggle = async () => {
-        if (!user || isCurrentUser) return;
+        if (!user || isCurrentUser || !params.userId) return;
         
         try {
             if (isFollowing) {
