@@ -1,56 +1,42 @@
-
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Users can read anyone's profile, but can only write to their own.
     match /users/{userId} {
-      // Allow anyone to get a specific user's public profile.
-      // This prevents listing all users but allows viewing profiles.
-      allow get: if true;
-      
-      // A user can create their own document.
-      allow create: if request.auth.uid == userId;
-      
-      // A user can only update their own profile data.
-      // The `isPremium` status cannot be changed by the user.
-      allow update: if request.auth.uid == userId && request.resource.data.isPremium == resource.data.isPremium;
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
 
-      // Users cannot delete their accounts from the client.
-      allow delete: if false;
-
-      // Rules for private user subcollections
+      // Sub-collections for private user data
       match /recipes/{recipeId} {
-        allow read, write, delete: if request.auth.uid == userId;
+        allow read, write: if request.auth != null && request.auth.uid == userId;
       }
-
       match /menus/{menuId} {
-        allow read, write, delete: if request.auth.uid == userId;
+        allow read, write: if request.auth != null && request.auth.uid == userId;
       }
 
-      // Followers and Following subcollections
+      // Sub-collections for social graph
       match /followers/{followerId} {
         allow read: if true;
-        // You can only follow/unfollow for yourself. `followerId` must be you.
-        allow write: if request.auth.uid == followerId;
+        // A user can add/remove themself from another user's followers list.
+        allow write: if request.auth != null && request.auth.uid == followerId;
       }
       match /following/{followedId} {
         allow read: if true;
-        // You can only manage your own 'following' list. `userId` must be you.
-        allow write: if request.auth.uid == userId;
+        // A user can manage their own list of who they follow.
+        allow write: if request.auth != null && request.auth.uid == userId;
       }
     }
 
-    // Rules for the public collection of recipes
+    // Collection for all public recipes
     match /published_recipes/{recipeId} {
-      // Anyone can read published recipes.
       allow read: if true;
 
-      // An authenticated user can publish a recipe if the publisherId is their own.
-      allow create: if request.auth.uid == request.resource.data.publisherId;
+      // Only an authenticated user can create a recipe, and they must be the author.
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.publisherId;
 
-      // Only the publisher can update or delete their own recipe.
-      allow update, delete: if request.auth.uid == resource.data.publisherId;
+      // Only the author can update or delete their recipe.
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.publisherId;
     }
   }
 }
