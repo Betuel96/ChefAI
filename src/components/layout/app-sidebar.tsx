@@ -16,6 +16,7 @@ import {
   UserCircle,
   Gem,
   Users,
+  PlusSquare,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -38,17 +39,20 @@ import { Skeleton } from '../ui/skeleton';
 import { Button } from '../ui/button';
 import { cn } from '@/lib/utils';
 
-const menuItems = [
-  { href: '/', label: 'Panel', icon: Home },
+const aiToolsItems = [
   { href: '/generator', label: 'Generador de Recetas', icon: Sparkles },
   { href: '/planner', label: 'Planificador Semanal', icon: CalendarDays },
+];
+
+const communityItems = [
+  { href: '/publish', label: 'Crear Publicación', icon: PlusSquare },
   { href: '/community', label: 'Comunidad', icon: Users },
-  { href: '/shopping-list', label: 'Lista de Compras', icon: ShoppingCart },
 ];
 
 const libraryItems = [
   { href: '/my-recipes', label: 'Mis Recetas', icon: BookHeart },
   { href: '/my-menus', label: 'Mis Menús', icon: MenuSquare },
+  { href: '/shopping-list', label: 'Lista de Compras', icon: ShoppingCart },
 ];
 
 
@@ -78,6 +82,8 @@ export function AppSidebar() {
     }
   };
 
+  const isCommunityActive = pathname === '/community' || pathname.startsWith('/profile') || pathname === '/publish';
+
   return (
     <Sidebar>
       <SidebarHeader>
@@ -97,45 +103,70 @@ export function AppSidebar() {
             </div>
           )}
           {user && isOpen && (
-             <div className="flex flex-col items-start gap-2 px-2 pb-4 border-b mb-4">
-               <Avatar>
-                  <AvatarImage src={user.photoURL || undefined} />
-                  <AvatarFallback>
-                    {user.displayName ? user.displayName.charAt(0).toUpperCase() : <UserCircle />}
-                  </AvatarFallback>
-                </Avatar>
-               <div className="text-sm font-medium">{user.displayName}</div>
-               <div className="text-xs text-muted-foreground">{user.email}</div>
-             </div>
+             <Link href={`/profile/${user.uid}`} className="block w-full">
+                <div className="flex flex-col items-start gap-2 p-2 pb-4 border-b mb-4 hover:bg-muted/50 rounded-md transition-colors">
+                  <Avatar>
+                      <AvatarImage src={user.photoURL || undefined} />
+                      <AvatarFallback>
+                        {user.displayName ? user.displayName.charAt(0).toUpperCase() : <UserCircle />}
+                      </AvatarFallback>
+                    </Avatar>
+                  <div className="text-sm font-medium">{user.displayName}</div>
+                  <div className="text-xs text-muted-foreground">{user.email}</div>
+                </div>
+              </Link>
           )}
-          {menuItems.map((item) => (
+
+          <SidebarMenuItem>
+              <Link href="/">
+                <SidebarMenuButton isActive={pathname === '/'} tooltip="Panel">
+                  <Home />
+                  <span>Panel</span>
+                </SidebarMenuButton>
+              </Link>
+          </SidebarMenuItem>
+
+          <Separator className="my-2" />
+
+          {aiToolsItems.map((item) => (
             <SidebarMenuItem key={item.href}>
               <Link href={item.href}>
-                <SidebarMenuButton
-                  isActive={pathname === item.href || (item.href === '/community' && pathname.startsWith('/profile'))}
-                  tooltip={item.label}
-                >
+                <SidebarMenuButton isActive={pathname === item.href} tooltip={item.label}>
                   <item.icon />
                   <span>{item.label}</span>
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
           ))}
+
           <Separator className="my-2" />
+
+           {communityItems.map((item) => (
+            <SidebarMenuItem key={item.href}>
+              <Link href={item.href}>
+                <SidebarMenuButton isActive={pathname.startsWith(item.href)} tooltip={item.label}>
+                  <item.icon />
+                  <span>{item.label}</span>
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
+          ))}
+
+          <Separator className="my-2" />
+
           {libraryItems.map((item) => (
             <SidebarMenuItem key={item.href}>
               <Link href={item.href}>
-                <SidebarMenuButton
-                  isActive={pathname === item.href}
-                  tooltip={item.label}
-                >
+                <SidebarMenuButton isActive={pathname === item.href} tooltip={item.label}>
                   <item.icon />
                   <span>{item.label}</span>
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
           ))}
+          
           <Separator className="my-2" />
+          
            <SidebarMenuItem>
               <Link href="/pro">
                 <Button

@@ -1,51 +1,48 @@
-
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // USERS collection
-    // - Logged-in users can read public profile data.
-    // - Only the user themselves can update their own data.
     match /users/{userId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      // Authenticated users can read public profile info.
+      allow get: if request.auth != null;
+      // Users can create and update their own document.
+      allow write: if request.auth.uid == userId;
 
-      // RECIPES subcollection
-      // - Only the owner can read/write their own saved recipes.
+      // Users cannot list all other users or delete accounts from the client.
+      allow list, delete: if false;
+
+      // Sub-collections for user-specific data
       match /recipes/{recipeId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read, write, delete: if request.auth.uid == userId;
       }
-
-      // MENUS subcollection
-      // - Only the owner can read/write their own saved menus.
       match /menus/{menuId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read, write, delete: if request.auth.uid == userId;
       }
 
-      // FOLLOWING subcollection (People the user follows)
-      // - Logged-in users can see who a user is following.
-      // - Only the user can modify their own "following" list.
-      match /following/{followedId} {
-        allow read: if request.auth != null;
-        allow write: if request.auth != null && request.auth.uid == userId;
-      }
-
-      // FOLLOWERS subcollection (People who follow the user)
-      // - Logged-in users can see who follows a user.
-      // - A user can add/remove themselves from the followers list (required for the follow/unfollow batch operation).
+      // Followers/Following sub-collections
       match /followers/{followerId} {
+        // Anyone can see who follows a user (for follower counts).
         allow read: if request.auth != null;
-        allow write: if request.auth != null && request.auth.uid == followerId;
+        // A user can only add/remove themself from someone's followers list.
+        // This means the document ID must match the writer's UID.
+        allow write: if request.auth.uid == followerId;
+      }
+      match /following/{targetId} {
+        // Anyone can see who a user is following (for following counts).
+        allow read: if request.auth != null;
+        // A user can only modify their own 'following' list.
+        allow write: if request.auth.uid == userId;
       }
     }
 
-    // PUBLISHED_RECIPES collection
-    // - Anyone can read published recipes.
-    // - Only the authenticated owner can create, update, or delete their own published recipes.
     match /published_recipes/{recipeId} {
+      // Anyone can read published recipes.
       allow read: if true;
-      allow create, update, delete: if request.auth != null && request.auth.uid == request.resource.data.publisherId;
+      // Users can only create recipes where they are the publisher.
+      allow create: if request.auth.uid == request.resource.data.publisherId;
+      // Users can only delete their own recipes.
+      allow delete: if request.auth.uid == resource.data.publisherId;
+      // Updates are not allowed for now to keep things simple.
+      allow update: if false;
     }
   }
 }
