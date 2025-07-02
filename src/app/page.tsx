@@ -10,6 +10,7 @@ import { UtensilsCrossed } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { getMenus } from '@/lib/menus';
 import { Skeleton } from '@/components/ui/skeleton';
+import { EmailVerificationBanner } from '@/components/layout/email-verification-banner';
 
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
@@ -118,6 +119,7 @@ export default function Dashboard() {
 
   return (
     <div className="flex flex-col gap-8">
+      <EmailVerificationBanner />
       <header>
         <h1 className="font-headline text-4xl font-bold text-primary">Panel de ChefAI</h1>
         <p className="text-muted-foreground mt-2 text-lg">Tu resumen culinario.</p>

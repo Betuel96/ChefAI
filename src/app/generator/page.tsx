@@ -156,6 +156,14 @@ export default function RecipeGeneratorPage() {
         });
         return;
     }
+    if (!user.emailVerified) {
+        toast({
+            title: 'Correo no verificado',
+            description: 'Por favor, verifica tu correo electrónico antes de publicar.',
+            variant: 'destructive'
+        });
+        return;
+    }
     setIsPublishing(true);
     try {
         await publishRecipe(user.uid, generatedRecipe, imageUrl);
@@ -186,6 +194,7 @@ export default function RecipeGeneratorPage() {
   const anyTextLoading = isLoading || isSimulatingAd;
   const anyLoading = anyTextLoading || isGeneratingImage || isSaving || isPublishing;
   const generationsLeft = FREE_GENERATIONS_LIMIT - generationCount;
+  const canPublish = user && user.emailVerified;
 
   return (
     <>
@@ -331,7 +340,7 @@ export default function RecipeGeneratorPage() {
                         </>
                       )}
                     </Button>
-                    <Button onClick={handlePublishRecipe} className="w-full" disabled={anyLoading || !user}>
+                    <Button onClick={handlePublishRecipe} className="w-full" disabled={anyLoading || !canPublish} title={!canPublish ? 'Verifica tu correo para publicar' : ''}>
                         {isPublishing ? (
                             <>Publicando...</>
                         ) : (

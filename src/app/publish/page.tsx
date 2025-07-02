@@ -17,7 +17,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { PlusSquare, Send } from 'lucide-react';
+import { PlusSquare, Send, VenetianMask } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -99,6 +99,15 @@ export default function PublishPage() {
       return;
     }
 
+    if (!user.emailVerified) {
+      toast({
+        title: 'Correo no verificado',
+        description: 'Por favor, verifica tu correo electrónico antes de publicar.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsPublishing(true);
 
     try {
@@ -140,6 +149,23 @@ export default function PublishPage() {
                 <AlertTitle>Acceso Denegado</AlertTitle>
                 <AlertDescription>
                    Debes <a href="/login" className='underline font-bold'>iniciar sesión</a> para poder publicar una receta en la comunidad.
+                </AlertDescription>
+         </Alert>
+        </div>
+    )
+  }
+
+  if (!user.emailVerified) {
+     return (
+        <div className="flex items-center justify-center min-h-[calc(100vh-8rem)]">
+         <Alert variant="destructive" className="max-w-lg">
+                <VenetianMask className='h-4 w-4' />
+                <AlertTitle>Verificación de Correo Requerida</AlertTitle>
+                <AlertDescription>
+                   Para publicar una receta, primero debes verificar tu correo electrónico. Por favor, revisa la bandeja de entrada del correo con el que te registraste y haz clic en el enlace de verificación.
+                   <br/>
+                   <br/>
+                   Puedes solicitar un nuevo correo desde el <a href="/" className='underline font-bold'>panel principal</a>.
                 </AlertDescription>
          </Alert>
         </div>
@@ -237,7 +263,7 @@ export default function PublishPage() {
                 )}
               />
               
-              <Button type="submit" disabled={isPublishing} className="w-full">
+              <Button type="submit" disabled={isPublishing || !user?.emailVerified} className="w-full">
                 {isPublishing ? 'Publicando...' : 'Publicar en la Comunidad'}
                 <Send className="ml-2 h-4 w-4" />
               </Button>

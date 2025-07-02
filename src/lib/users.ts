@@ -8,6 +8,7 @@ import {
 } from 'firebase/firestore';
 import {
   signInWithPopup,
+  sendEmailVerification,
 } from 'firebase/auth';
 import { db, auth, googleProvider } from './firebase';
 
@@ -70,4 +71,24 @@ export async function signInWithGoogle(): Promise<void> {
     
     throw new Error("No se pudo iniciar sesión con Google. Inténtalo de nuevo.");
   }
+}
+
+/**
+ * Resends the verification email to the currently signed-in user.
+ */
+export async function resendVerificationEmail(): Promise<{ success: boolean; message: string }> {
+    if (!auth || !auth.currentUser) {
+        return { success: false, message: 'Debes iniciar sesión para reenviar el correo.' };
+    }
+
+    try {
+        await sendEmailVerification(auth.currentUser);
+        return { success: true, message: 'Correo de verificación reenviado. Revisa tu bandeja de entrada.' };
+    } catch (error: any) {
+        console.error("Error resending verification email:", error);
+        if (error.code === 'auth/too-many-requests') {
+            return { success: false, message: 'Has solicitado esto demasiadas veces. Inténtalo más tarde.' };
+        }
+        return { success: false, message: 'No se pudo reenviar el correo de verificación.' };
+    }
 }

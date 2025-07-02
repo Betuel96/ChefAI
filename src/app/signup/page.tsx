@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from 'firebase/auth';
 import { auth, isFirebaseConfigured } from '@/lib/firebase';
 import { createUserDocument, signInWithGoogle } from '@/lib/users';
 import { Button } from '@/components/ui/button';
@@ -54,13 +54,18 @@ export default function SignupPage() {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const user = userCredential.user;
       
-      // Update Firebase Auth profile and create user document in Firestore
+      // Update Firebase Auth profile
       await updateProfile(user, { displayName: values.name });
+      
+      // Create user document in Firestore
       await createUserDocument(user.uid, values.name, values.email, user.photoURL);
+
+      // Send verification email
+      await sendEmailVerification(user);
       
       toast({
-        title: '¡Cuenta Creada!',
-        description: 'Bienvenido/a. Te hemos redirigido al panel principal.',
+        title: '¡Cuenta Creada! Revisa tu correo',
+        description: 'Te hemos enviado un enlace para verificar tu cuenta.',
       });
       router.push('/');
     } catch (error: any) {
