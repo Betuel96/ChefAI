@@ -1,0 +1,43 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Allow public read of user profiles for community features
+    // Only the user can create or update their own profile
+    match /users/{userId} {
+      allow read: if true;
+      allow create, update: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // A user can manage their own "following" list
+    match /users/{userId}/following/{targetId} {
+      allow read: if request.auth != null;
+      allow create, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // A user can be added/removed from a "followers" list by another user's action
+    match /users/{userId}/followers/{followerId} {
+      allow read: if request.auth != null;
+      allow create, delete: if request.auth != null;
+    }
+    
+    // A user can manage their own saved recipes
+    match /users/{userId}/recipes/{recipeId} {
+      allow read, write, delete: if request.auth.uid == userId;
+    }
+    
+    // A user can manage their own saved menus
+    match /users/{userId}/menus/{menuId} {
+      allow read, write, delete: if request.auth.uid == userId;
+    }
+
+    // Anyone can read published recipes. 
+    // Only authenticated users can create. 
+    // Only owners can update or delete.
+    match /published_recipes/{recipeId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.publisherId;
+    }
+  }
+}
