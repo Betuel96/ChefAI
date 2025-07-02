@@ -69,18 +69,11 @@ const CreateWeeklyMealPlanOutputSchema = z.object({
 
 export type CreateWeeklyMealPlanOutput = z.infer<typeof CreateWeeklyMealPlanOutputSchema>;
 
-const createWeeklyMealPlanFlow = ai.defineFlow(
-  {
-    name: 'createWeeklyMealPlanFlow',
-    inputSchema: CreateWeeklyMealPlanInputSchema,
-    outputSchema: CreateWeeklyMealPlanOutputSchema,
-  },
-  async input => {
-    const prompt = ai.definePrompt({
-      name: 'createWeeklyMealPlanPrompt',
-      input: {schema: CreateWeeklyMealPlanInputSchema},
-      output: {schema: CreateWeeklyMealPlanOutputSchema},
-      prompt: `Eres un planificador de comidas experto. Tu tarea es crear un plan de comidas semanal basado en las siguientes preferencias del usuario.
+const prompt = ai.definePrompt({
+  name: 'createWeeklyMealPlanPrompt',
+  input: {schema: CreateWeeklyMealPlanInputSchema},
+  output: {schema: CreateWeeklyMealPlanOutputSchema},
+  prompt: `Eres un planificador de comidas experto. Tu tarea es crear un plan de comidas semanal creativo y variado basado en las siguientes preferencias del usuario. Cada vez que generes un plan, intenta que sea diferente al anterior, incluso con las mismas preferencias.
 
 **Preferencias del Usuario:**
 - **Ingredientes disponibles:** {{{ingredients}}}
@@ -101,28 +94,36 @@ const createWeeklyMealPlanFlow = ai.defineFlow(
 7.  Respeta estrictamente las preferencias dietéticas.
 8.  Asegúrate de que el plan sea variado y minimice el desperdicio de alimentos.
 `,
-      config: {
-        safetySettings: [
-          {
-            category: 'HARM_CATEGORY_HATE_SPEECH',
-            threshold: 'BLOCK_ONLY_HIGH',
-          },
-          {
-            category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
-            threshold: 'BLOCK_NONE',
-          },
-          {
-            category: 'HARM_CATEGORY_HARASSMENT',
-            threshold: 'BLOCK_MEDIUM_AND_ABOVE',
-          },
-          {
-            category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-            threshold: 'BLOCK_LOW_AND_ABOVE',
-          },
-        ],
+  config: {
+    temperature: 0.9,
+    safetySettings: [
+      {
+        category: 'HARM_CATEGORY_HATE_SPEECH',
+        threshold: 'BLOCK_ONLY_HIGH',
       },
-    });
+      {
+        category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
+        threshold: 'BLOCK_NONE',
+      },
+      {
+        category: 'HARM_CATEGORY_HARASSMENT',
+        threshold: 'BLOCK_MEDIUM_AND_ABOVE',
+      },
+      {
+        category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+        threshold: 'BLOCK_LOW_AND_ABOVE',
+      },
+    ],
+  },
+});
 
+const createWeeklyMealPlanFlow = ai.defineFlow(
+  {
+    name: 'createWeeklyMealPlanFlow',
+    inputSchema: CreateWeeklyMealPlanInputSchema,
+    outputSchema: CreateWeeklyMealPlanOutputSchema,
+  },
+  async input => {
     const {output} = await prompt(input);
     if (!output) {
       throw new Error('La IA no pudo generar un plan de comidas. Por favor, intenta de nuevo.');

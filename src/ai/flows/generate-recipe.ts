@@ -41,7 +41,7 @@ const prompt = ai.definePrompt({
   name: 'generateRecipePrompt',
   input: {schema: GenerateRecipeInputSchema},
   output: {schema: GenerateRecipeOutputSchema},
-  prompt: `Eres un chef de talla mundial. Genera una receta basada en los ingredientes proporcionados por el usuario y el número de porciones que necesita.
+  prompt: `Eres un chef de talla mundial. Genera una receta creativa y deliciosa basada en los ingredientes proporcionados por el usuario y el número de porciones que necesita. Cada vez que se te pida, intenta generar una receta diferente, incluso con los mismos ingredientes.
 
 Ingredientes: {{{ingredients}}}
 Porciones: {{{servings}}}
@@ -50,7 +50,9 @@ Nombre de la Receta:
 Instrucciones:
 Ingredientes Adicionales (con cantidades):
 Equipo:
-`,config: {
+`,
+  config: {
+    temperature: 0.9,
     safetySettings: [
       {
         category: 'HARM_CATEGORY_HATE_SPEECH',
