@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -84,6 +84,11 @@ export default function MealPlannerPage() {
   const router = useRouter();
   const { user } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -320,9 +325,11 @@ export default function MealPlannerPage() {
             </CardContent>
             {!user?.isPremium && (
               <CardFooter className="justify-center">
-                <p className="text-sm text-muted-foreground">
-                    Te queda{generationsLeft === 1 ? '' : 'n'} {generationsLeft > 0 ? generationsLeft : 0} generaci{generationsLeft === 1 ? 'ón' : 'ones'} gratuita{generationsLeft === 1 ? '' : 's'}.
-                </p>
+                {isClient && (
+                  <p className="text-sm text-muted-foreground">
+                      Te queda{generationsLeft === 1 ? '' : 'n'} {generationsLeft > 0 ? generationsLeft : 0} generaci{generationsLeft === 1 ? 'ón' : 'ones'} gratuita{generationsLeft === 1 ? '' : 's'}.
+                  </p>
+                )}
               </CardFooter>
             )}
           </Card>

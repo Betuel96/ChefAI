@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -52,9 +52,14 @@ export default function RecipeGeneratorPage() {
   const [showAdDialog, setShowAdDialog] = useState(false);
   
   const [generationCount, setGenerationCount] = useLocalStorage<number>('recipeGenerationCount', 0);
+  const [isClient, setIsClient] = useState(false);
   
   const { toast } = useToast();
   
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -234,9 +239,11 @@ export default function RecipeGeneratorPage() {
             </CardContent>
             {!user?.isPremium && (
               <CardFooter className='justify-center'>
+                {isClient && (
                  <p className="text-sm text-muted-foreground">
                     Te queda{generationsLeft === 1 ? '' : 'n'} {generationsLeft > 0 ? generationsLeft : 0} generaci{generationsLeft === 1 ? 'ón' : 'ones'} gratuita{generationsLeft === 1 ? '' : 's'}.
                   </p>
+                )}
               </CardFooter>
             )}
           </Card>
