@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -18,7 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import type { WeeklyPlan, ShoppingListCategory, DailyMealPlan } from '@/types';
-import { BookHeart, CalendarDays, Gem, ShoppingCart, Sparkles } from 'lucide-react';
+import { BookHeart, CalendarDays, Gem, RefreshCw, ShoppingCart, Sparkles } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   AlertDialog,
@@ -390,19 +389,25 @@ export default function MealPlannerPage() {
               )}
             </CardContent>
             {mealPlan && (
-              <CardFooter className="flex flex-col sm:flex-row gap-2">
-                <Button onClick={handleSaveMenu} variant="secondary" className="w-full" disabled={anyLoading}>
-                  {isSaving ? (
-                     <>Guardando...</>
-                  ) : (
-                    <>
-                      <BookHeart className="mr-2 h-4 w-4" /> Guardar Menú
-                    </>
-                  )}
-                </Button>
-                <Button onClick={handleGenerateShoppingList} className="w-full" disabled={anyLoading}>
-                  <ShoppingCart className="mr-2 h-4 w-4" /> 
-                  {isGeneratingList ? 'Generando Lista...' : 'Generar Lista de Compras'}
+              <CardFooter className="flex flex-col gap-2">
+                 <div className="flex flex-col sm:flex-row gap-2 w-full">
+                    <Button onClick={handleSaveMenu} variant="secondary" className="w-full" disabled={anyLoading}>
+                      {isSaving ? (
+                        <>Guardando...</>
+                      ) : (
+                        <>
+                          <BookHeart className="mr-2 h-4 w-4" /> Guardar Menú
+                        </>
+                      )}
+                    </Button>
+                    <Button onClick={handleGenerateShoppingList} className="w-full" disabled={anyLoading}>
+                      <ShoppingCart className="mr-2 h-4 w-4" />
+                      {isGeneratingList ? 'Generando Lista...' : 'Generar Lista de Compras'}
+                    </Button>
+                  </div>
+                  <Button onClick={() => onSubmit(form.getValues())} variant="outline" className="w-full" disabled={anyLoading}>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Generar un Plan Diferente
                 </Button>
               </CardFooter>
             )}

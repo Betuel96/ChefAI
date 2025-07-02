@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -16,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { BookHeart, ChefHat, Sparkles, Gem, Image as ImageIcon } from 'lucide-react';
+import { BookHeart, ChefHat, Sparkles, Gem, Image as ImageIcon, RefreshCw } from 'lucide-react';
 import type { Recipe } from '@/types';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -304,8 +303,8 @@ export default function RecipeGeneratorPage() {
               )}
             </CardContent>
             {generatedRecipe && (
-              <CardFooter>
-                <Button onClick={handleSaveRecipe} className="w-full" variant="secondary" disabled={isSaving || isGeneratingImage}>
+              <CardFooter className="flex flex-col sm:flex-row gap-2">
+                <Button onClick={handleSaveRecipe} className="w-full" variant="secondary" disabled={anyLoading}>
                   {isSaving ? (
                     <>Guardando...</>
                   ) : (
@@ -314,6 +313,10 @@ export default function RecipeGeneratorPage() {
                       Guardar Receta
                     </>
                   )}
+                </Button>
+                 <Button onClick={() => onSubmit(form.getValues())} className="w-full" disabled={anyLoading}>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Generar Otra
                 </Button>
               </CardFooter>
             )}
