@@ -27,7 +27,7 @@ export async function publishRecipe(userId: string, recipe: Recipe, imageUrl: st
   const userDoc = await getDoc(userDocRef);
 
   if (!userDoc.exists()) {
-    throw new Error('User does not exist.');
+    throw new Error('No se encontró tu perfil de usuario. Por favor, vuelve a iniciar sesión e inténtalo de nuevo.');
   }
 
   const userData = userDoc.data();

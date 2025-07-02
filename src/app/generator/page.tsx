@@ -159,10 +159,10 @@ export default function RecipeGeneratorPage() {
             description: `"${generatedRecipe.name}" ahora es visible para la comunidad.`,
         });
         router.push('/community');
-    } catch (error) {
+    } catch (error: any) {
         toast({
             title: 'Error al Publicar',
-            description: 'No se pudo publicar la receta. Inténtalo de nuevo.',
+            description: error.message || 'No se pudo publicar la receta. Inténtalo de nuevo.',
             variant: 'destructive',
         });
     } finally {
