@@ -12,17 +12,39 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
 
-    // --- Colecciones Públicas ---
+    // --- Colecciones Públicas y sus Sub-colecciones ---
     match /published_recipes/{recipeId} {
       // Lectura: Cualquiera puede ver las publicaciones.
       allow read: if true;
 
-      // Crear: Solo usuarios autenticados. La verificación de que el publisherId
-      // coincide con el UID del solicitante es una buena práctica.
+      // Crear: Solo usuarios autenticados.
       allow create: if isAuthenticated() && request.auth.uid == request.resource.data.publisherId;
 
       // Actualizar/Eliminar: Solo el propietario de la publicación.
       allow update, delete: if isAuthenticated() && request.auth.uid == resource.data.publisherId;
+
+      // -- Sub-colección de Comentarios --
+      match /comments/{commentId} {
+        // Lectura: Cualquiera puede leer los comentarios de una publicación.
+        allow read: if true;
+        
+        // Crear: Solo usuarios autenticados pueden comentar.
+        allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
+        
+        // Actualizar/Eliminar: Solo el autor del comentario puede modificarlo/borrarlo.
+        allow update, delete: if isAuthenticated() && request.auth.uid == resource.data.userId;
+      }
+
+      // -- Sub-colección de Me Gusta --
+      // El ID del documento de "me gusta" es el UID del usuario.
+      match /likes/{userId} {
+        // Lectura: Cualquiera puede leer quién ha dado "me gusta".
+        allow read: if true;
+        
+        // Crear/Eliminar (Dar/Quitar Me Gusta): Solo el usuario autenticado puede
+        // gestionar su propio "me gusta".
+        allow create, delete: if isAuthenticated() && request.auth.uid == userId;
+      }
     }
 
     // --- Colecciones de Usuarios y Datos Privados ---
