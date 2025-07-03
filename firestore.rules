@@ -1,56 +1,48 @@
+
 rules_version = '2';
 
-// Estas son las reglas para Cloud Firestore
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Reglas para la colección 'users'
+    // Regla 1: Perfiles de Usuario (/users/{userId})
+    // - Un usuario puede ver cualquier perfil público.
+    // - Un usuario solo puede crear o editar su propio perfil.
     match /users/{userId} {
-      
-      // PERMISO DE LECTURA DE PERFILES:
-      // Cualquier usuario autenticado puede LEER el perfil de otro usuario.
-      // Esto es necesario para la página de perfil público y la comunidad.
       allow get: if request.auth != null;
+      allow create, update, delete: if request.auth.uid == userId;
 
-      // PERMISO DE ESCRITURA DE PERFILES:
-      // Un usuario solo puede crear, editar o borrar SU PROPIO perfil.
-      allow write: if request.auth.uid == userId;
-
-      // REGLAS PARA SUBCOLECCIONES PRIVADAS (Recetas y Menús guardados)
-      // Un usuario solo puede acceder a sus propias recetas y menús.
+      // Regla 2: Recetas y Menús Guardados (/users/{userId}/recipes/{recipeId}, /users/{userId}/menus/{menuId})
+      // - Un usuario solo puede acceder a sus propias recetas y menús guardados.
       match /recipes/{recipeId} {
-        allow read, write: if request.auth.uid == userId;
-      }
-      match /menus/{menuId} {
-        allow read, write: if request.auth.uid == userId;
+        allow read, write, delete: if request.auth.uid == userId;
       }
 
-      // REGLAS PARA SUBCOLECCIONES DE SEGUIMIENTO (followers/following)
-      // Cualquiera puede VER quién sigue a quién, pero solo el usuario involucrado puede ESCRIBIR.
-      match /followers/{followerId} {
-        allow read: if request.auth != null;
-        allow write: if request.auth.uid == followerId; // Solo el seguidor puede escribir/borrar
+      match /menus/{menuId} {
+        allow read, write, delete: if request.auth.uid == userId;
       }
+      
+      // Regla 3: Seguidores y Seguidos (/users/{userId}/followers/{followerId}, /users/{userId}/following/{followingId})
+      // - Cualquiera puede ver quién sigue a quién (necesario para contadores y estado de "seguir").
+      // - Un usuario solo puede modificar su propia lista de "seguidos".
+      match /followers/{followerId} {
+        allow get: if request.auth != null;
+        allow create, delete: if request.auth.uid == followerId;
+      }
+
       match /following/{followingId} {
-        allow read: if request.auth != null;
-        allow write: if request.auth.uid == userId; // Solo el usuario que sigue puede escribir/borrar
+        allow get: if request.auth != null;
+        allow create, delete: if request.auth.uid == userId;
       }
     }
 
-    // Reglas para la colección pública 'published_recipes'
+    // Regla 4: Recetas Públicas (/published_recipes/{recipeId})
+    // - CUALQUIERA puede leer las recetas publicadas (ideal para la página de comunidad).
+    // - Solo usuarios autenticados y verificados pueden publicar.
+    // - Un usuario solo puede eliminar las recetas que él mismo publicó.
     match /published_recipes/{recipeId} {
-      
-      // PERMISO DE LECTURA:
-      // Cualquier usuario autenticado puede LEER todas las recetas publicadas.
-      allow read: if request.auth != null;
-
-      // PERMISO DE CREACIÓN:
-      // Un usuario solo puede CREAR una publicación si el 'publisherId' es su propio UID.
-      allow create: if request.auth.uid == request.resource.data.publisherId;
-
-      // PERMISO DE EDICIÓN/BORRADO:
-      // Un usuario solo puede EDITAR o BORRAR sus propias publicaciones.
-      allow update, delete: if request.auth.uid == resource.data.publisherId;
+      allow read: if true;
+      allow create: if request.auth != null && request.auth.token.email_verified == true;
+      allow update, delete: if request.auth != null && resource.data.publisherId == request.auth.uid;
     }
   }
 }
