@@ -20,25 +20,27 @@ import type { Recipe, UserAccount, PublishedRecipe as PublishedRecipeType, Profi
 
 
 // Function to publish a recipe
-export async function publishRecipe(userId: string, recipe: Recipe, imageUrl: string | null): Promise<string> {
+export async function publishRecipe(
+  userId: string,
+  userName: string,
+  userPhotoURL: string | null,
+  recipe: Recipe,
+  imageUrl: string | null
+): Promise<string> {
   if (!db) throw new Error('Firestore is not initialized.');
-  
-  const userDocRef = doc(db, 'users', userId);
-  const userDoc = await getDoc(userDocRef);
 
-  if (!userDoc.exists()) {
-    throw new Error('No se encontró tu perfil de usuario. Por favor, vuelve a iniciar sesión e inténtalo de nuevo.');
-  }
-
-  const userData = userDoc.data();
+  // The user document is no longer fetched here. We rely on the auth
+  // information passed directly from the client. This makes the function
+  // more resilient against race conditions where the user document
+  // might not have been created yet.
   
   const publishedRecipesCollection = collection(db, 'published_recipes');
   const docRef = await addDoc(publishedRecipesCollection, {
     ...recipe,
     imageUrl,
     publisherId: userId,
-    publisherName: userData.name,
-    publisherPhotoURL: userData.photoURL || null,
+    publisherName: userName,
+    publisherPhotoURL: userPhotoURL,
     createdAt: serverTimestamp(),
   });
   return docRef.id;

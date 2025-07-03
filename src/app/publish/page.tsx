@@ -118,7 +118,13 @@ export default function PublishPage() {
         equipment: values.equipment,
       };
 
-      await publishRecipe(user.uid, recipeToPublish, imagePreview);
+      await publishRecipe(
+          user.uid,
+          user.displayName || 'Usuario Anónimo',
+          user.photoURL,
+          recipeToPublish,
+          imagePreview
+      );
       
       toast({
         title: '¡Receta Publicada!',

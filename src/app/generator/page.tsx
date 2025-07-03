@@ -166,7 +166,13 @@ export default function RecipeGeneratorPage() {
     }
     setIsPublishing(true);
     try {
-        await publishRecipe(user.uid, generatedRecipe, imageUrl);
+        await publishRecipe(
+            user.uid,
+            user.displayName || 'Usuario Anónimo',
+            user.photoURL,
+            generatedRecipe,
+            imageUrl
+        );
         toast({
             title: '¡Receta Publicada!',
             description: `"${generatedRecipe.name}" ahora es visible para la comunidad.`,
