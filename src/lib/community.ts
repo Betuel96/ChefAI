@@ -17,9 +17,10 @@ import {
   runTransaction,
   increment,
   deleteDoc,
+  limit,
 } from 'firebase/firestore';
 import { db, storage } from './firebase';
-import type { PublishedPost, ProfileData as ProfileDataType, Comment } from '@/types';
+import type { PublishedPost, ProfileData as ProfileDataType, Comment, Mention } from '@/types';
 import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
 
 // Function to create a new post (recipe or text)
@@ -223,6 +224,7 @@ export async function getComments(postId: string): Promise<Comment[]> {
             createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
             parentId: data.parentId || null,
             likesCount: data.likesCount || 0,
+            mentions: data.mentions || [],
         } as Comment;
     });
 }
@@ -234,7 +236,8 @@ export async function addComment(
   userName: string,
   userPhotoURL: string | null,
   text: string,
-  parentId: string | null = null
+  parentId: string | null = null,
+  mentions: Mention[] = []
 ): Promise<string> {
     if (!db) throw new Error('Firestore is not initialized.');
     const postRef = doc(db, 'published_recipes', postId);
@@ -246,6 +249,7 @@ export async function addComment(
         userPhotoURL,
         text,
         parentId,
+        mentions,
         likesCount: 0,
         createdAt: serverTimestamp(),
     });
@@ -374,4 +378,29 @@ export async function getFollowingStatus(currentUserId: string, targetUserId: st
     const followingRef = doc(db, 'users', currentUserId, 'following', targetUserId);
     const docSnap = await getDoc(followingRef);
     return docSnap.exists();
+}
+
+
+/**
+ * Searches for users by display name for mention suggestions.
+ * @param nameQuery The partial name to search for.
+ * @returns A promise that resolves to an array of user objects.
+ */
+export async function searchUsers(nameQuery: string): Promise<{ id: string; name: string; photoURL: string | null }[]> {
+  if (!db || nameQuery.trim() === '') return [];
+  const usersCollection = collection(db, 'users');
+  // Firestore "starts with" query
+  const q = query(
+    usersCollection, 
+    where('name', '>=', nameQuery),
+    where('name', '<=', nameQuery + '\uf8ff'),
+    limit(5)
+  );
+
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc => ({
+    id: doc.id,
+    name: doc.data().name,
+    photoURL: doc.data().photoURL || null,
+  }));
 }

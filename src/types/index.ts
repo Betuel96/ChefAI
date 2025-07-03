@@ -23,7 +23,7 @@ export interface ShoppingListCategory {
 }
 
 export interface UserAccount {
-    name: string;
+    name:string;
     email: string | null;
     photoURL: string | null;
     isPremium: boolean;
@@ -31,6 +31,8 @@ export interface UserAccount {
 }
 
 export type AppUser = (User & UserAccount) | null;
+
+export type Mention = { displayName: string; userId: string; };
 
 export interface Comment {
     id: string;
@@ -41,6 +43,7 @@ export interface Comment {
     createdAt: string;
     parentId: string | null; // For nested comments
     likesCount: number; // For comment likes
+    mentions?: Mention[];
 }
 
 export interface Like {

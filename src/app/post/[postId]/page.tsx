@@ -2,13 +2,10 @@
 // src/app/post/[postId]/page.tsx
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -23,14 +20,12 @@ import {
     toggleCommentLike,
     isCommentLiked
 } from '@/lib/community';
-import type { PublishedPost, Comment } from '@/types';
+import type { PublishedPost, Comment, Mention } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
 import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { UserCircle, MessageCircle, Send, ArrowLeft, ChefHat, MoreVertical, Trash2, Pencil, Reply } from 'lucide-react';
@@ -46,12 +41,37 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-
-const commentSchema = z.object({
-  text: z.string().min(1, 'El comentario no puede estar vacío.').max(500, 'El comentario no puede exceder los 500 caracteres.'),
-});
+import { CommentInput } from '@/components/community/comment-input';
 
 type CommentWithReplies = Comment & { replies: CommentWithReplies[] };
+
+const renderWithMentions = (text: string, mentions: Mention[] = []) => {
+    if (!mentions || mentions.length === 0) {
+        return <p className="text-sm mt-1 whitespace-pre-wrap">{text}</p>;
+    }
+
+    const mentionMap = new Map(mentions.map(m => [`@${m.displayName}`, m.userId]));
+    const names = mentions.map(m => m.displayName.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')).join('|');
+    const regex = new RegExp(`@(${names})`, 'g');
+    
+    const parts = text.split(regex);
+
+    return (
+        <p className="text-sm mt-1 whitespace-pre-wrap">
+            {parts.map((part, i) => {
+                const mentionKey = `@${part}`;
+                if (i % 2 === 1 && mentionMap.has(mentionKey)) {
+                    return (
+                        <Link key={i} href={`/profile/${mentionMap.get(mentionKey)}`} className="font-semibold text-primary hover:underline">
+                            {mentionKey}
+                        </Link>
+                    );
+                }
+                return <span key={i}>{part}</span>;
+            })}
+        </p>
+    );
+};
 
 
 const CommentItem = ({ 
@@ -68,11 +88,6 @@ const CommentItem = ({
     const [isReplying, setIsReplying] = useState(false);
     const [isLiked, setIsLiked] = useState(false);
     const [likesCount, setLikesCount] = useState(comment.likesCount);
-
-    const form = useForm<z.infer<typeof commentSchema>>({
-        resolver: zodResolver(commentSchema),
-        defaultValues: { text: '' },
-    });
 
     useEffect(() => {
         if (user?.uid) {
@@ -98,11 +113,10 @@ const CommentItem = ({
         }
     };
 
-    const handleReplySubmit = async (values: z.infer<typeof commentSchema>) => {
+    const handleReplySubmit = async (text: string, mentions: Mention[]) => {
         if (!user) return;
         try {
-            await addComment(postId, user.uid, user.displayName || 'Anónimo', user.photoURL, values.text, comment.id);
-            form.reset();
+            await addComment(postId, user.uid, user.displayName || 'Anónimo', user.photoURL, text, comment.id, mentions);
             setIsReplying(false);
             onCommentAdded();
         } catch (error) {
@@ -112,10 +126,12 @@ const CommentItem = ({
 
     return (
         <div className="flex items-start gap-4">
-            <Avatar className="h-10 w-10">
-                <AvatarImage src={comment.userPhotoURL || undefined} />
-                <AvatarFallback><UserCircle /></AvatarFallback>
-            </Avatar>
+            <Link href={`/profile/${comment.userId}`}>
+                <Avatar className="h-10 w-10 cursor-pointer">
+                    <AvatarImage src={comment.userPhotoURL || undefined} />
+                    <AvatarFallback><UserCircle /></AvatarFallback>
+                </Avatar>
+            </Link>
             <div className="flex-grow">
                 <div className="bg-muted p-3 rounded-lg">
                     <div className="flex items-center justify-between">
@@ -124,7 +140,7 @@ const CommentItem = ({
                             {formatDistanceToNow(new Date(comment.createdAt), { locale: es, addSuffix: true })}
                         </p>
                     </div>
-                    <p className="text-sm mt-1 whitespace-pre-wrap">{comment.text}</p>
+                     {renderWithMentions(comment.text, comment.mentions)}
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
                      <button onClick={handleToggleLike} className="flex items-center gap-1 hover:text-primary p-1 rounded">
@@ -135,34 +151,15 @@ const CommentItem = ({
                     <button onClick={() => setIsReplying(!isReplying)} className="hover:underline p-1 rounded">Responder</button>
                 </div>
 
-                {isReplying && (
-                    <Card className="mt-2">
-                        <CardContent className="p-2">
-                           <Form {...form}>
-                                <form onSubmit={form.handleSubmit(handleReplySubmit)} className="flex items-start gap-2">
-                                     <Avatar className="h-8 w-8 mt-1">
-                                        <AvatarImage src={user?.photoURL || undefined} />
-                                        <AvatarFallback><UserCircle /></AvatarFallback>
-                                    </Avatar>
-                                    <FormField
-                                        control={form.control}
-                                        name="text"
-                                        render={({ field }) => (
-                                            <FormItem className="flex-grow">
-                                                <FormControl>
-                                                    <Textarea placeholder={`Respondiendo a ${comment.userName}...`} {...field} rows={1} className="min-h-0"/>
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <Button type="submit" disabled={form.formState.isSubmitting} size="icon" className='h-9 w-9'>
-                                        <Send className="h-4 w-4" />
-                                    </Button>
-                                </form>
-                            </Form>
-                        </CardContent>
-                    </Card>
+                {isReplying && user && (
+                    <div className="mt-2">
+                         <CommentInput
+                            user={user}
+                            onSubmit={handleReplySubmit}
+                            placeholder={`Respondiendo a ${comment.userName}...`}
+                            autoFocus={true}
+                         />
+                    </div>
                 )}
                 
                 {comment.replies && comment.replies.length > 0 && (
@@ -215,11 +212,6 @@ export default function PostDetailPage() {
 
     const isOwner = user?.uid === post?.publisherId;
 
-    const form = useForm<z.infer<typeof commentSchema>>({
-        resolver: zodResolver(commentSchema),
-        defaultValues: { text: '' },
-    });
-
     const fetchPostData = async () => {
         if (!params.postId) return;
         try {
@@ -261,11 +253,10 @@ export default function PostDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [params.postId, user]);
 
-    const handleAddComment = async (values: z.infer<typeof commentSchema>) => {
+    const handleAddComment = async (text: string, mentions: Mention[]) => {
         if (!user || !post) return;
         try {
-            await addComment(post.id, user.uid, user.displayName || 'Anónimo', user.photoURL, values.text, null);
-            form.reset();
+            await addComment(post.id, user.uid, user.displayName || 'Anónimo', user.photoURL, text, null, mentions);
             const updatedComments = await getComments(post.id);
             setComments(updatedComments);
         } catch (error) {
@@ -324,8 +315,8 @@ export default function PostDetailPage() {
 
         const result: CommentWithReplies[] = [];
         comments.forEach(comment => {
-            if (comment.parentId) {
-                commentMap[comment.parentId]?.replies.push(commentMap[comment.id]);
+            if (comment.parentId && commentMap[comment.parentId]) {
+                commentMap[comment.parentId].replies.push(commentMap[comment.id]);
             } else {
                 result.push(commentMap[comment.id]);
             }
@@ -438,33 +429,7 @@ export default function PostDetailPage() {
                 <h2 className="font-headline text-2xl font-bold">Comentarios ({post.commentsCount || 0})</h2>
 
                 {user ? (
-                    <Card>
-                        <CardContent className="p-4">
-                            <Form {...form}>
-                                <form onSubmit={form.handleSubmit(handleAddComment)} className="flex items-start gap-4">
-                                     <Avatar className="h-10 w-10 mt-1">
-                                        <AvatarImage src={user.photoURL || undefined} />
-                                        <AvatarFallback><UserCircle /></AvatarFallback>
-                                    </Avatar>
-                                    <FormField
-                                        control={form.control}
-                                        name="text"
-                                        render={({ field }) => (
-                                            <FormItem className="flex-grow">
-                                                <FormControl>
-                                                    <Textarea placeholder="Escribe un comentario..." {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <Button type="submit" disabled={form.formState.isSubmitting} size="icon">
-                                        <Send className="h-4 w-4" />
-                                    </Button>
-                                </form>
-                            </Form>
-                        </CardContent>
-                    </Card>
+                    <CommentInput user={user} onSubmit={handleAddComment} placeholder="Escribe un comentario..." />
                 ) : (
                     <p className="text-muted-foreground text-center">
                         <Link href="/login" className="underline font-semibold">Inicia sesión</Link> para dejar un comentario.
