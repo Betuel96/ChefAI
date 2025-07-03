@@ -3,47 +3,45 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Rule for the public recipes collection
+    // ===== Colección de Recetas Públicas =====
+    // Este único bloque controla todo para `published_recipes`.
     match /published_recipes/{recipeId} {
-      // Anyone can read published recipes
+
+      // LECTURA: Permite que cualquiera lea las recetas publicadas.
+      // Esto es ESENCIAL para que la página de Comunidad y los perfiles carguen.
       allow read: if true;
-      // Only authenticated, verified users can create them
+
+      // ESCRITURA (Crear): Solo usuarios con correo verificado pueden publicar.
+      // Esta es la regla que ya funcionó, como demostró tu captura.
       allow create: if request.auth != null && request.auth.token.email_verified == true;
-      // Only the author can update or delete their own recipe
+
+      // ESCRITURA (Editar/Borrar): Solo el autor original puede modificar su publicación.
       allow update, delete: if request.auth.uid == resource.data.publisherId;
     }
 
-    // Rules for user-specific data
+    // ===== Datos de Usuario y Colecciones Privadas =====
     match /users/{userId} {
-      // Any authenticated user can get public profile data
+      // LECTURA: Cualquier usuario autenticado puede ver el perfil público de otro.
       allow get: if request.auth != null;
-      // A user can only create or update their own profile
-      allow create, update, delete: if request.auth.uid == userId;
 
-      // --- Rules for user sub-collections ---
+      // ESCRITURA: Un usuario solo puede escribir en su propio documento de perfil.
+      allow write: if request.auth.uid == userId;
 
-      // Only the user can read/write their private recipes
+      // --- Sub-colecciones privadas ---
       match /recipes/{recipeId} {
         allow read, write: if request.auth.uid == userId;
       }
-      
-      // Only the user can read/write their private menus
       match /menus/{menuId} {
         allow read, write: if request.auth.uid == userId;
       }
       
-      // Rules for the social graph
+      // --- Sub-colecciones de "Seguir" ---
       match /following/{targetUserId} {
-        // Anyone can see who a user is following
         allow read: if request.auth != null;
-        // A user can only change their own following list
         allow write: if request.auth.uid == userId;
       }
-      
       match /followers/{followerId} {
-        // Anyone can see a user's followers
         allow read: if request.auth != null;
-        // A user can add/remove themselves as a follower
         allow write: if request.auth.uid == followerId;
       }
     }
