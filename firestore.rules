@@ -3,40 +3,48 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ===== PUBLIC DATA =====
-    // Cualquiera puede leer las recetas publicadas y los perfiles de usuario.
+    // === REGLAS PARA DATOS PÚBLICOS ===
+
+    // 1. Recetas Publicadas:
+    // - LECTURA: Cualquiera puede leer las recetas publicadas.
+    // - ESCRITURA: Solo usuarios con correo verificado pueden crear. El autor puede borrar su propia receta.
     match /published_recipes/{recipeId} {
-      allow read: if true;
-    }
-    match /users/{userId} {
-      allow get: if request.auth != null;
-    }
-    
-    // ===== SECURED WRITES & PRIVATE DATA =====
-    match /published_recipes/{recipeId} {
-      // Solo usuarios verificados pueden crear recetas.
+      allow read: if request.auth != null;
       allow create: if request.auth != null && request.auth.token.email_verified == true;
-      // Solo el autor puede editar o borrar su receta.
       allow update, delete: if request.auth.uid == resource.data.publisherId;
     }
 
-    match /users/{userId} {
-      // Un usuario solo puede escribir en su propio perfil y datos privados.
-      allow write: if request.auth.uid == userId;
+    // === REGLAS PARA DATOS DE USUARIO ===
 
+    // 2. Documento Principal del Usuario y Sub-colecciones
+    match /users/{userId} {
+      // PERFIL PÚBLICO: Cualquiera puede ver la información básica de un perfil.
+      allow get: if request.auth != null;
+      // ESCRITURA: Un usuario solo puede modificar su propio documento.
+      allow create, update, delete: if request.auth.uid == userId;
+
+      // 2a. Recetas Privadas: Solo el dueño puede acceder.
       match /recipes/{recipeId} {
-        allow read, write: if request.auth.uid == userId;
+        allow read, write, delete: if request.auth.uid == userId;
       }
+
+      // 2b. Menús Privados: Solo el dueño puede acceder.
       match /menus/{menuId} {
-        allow read, write: if request.auth.uid == userId;
+        allow read, write, delete: if request.auth.uid == userId;
       }
-      match /following/{targetId} {
-          allow read: if request.auth != null;
-          allow write: if request.auth.uid == userId;
+      
+      // 2c. Lista de "Seguidos": Pública para lectura (para contadores).
+      // Solo el dueño del perfil puede modificar a quién sigue.
+      match /following/{targetUserId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth.uid == userId;
       }
+      
+      // 2d. Lista de "Seguidores": Pública para lectura (para contadores).
+      // Un usuario solo puede añadirse o quitarse a sí mismo de la lista de otro.
       match /followers/{followerId} {
-          allow read: if request.auth != null;
-          allow write: if request.auth.uid == followerId;
+        allow read: if request.auth != null;
+        allow write: if request.auth.uid == followerId;
       }
     }
   }
