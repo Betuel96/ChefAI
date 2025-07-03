@@ -8,6 +8,7 @@ import {
   serverTimestamp,
   query,
   orderBy,
+  Timestamp,
 } from 'firebase/firestore';
 import { db, storage } from './firebase';
 import type { Recipe, SavedRecipe } from '@/types';
@@ -65,21 +66,28 @@ export async function getRecipes(userId: string): Promise<SavedRecipe[]> {
   if (!db) {
     throw new Error('Firestore is not initialized.');
   }
-  const recipesCollection = collection(db, 'users', userId, 'recipes');
-  const q = query(recipesCollection, orderBy('createdAt', 'desc'));
-  const snapshot = await getDocs(q);
+  try {
+    const recipesCollection = collection(db, 'users', userId, 'recipes');
+    const q = query(recipesCollection, orderBy('createdAt', 'desc'));
+    const snapshot = await getDocs(q);
 
-  return snapshot.docs.map((doc) => {
-    const data = doc.data();
-    return {
-      id: doc.id,
-      name: data.name,
-      instructions: data.instructions,
-      additionalIngredients: data.additionalIngredients,
-      equipment: data.equipment,
-      imageUrl: data.imageUrl || null,
-    } as SavedRecipe;
-  });
+    return snapshot.docs.map((doc) => {
+      const data = doc.data();
+      const createdAtTimestamp = data.createdAt as Timestamp;
+      return {
+        id: doc.id,
+        name: data.name,
+        instructions: data.instructions,
+        additionalIngredients: data.additionalIngredients,
+        equipment: data.equipment,
+        imageUrl: data.imageUrl || null,
+        createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
+      } as SavedRecipe;
+    });
+  } catch (error) {
+    console.error(`[DEBUG] PERMISSION_ERROR in getRecipes. Failed to read 'recipes' subcollection for userId: ${userId}. Check Firestore rules.`, error);
+    return [];
+  }
 }
 
 /**

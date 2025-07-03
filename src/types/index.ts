@@ -5,11 +5,11 @@ import type { User } from 'firebase/auth';
 // The core recipe structure from AI
 export type Recipe = GenerateRecipeOutput;
 // A recipe saved to a user's private collection
-export type SavedRecipe = Recipe & { id: string; imageUrl?: string | null };
+export type SavedRecipe = Recipe & { id: string; imageUrl?: string | null; createdAt: string; };
 
 export type WeeklyPlan = CreateWeeklyMealPlanOutput;
 export type DailyMealPlan = DailyMealPlanType;
-export type SavedWeeklyPlan = WeeklyPlan & { id: string };
+export type SavedWeeklyPlan = WeeklyPlan & { id: string; createdAt: string; };
 
 export interface ShoppingListItem {
   id: string;

@@ -61,81 +61,96 @@ export async function createPost(
 // Function to get all published posts
 export async function getPublishedPosts(): Promise<PublishedPost[]> {
     if (!db) throw new Error('Firestore is not initialized.');
-    const recipesCollection = collection(db, 'published_recipes');
-    const q = query(recipesCollection, orderBy('createdAt', 'desc'));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => {
-        const data = doc.data();
-        const createdAtTimestamp = data.createdAt as Timestamp;
-        return {
-            id: doc.id,
-            publisherId: data.publisherId,
-            publisherName: data.publisherName,
-            publisherPhotoURL: data.publisherPhotoURL || null,
-            imageUrl: data.imageUrl || null,
-            createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
-            type: data.type || 'recipe', // Default to recipe for old data
-            content: data.content || data.name, // Handle old data where name was used
-            instructions: data.instructions,
-            additionalIngredients: data.additionalIngredients,
-            equipment: data.equipment,
-        } as PublishedPost;
-    });
+    try {
+        const recipesCollection = collection(db, 'published_recipes');
+        const q = query(recipesCollection, orderBy('createdAt', 'desc'));
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => {
+            const data = doc.data();
+            const createdAtTimestamp = data.createdAt as Timestamp;
+            return {
+                id: doc.id,
+                publisherId: data.publisherId,
+                publisherName: data.publisherName,
+                publisherPhotoURL: data.publisherPhotoURL || null,
+                imageUrl: data.imageUrl || null,
+                createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
+                type: data.type || 'recipe', // Default to recipe for old data
+                content: data.content || data.name, // Handle old data where name was used
+                instructions: data.instructions,
+                additionalIngredients: data.additionalIngredients,
+                equipment: data.equipment,
+            } as PublishedPost;
+        });
+    } catch (error) {
+        console.error(`[DEBUG] PERMISSION_ERROR in getPublishedPosts. Failed to read 'published_recipes' collection. Check Firestore rules.`, error);
+        return []; // Return empty array on error to prevent app crash
+    }
 }
 
 // Function to get posts published by a specific user
 export async function getUserPublishedPosts(userId: string): Promise<PublishedPost[]> {
     if (!db) throw new Error('Firestore is not initialized.');
-    const recipesCollection = collection(db, 'published_recipes');
-    const q = query(recipesCollection, where('publisherId', '==', userId), orderBy('createdAt', 'desc'));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => {
-        const data = doc.data();
-        const createdAtTimestamp = data.createdAt as Timestamp;
-        return {
-            id: doc.id,
-            publisherId: data.publisherId,
-            publisherName: data.publisherName,
-            publisherPhotoURL: data.publisherPhotoURL || null,
-            imageUrl: data.imageUrl || null,
-            createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
-            type: data.type || 'recipe',
-            content: data.content || data.name,
-            instructions: data.instructions,
-            additionalIngredients: data.additionalIngredients,
-            equipment: data.equipment,
-        } as PublishedPost;
-    });
+    try {
+        const recipesCollection = collection(db, 'published_recipes');
+        const q = query(recipesCollection, where('publisherId', '==', userId), orderBy('createdAt', 'desc'));
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => {
+            const data = doc.data();
+            const createdAtTimestamp = data.createdAt as Timestamp;
+            return {
+                id: doc.id,
+                publisherId: data.publisherId,
+                publisherName: data.publisherName,
+                publisherPhotoURL: data.publisherPhotoURL || null,
+                imageUrl: data.imageUrl || null,
+                createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
+                type: data.type || 'recipe',
+                content: data.content || data.name,
+                instructions: data.instructions,
+                additionalIngredients: data.additionalIngredients,
+                equipment: data.equipment,
+            } as PublishedPost;
+        });
+    } catch (error) {
+        console.error(`[DEBUG] PERMISSION_ERROR in getUserPublishedPosts. Failed to query 'published_recipes' for userId: ${userId}. Check Firestore rules.`, error);
+        return [];
+    }
 }
 
 // Function to get public profile data
 export async function getProfileData(userId: string): Promise<ProfileDataType | null> {
     if (!db) throw new Error("Firestore not initialized.");
     
-    const userDocRef = doc(db, 'users', userId);
-    const followersRef = collection(db, 'users', userId, 'followers');
-    const followingRef = collection(db, 'users', userId, 'following');
+    try {
+        const userDocRef = doc(db, 'users', userId);
+        const followersRef = collection(db, 'users', userId, 'followers');
+        const followingRef = collection(db, 'users', userId, 'following');
 
-    const [userDoc, followersSnap, followingSnap] = await Promise.all([
-        getDoc(userDocRef),
-        getDocs(followersRef),
-        getDocs(followingRef)
-    ]);
+        const [userDoc, followersSnap, followingSnap] = await Promise.all([
+            getDoc(userDocRef),
+            getDocs(followersRef),
+            getDocs(followingRef)
+        ]);
 
-    if (!userDoc.exists()) {
+        if (!userDoc.exists()) {
+            return null;
+        }
+        
+        const data = userDoc.data();
+        const createdAtTimestamp = data.createdAt as Timestamp;
+
+        return {
+            id: userDoc.id,
+            ...data,
+            followersCount: followersSnap.size,
+            followingCount: followingSnap.size,
+            createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
+        } as ProfileDataType;
+    } catch (error) {
+        console.error(`[DEBUG] PERMISSION_ERROR in getProfileData. Failed to read data for userId: ${userId}. Check Firestore rules for 'users', 'followers', and 'following'.`, error);
         return null;
     }
-    
-    const data = userDoc.data();
-    const createdAtTimestamp = data.createdAt as Timestamp;
-
-    return {
-        id: userDoc.id,
-        ...data,
-        followersCount: followersSnap.size,
-        followingCount: followingSnap.size,
-        createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
-    } as ProfileDataType;
 }
 
 

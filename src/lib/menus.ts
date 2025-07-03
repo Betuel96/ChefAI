@@ -10,6 +10,7 @@ import {
   serverTimestamp,
   query,
   orderBy,
+  Timestamp,
 } from 'firebase/firestore';
 import { db } from './firebase';
 import type { WeeklyPlan, SavedWeeklyPlan } from '@/types';
@@ -41,18 +42,25 @@ export async function getMenus(userId: string): Promise<SavedWeeklyPlan[]> {
   if (!db) {
     throw new Error('Firestore is not initialized.');
   }
-  const menusCollection = collection(db, 'users', userId, 'menus');
-  const q = query(menusCollection, orderBy('createdAt', 'desc'));
-  const snapshot = await getDocs(q);
+  try {
+    const menusCollection = collection(db, 'users', userId, 'menus');
+    const q = query(menusCollection, orderBy('createdAt', 'desc'));
+    const snapshot = await getDocs(q);
 
-  return snapshot.docs.map(doc => {
-    const data = doc.data();
-    // The weeklyMealPlan is stored directly in the document
-    return {
-      id: doc.id,
-      weeklyMealPlan: data.weeklyMealPlan,
-    } as SavedWeeklyPlan;
-  });
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      // The weeklyMealPlan is stored directly in the document
+      const createdAtTimestamp = data.createdAt as Timestamp;
+      return {
+        id: doc.id,
+        weeklyMealPlan: data.weeklyMealPlan,
+        createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
+      } as SavedWeeklyPlan;
+    });
+  } catch (error) {
+    console.error(`[DEBUG] PERMISSION_ERROR in getMenus. Failed to read 'menus' subcollection for userId: ${userId}. Check Firestore rules.`, error);
+    return [];
+  }
 }
 
 /**
