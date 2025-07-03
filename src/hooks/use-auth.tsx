@@ -55,11 +55,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 No se pudo leer el perfil del usuario (UID: ${authUser.uid}).
 Esto casi siempre significa que las REGLAS DE SEGURIDAD de Cloud Firestore no se han publicado correctamente.
 
-Causa probable: Las reglas predeterminadas están en "modo de producción", que bloquea todas las lecturas.
+Causa probable: Las reglas predeterminadas están en "modo de producción", que bloquea todas las lecturas, o las reglas personalizadas no permiten que un usuario lea su propio documento en la colección '/users'.
 
 Solución:
 1. Ve a la Consola de Firebase -> Cloud Firestore -> Pestaña "Reglas".
-2. Pega el contenido del archivo 'firestore.rules' del proyecto.
+2. Pega el contenido del archivo 'firestore.rules' del proyecto. La regla clave que necesitas es:
+   match /users/{userId} {
+     allow get: if request.auth.uid == userId;
+     // ... otras reglas
+   }
 3. Haz clic en "Publicar".
 
 Error original:`,
