@@ -1,36 +1,45 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Reglas de Usuario:
-    // - Los usuarios pueden leer y escribir su propio documento.
-    // - Los usuarios pueden leer los documentos de otros (para los perfiles).
+
     match /users/{userId} {
-      allow read;
-      allow write: if request.auth.uid == userId;
+      // Cualquier usuario autenticado puede leer los datos del perfil público.
+      allow read: if request.auth != null;
 
-      // Sub-colecciones de recetas y menús:
-      // - Solo el propietario del perfil puede leer y escribir sus recetas/menús.
-      match /{collection}/{docId} {
-        allow read, write, delete: if request.auth.uid == userId;
+      // Solo el propietario puede crear o actualizar su perfil.
+      allow create, update: if request.auth.uid == userId;
+
+      // Cualquiera puede leer recetas/menús (para páginas de perfil público), pero solo el propietario puede escribir.
+      match /recipes/{recipeId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth.uid == userId;
+      }
+      match /menus/{menuId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth.uid == userId;
       }
 
-      // Sub-colecciones de seguimiento:
-      // - Cualquier usuario autenticado puede leer/escribir en las listas de seguimiento.
+      // Reglas para seguidores/seguidos
+      // Cualquiera puede leer las listas (necesario para los contadores).
       match /followers/{followerId} {
-        allow read, write, delete: if request.auth != null;
+        allow read: if request.auth != null;
+        // Puedes añadirte o eliminarte a ti mismo como seguidor de alguien.
+        allow write: if request.auth.uid == followerId;
       }
-       match /following/{followingId} {
-        allow read, write, delete: if request.auth != null;
+      match /following/{followingId} {
+        allow read: if request.auth != null;
+        // Solo puedes modificar tu propia lista de seguidos.
+        allow write: if request.auth.uid == userId;
       }
     }
 
-    // Reglas de Recetas Públicas:
-    // - Cualquier usuario autenticado puede leer todas las recetas publicadas.
-    // - Los usuarios autenticados y con email verificado pueden crear recetas.
-    // - Solo el autor de la receta puede actualizarla o eliminarla.
     match /published_recipes/{recipeId} {
+      // Cualquier usuario autenticado puede leer recetas publicadas.
       allow read: if request.auth != null;
-      allow create: if request.auth != null && request.auth.token.email_verified == true;
+      
+      // Solo el editor puede crear, actualizar o eliminar sus propias recetas.
+      allow create: if request.auth.uid == request.resource.data.publisherId;
       allow update, delete: if request.auth.uid == resource.data.publisherId;
     }
   }
