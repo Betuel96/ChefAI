@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
+import { resendVerificationEmail } from '@/lib/users';
 
 import { publishRecipe } from '@/lib/community';
 import type { Recipe } from '@/types';
@@ -17,7 +18,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { PlusSquare, Send, VenetianMask } from 'lucide-react';
+import { PlusSquare, Send, VenetianMask, Mail } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -66,6 +67,7 @@ export default function PublishPage() {
   const { toast } = useToast();
   const [isPublishing, setIsPublishing] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isSending, setIsSending] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -144,6 +146,24 @@ export default function PublishPage() {
     }
   }
 
+  const handleResend = async () => {
+    setIsSending(true);
+    const result = await resendVerificationEmail();
+    if (result.success) {
+      toast({
+        title: 'Correo Enviado',
+        description: result.message,
+      });
+    } else {
+      toast({
+        title: 'Error',
+        description: result.message,
+        variant: 'destructive',
+      });
+    }
+    setIsSending(false);
+  };
+
   if (loading) {
     return <LoadingSkeleton />;
   }
@@ -168,10 +188,16 @@ export default function PublishPage() {
                 <VenetianMask className='h-4 w-4' />
                 <AlertTitle>Verificación de Correo Requerida</AlertTitle>
                 <AlertDescription>
-                   Para publicar una receta, primero debes verificar tu correo electrónico. Por favor, revisa la bandeja de entrada del correo con el que te registraste y haz clic en el enlace de verificación.
-                   <br/>
-                   <br/>
-                   Puedes solicitar un nuevo correo desde el <a href="/" className='underline font-bold'>panel principal</a>.
+                   <p className="mb-4">Para publicar una receta, primero debes verificar tu correo electrónico. Por favor, revisa la bandeja de entrada del correo con el que te registraste y haz clic en el enlace de verificación.</p>
+                   <Button
+                      onClick={handleResend}
+                      disabled={isSending}
+                      variant="secondary"
+                      className="bg-destructive-foreground text-destructive hover:bg-destructive-foreground/90 w-full"
+                    >
+                      <Mail className="mr-2 h-4 w-4" />
+                      {isSending ? 'Enviando...' : 'Reenviar Correo de Verificación'}
+                    </Button>
                 </AlertDescription>
          </Alert>
         </div>
