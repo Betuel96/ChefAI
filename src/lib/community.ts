@@ -212,7 +212,7 @@ export async function deletePost(postId: string): Promise<void> {
 export async function getComments(postId: string): Promise<Comment[]> {
     if (!db) throw new Error('Firestore is not initialized.');
     const commentsRef = collection(db, 'published_recipes', postId, 'comments');
-    const q = query(commentsRef, orderBy('createdAt', 'desc'));
+    const q = query(commentsRef, orderBy('createdAt', 'asc')); // Order ascending to build threads correctly
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => {
         const data = doc.data();
@@ -221,6 +221,8 @@ export async function getComments(postId: string): Promise<Comment[]> {
             id: doc.id,
             ...data,
             createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
+            parentId: data.parentId || null,
+            likesCount: data.likesCount || 0,
         } as Comment;
     });
 }
@@ -231,7 +233,8 @@ export async function addComment(
   userId: string,
   userName: string,
   userPhotoURL: string | null,
-  text: string
+  text: string,
+  parentId: string | null = null
 ): Promise<string> {
     if (!db) throw new Error('Firestore is not initialized.');
     const postRef = doc(db, 'published_recipes', postId);
@@ -242,6 +245,8 @@ export async function addComment(
         userName,
         userPhotoURL,
         text,
+        parentId,
+        likesCount: 0,
         createdAt: serverTimestamp(),
     });
 
@@ -278,6 +283,33 @@ export async function toggleLikePost(postId: string, userId: string): Promise<vo
         }
     });
 }
+
+// Function to check if a comment is liked by a user
+export async function isCommentLiked(postId: string, commentId: string, userId: string): Promise<boolean> {
+    if (!db || !userId) return false;
+    const likeRef = doc(db, 'published_recipes', postId, 'comments', commentId, 'likes', userId);
+    const docSnap = await getDoc(likeRef);
+    return docSnap.exists();
+}
+
+// Function to toggle a like on a comment
+export async function toggleCommentLike(postId: string, commentId: string, userId: string): Promise<void> {
+    if (!db) throw new Error('Firestore is not initialized.');
+    const commentRef = doc(db, 'published_recipes', postId, 'comments', commentId);
+    const likeRef = doc(commentRef, 'likes', userId);
+
+    await runTransaction(db, async (transaction) => {
+        const likeDoc = await transaction.get(likeRef);
+        if (likeDoc.exists()) {
+            transaction.delete(likeRef);
+            transaction.update(commentRef, { likesCount: increment(-1) });
+        } else {
+            transaction.set(likeRef, { userId, createdAt: serverTimestamp() });
+            transaction.update(commentRef, { likesCount: increment(1) });
+        }
+    });
+}
+
 
 // Function to get public profile data
 export async function getProfileData(userId: string): Promise<ProfileDataType | null> {

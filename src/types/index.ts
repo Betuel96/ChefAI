@@ -39,6 +39,8 @@ export interface Comment {
     userPhotoURL?: string | null;
     text: string;
     createdAt: string;
+    parentId: string | null; // For nested comments
+    likesCount: number; // For comment likes
 }
 
 export interface Like {

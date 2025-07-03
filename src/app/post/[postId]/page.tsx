@@ -2,7 +2,7 @@
 // src/app/post/[postId]/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -13,7 +13,16 @@ import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 import { useAuth } from '@/hooks/use-auth';
-import { getPost, getComments, addComment, isPostLiked, toggleLikePost, deletePost } from '@/lib/community';
+import { 
+    getPost, 
+    getComments, 
+    addComment, 
+    isPostLiked, 
+    toggleLikePost, 
+    deletePost,
+    toggleCommentLike,
+    isCommentLiked
+} from '@/lib/community';
 import type { PublishedPost, Comment } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
@@ -24,7 +33,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
-import { UserCircle, MessageCircle, Send, ArrowLeft, ChefHat, MoreVertical, Trash2, Pencil } from 'lucide-react';
+import { UserCircle, MessageCircle, Send, ArrowLeft, ChefHat, MoreVertical, Trash2, Pencil, Reply } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
@@ -38,10 +47,135 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
-
 const commentSchema = z.object({
   text: z.string().min(1, 'El comentario no puede estar vacío.').max(500, 'El comentario no puede exceder los 500 caracteres.'),
 });
+
+type CommentWithReplies = Comment & { replies: CommentWithReplies[] };
+
+
+const CommentItem = ({ 
+    comment, 
+    postId,
+    onCommentAdded 
+}: { 
+    comment: CommentWithReplies, 
+    postId: string,
+    onCommentAdded: () => void 
+}) => {
+    const { user } = useAuth();
+    const { toast } = useToast();
+    const [isReplying, setIsReplying] = useState(false);
+    const [isLiked, setIsLiked] = useState(false);
+    const [likesCount, setLikesCount] = useState(comment.likesCount);
+
+    const form = useForm<z.infer<typeof commentSchema>>({
+        resolver: zodResolver(commentSchema),
+        defaultValues: { text: '' },
+    });
+
+    useEffect(() => {
+        if (user?.uid) {
+            isCommentLiked(postId, comment.id, user.uid).then(setIsLiked);
+        }
+    }, [user, postId, comment.id]);
+
+    const handleToggleLike = async () => {
+        if (!user) {
+            toast({ title: "Debes iniciar sesión para reaccionar.", variant: "destructive" });
+            return;
+        }
+        const previouslyLiked = isLiked;
+        setIsLiked(!previouslyLiked);
+        setLikesCount(prev => previouslyLiked ? prev - 1 : prev + 1);
+
+        try {
+            await toggleCommentLike(postId, comment.id, user.uid);
+        } catch (error) {
+            setIsLiked(previouslyLiked);
+            setLikesCount(prev => previouslyLiked ? prev + 1 : prev - 1);
+            toast({ title: 'Error al reaccionar al comentario.', variant: 'destructive' });
+        }
+    };
+
+    const handleReplySubmit = async (values: z.infer<typeof commentSchema>) => {
+        if (!user) return;
+        try {
+            await addComment(postId, user.uid, user.displayName || 'Anónimo', user.photoURL, values.text, comment.id);
+            form.reset();
+            setIsReplying(false);
+            onCommentAdded();
+        } catch (error) {
+            toast({ title: "Error al añadir tu respuesta.", variant: "destructive" });
+        }
+    };
+
+    return (
+        <div className="flex items-start gap-4">
+            <Avatar className="h-10 w-10">
+                <AvatarImage src={comment.userPhotoURL || undefined} />
+                <AvatarFallback><UserCircle /></AvatarFallback>
+            </Avatar>
+            <div className="flex-grow">
+                <div className="bg-muted p-3 rounded-lg">
+                    <div className="flex items-center justify-between">
+                        <Link href={`/profile/${comment.userId}`} className="font-bold hover:underline">{comment.userName}</Link>
+                        <p className="text-xs text-muted-foreground">
+                            {formatDistanceToNow(new Date(comment.createdAt), { locale: es, addSuffix: true })}
+                        </p>
+                    </div>
+                    <p className="text-sm mt-1 whitespace-pre-wrap">{comment.text}</p>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                     <button onClick={handleToggleLike} className="flex items-center gap-1 hover:text-primary p-1 rounded">
+                        <ChefHat className={cn("w-4 h-4", isLiked && "fill-primary text-primary")} />
+                        <span>{likesCount}</span>
+                    </button>
+                    ·
+                    <button onClick={() => setIsReplying(!isReplying)} className="hover:underline p-1 rounded">Responder</button>
+                </div>
+
+                {isReplying && (
+                    <Card className="mt-2">
+                        <CardContent className="p-2">
+                           <Form {...form}>
+                                <form onSubmit={form.handleSubmit(handleReplySubmit)} className="flex items-start gap-2">
+                                     <Avatar className="h-8 w-8 mt-1">
+                                        <AvatarImage src={user?.photoURL || undefined} />
+                                        <AvatarFallback><UserCircle /></AvatarFallback>
+                                    </Avatar>
+                                    <FormField
+                                        control={form.control}
+                                        name="text"
+                                        render={({ field }) => (
+                                            <FormItem className="flex-grow">
+                                                <FormControl>
+                                                    <Textarea placeholder={`Respondiendo a ${comment.userName}...`} {...field} rows={1} className="min-h-0"/>
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <Button type="submit" disabled={form.formState.isSubmitting} size="icon" className='h-9 w-9'>
+                                        <Send className="h-4 w-4" />
+                                    </Button>
+                                </form>
+                            </Form>
+                        </CardContent>
+                    </Card>
+                )}
+                
+                {comment.replies && comment.replies.length > 0 && (
+                    <div className="mt-4 space-y-4 pl-6 border-l-2">
+                        {comment.replies.map(reply => (
+                            <CommentItem key={reply.id} comment={reply} postId={postId} onCommentAdded={onCommentAdded} />
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
 
 const PostDetailSkeleton = () => (
     <div className="max-w-3xl mx-auto space-y-8">
@@ -86,50 +220,51 @@ export default function PostDetailPage() {
         defaultValues: { text: '' },
     });
 
-    useEffect(() => {
-        const fetchPostData = async () => {
-            if (!params.postId) return;
-            setIsLoading(true);
-            try {
-                const [postData, commentsData] = await Promise.all([
-                    getPost(params.postId),
-                    getComments(params.postId),
-                ]);
+    const fetchPostData = async () => {
+        if (!params.postId) return;
+        try {
+            const [postData, commentsData] = await Promise.all([
+                getPost(params.postId),
+                getComments(params.postId),
+            ]);
 
-                if (postData) {
-                    setPost(postData);
-                    setComments(commentsData);
-                    setLikesCount(postData.likesCount || 0);
-                    if (user) {
-                        isPostLiked(postData.id, user.uid).then(setIsLiked);
-                    }
-                } else {
-                     toast({
-                        title: 'Publicación no encontrada',
-                        description: 'La publicación que buscas no existe o fue eliminada.',
-                        variant: 'destructive',
-                    });
-                    router.push('/community');
+            if (postData) {
+                setPost(postData);
+                setComments(commentsData);
+                setLikesCount(postData.likesCount || 0);
+                if (user) {
+                    isPostLiked(postData.id, user.uid).then(setIsLiked);
                 }
-            } catch (error) {
-                console.error("Error fetching post details:", error);
+            } else {
                  toast({
-                    title: 'Error al cargar',
-                    description: 'No se pudo cargar la publicación.',
+                    title: 'Publicación no encontrada',
+                    description: 'La publicación que buscas no existe o fue eliminada.',
                     variant: 'destructive',
                 });
-            } finally {
-                setIsLoading(false);
+                router.push('/community');
             }
-        };
-
+        } catch (error) {
+            console.error("Error fetching post details:", error);
+             toast({
+                title: 'Error al cargar',
+                description: 'No se pudo cargar la publicación.',
+                variant: 'destructive',
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    
+    useEffect(() => {
+        setIsLoading(true);
         fetchPostData();
-    }, [params.postId, user, router, toast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [params.postId, user]);
 
     const handleAddComment = async (values: z.infer<typeof commentSchema>) => {
         if (!user || !post) return;
         try {
-            await addComment(post.id, user.uid, user.displayName || 'Anónimo', user.photoURL, values.text);
+            await addComment(post.id, user.uid, user.displayName || 'Anónimo', user.photoURL, values.text, null);
             form.reset();
             const updatedComments = await getComments(post.id);
             setComments(updatedComments);
@@ -180,6 +315,23 @@ export default function PostDetailPage() {
             setIsDeleting(false);
         }
     };
+
+    const nestedComments = useMemo((): CommentWithReplies[] => {
+        const commentMap: { [key: string]: CommentWithReplies } = {};
+        comments.forEach(comment => {
+            commentMap[comment.id] = { ...comment, replies: [] };
+        });
+
+        const result: CommentWithReplies[] = [];
+        comments.forEach(comment => {
+            if (comment.parentId) {
+                commentMap[comment.parentId]?.replies.push(commentMap[comment.id]);
+            } else {
+                result.push(commentMap[comment.id]);
+            }
+        });
+        return result;
+    }, [comments]);
 
 
     if (isLoading) {
@@ -277,13 +429,13 @@ export default function PostDetailPage() {
                     </Button>
                     <div className="flex items-center gap-2 text-muted-foreground">
                         <MessageCircle className="w-6 h-6" />
-                        <span className="font-semibold">{comments.length}</span>
+                        <span className="font-semibold">{post.commentsCount || 0}</span>
                     </div>
                 </CardFooter>
             </Card>
 
             <div className="space-y-6">
-                <h2 className="font-headline text-2xl font-bold">Comentarios</h2>
+                <h2 className="font-headline text-2xl font-bold">Comentarios ({post.commentsCount || 0})</h2>
 
                 {user ? (
                     <Card>
@@ -321,23 +473,14 @@ export default function PostDetailPage() {
 
 
                 <div className="space-y-4">
-                    {comments.length > 0 ? (
-                        comments.map(comment => (
-                             <div key={comment.id} className="flex items-start gap-4">
-                                <Avatar className="h-10 w-10">
-                                    <AvatarImage src={comment.userPhotoURL || undefined} />
-                                    <AvatarFallback><UserCircle /></AvatarFallback>
-                                </Avatar>
-                                <div className="flex-grow bg-muted p-3 rounded-lg">
-                                    <div className="flex items-center justify-between">
-                                        <Link href={`/profile/${comment.userId}`} className="font-bold hover:underline">{comment.userName}</Link>
-                                        <p className="text-xs text-muted-foreground">
-                                            {formatDistanceToNow(new Date(comment.createdAt), { locale: es })}
-                                        </p>
-                                    </div>
-                                    <p className="text-sm mt-1">{comment.text}</p>
-                                </div>
-                            </div>
+                    {nestedComments.length > 0 ? (
+                        nestedComments.map(comment => (
+                             <CommentItem 
+                                key={comment.id} 
+                                comment={comment} 
+                                postId={post.id} 
+                                onCommentAdded={fetchPostData} 
+                             />
                         ))
                     ) : (
                         <p className="text-muted-foreground text-center pt-4">No hay comentarios todavía. ¡Sé el primero!</p>
