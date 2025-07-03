@@ -36,12 +36,12 @@ export interface PublishedRecipe extends Recipe {
     publisherId: string;
     publisherName: string;
     publisherPhotoURL?: string | null;
-    createdAt: Timestamp;
+    createdAt: string;
 }
 
 export interface ProfileData extends Omit<UserAccount, 'createdAt' | 'email'> {
     id: string;
-    createdAt: Timestamp;
+    createdAt: string;
     followersCount: number;
     followingCount: number;
 }

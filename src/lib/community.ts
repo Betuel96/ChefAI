@@ -52,7 +52,15 @@ export async function getPublishedRecipes(): Promise<PublishedRecipeType[]> {
     const recipesCollection = collection(db, 'published_recipes');
     const q = query(recipesCollection, orderBy('createdAt', 'desc'));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as PublishedRecipeType));
+    return snapshot.docs.map(doc => {
+        const data = doc.data();
+        const createdAtTimestamp = data.createdAt as Timestamp;
+        return {
+            ...data,
+            id: doc.id,
+            createdAt: createdAtTimestamp.toDate().toISOString(),
+        } as PublishedRecipeType;
+    });
 }
 
 // Function to get recipes published by a specific user
@@ -61,7 +69,15 @@ export async function getUserPublishedRecipes(userId: string): Promise<Published
     const recipesCollection = collection(db, 'published_recipes');
     const q = query(recipesCollection, where('publisherId', '==', userId), orderBy('createdAt', 'desc'));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as PublishedRecipeType));
+    return snapshot.docs.map(doc => {
+        const data = doc.data();
+        const createdAtTimestamp = data.createdAt as Timestamp;
+        return { 
+            ...data,
+            id: doc.id,
+            createdAt: createdAtTimestamp.toDate().toISOString(),
+        } as PublishedRecipeType;
+    });
 }
 
 // Function to get public profile data
@@ -81,12 +97,16 @@ export async function getProfileData(userId: string): Promise<ProfileDataType | 
     if (!userDoc.exists()) {
         return null;
     }
+    
+    const data = userDoc.data();
+    const createdAtTimestamp = data.createdAt as Timestamp;
 
     return {
         id: userDoc.id,
-        ...userDoc.data(),
+        ...data,
         followersCount: followersSnap.size,
         followingCount: followingSnap.size,
+        createdAt: createdAtTimestamp.toDate().toISOString(),
     } as ProfileDataType;
 }
 

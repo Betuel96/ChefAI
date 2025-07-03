@@ -13,12 +13,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { UserCircle, UtensilsCrossed, CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Timestamp } from 'firebase/firestore';
 
 const ProfileHeader = ({ profile, isFollowing, onFollowToggle, isCurrentUser }: { profile: ProfileData, isFollowing: boolean, onFollowToggle: () => void, isCurrentUser: boolean }) => {
-    const joinedDate = profile.createdAt
-      ? new Timestamp((profile.createdAt as any).seconds, (profile.createdAt as any).nanoseconds).toDate()
-      : null;
+    const joinedDate = profile.createdAt ? new Date(profile.createdAt) : null;
       
     return (
         <div className="flex flex-col sm:flex-row items-center gap-6">
