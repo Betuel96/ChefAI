@@ -1,41 +1,39 @@
+
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Perfiles de usuario
+
+    // Users can read other users' public profiles.
+    // They can only write to their own document.
     match /users/{userId} {
-      // Cualquier usuario autenticado puede leer un perfil (para las páginas de perfil).
       allow read: if request.auth != null;
-      // Un usuario solo puede crear su propio documento.
-      allow create: if request.auth.uid == userId;
-      // Un usuario solo puede actualizar su propio documento.
-      allow update: if request.auth.uid == userId;
+      allow write: if request.auth.uid == userId;
+
+      // A user can manage their own recipes and menus.
+      match /recipes/{recipeId} {
+        allow read, write, delete: if request.auth.uid == userId;
+      }
+      match /menus/{menuId} {
+        allow read, write, delete: if request.auth.uid == userId;
+      }
+
+      // A user can manage their own followers/following lists.
+      match /followers/{followerId} {
+        allow read, write, delete: if request.auth.uid == userId || request.auth.uid == followerId;
+      }
+      match /following/{followingId} {
+        allow read, write, delete: if request.auth.uid == userId || request.auth.uid == followingId;
+      }
     }
 
-    // Los usuarios gestionan sus propias recetas y menús privados.
-    match /users/{userId}/(recipes|menus)/{docId} {
-       allow read, write: if request.auth.uid == userId;
-    }
-    
-    // Reglas para el sistema de seguimiento
-    match /users/{targetUserId}/followers/{currentUserId} {
-        // Cualquier usuario conectado puede ver quién sigue a quién
-        allow read: if request.auth != null;
-        // Solo puedes seguir/dejar de seguir por ti mismo
-        allow create, delete: if request.auth.uid == currentUserId;
-    }
-    match /users/{currentUserId}/following/{targetUserId} {
-        // Cualquier usuario conectado puede ver a quién sigue
-        allow read: if request.auth != null;
-        // Solo puedes gestionar tu propia lista de seguidos
-        allow create, delete: if request.auth.uid == currentUserId;
-    }
-
-    // Las recetas publicadas pueden ser leídas por cualquier usuario conectado.
-    // Solo pueden ser creadas por el propietario autenticado.
+    // Published recipes can be read by anyone.
+    // Only authenticated users can create them.
+    // Only the original publisher can update or delete their own recipe.
     match /published_recipes/{recipeId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth.uid == request.resource.data.publisherId;
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth.uid == resource.data.publisherId;
     }
   }
 }
