@@ -13,19 +13,30 @@ import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 import { useAuth } from '@/hooks/use-auth';
-import { getPost, getComments, addComment, isPostLiked, toggleLikePost } from '@/lib/community';
+import { getPost, getComments, addComment, isPostLiked, toggleLikePost, deletePost } from '@/lib/community';
 import type { PublishedPost, Comment } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
-import { UserCircle, MessageCircle, Send, ArrowLeft, ChefHat } from 'lucide-react';
+import { UserCircle, MessageCircle, Send, ArrowLeft, ChefHat, MoreVertical, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 
 const commentSchema = z.object({
@@ -65,6 +76,10 @@ export default function PostDetailPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isLiked, setIsLiked] = useState(false);
     const [likesCount, setLikesCount] = useState(0);
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const isOwner = user?.uid === post?.publisherId;
 
     const form = useForm<z.infer<typeof commentSchema>>({
         resolver: zodResolver(commentSchema),
@@ -116,7 +131,6 @@ export default function PostDetailPage() {
         try {
             await addComment(post.id, user.uid, user.displayName || 'Anónimo', user.photoURL, values.text);
             form.reset();
-            // Refetch comments to show the new one
             const updatedComments = await getComments(post.id);
             setComments(updatedComments);
         } catch (error) {
@@ -147,12 +161,33 @@ export default function PostDetailPage() {
         }
     };
 
+    const handleDelete = async () => {
+        if (!post) return;
+        setIsDeleting(true);
+        try {
+            await deletePost(post.id);
+            toast({
+                title: 'Publicación eliminada',
+                description: 'Tu publicación ha sido eliminada correctamente.',
+            });
+            router.push('/community');
+        } catch (error) {
+            toast({
+                title: 'Error al eliminar',
+                description: 'No se pudo eliminar la publicación. Inténtalo de nuevo.',
+                variant: 'destructive',
+            });
+            setIsDeleting(false);
+        }
+    };
+
+
     if (isLoading) {
         return <PostDetailSkeleton />;
     }
 
     if (!post) {
-        return null; // or a not found component
+        return null;
     }
 
     const createdAtDate = new Date(post.createdAt);
@@ -167,17 +202,35 @@ export default function PostDetailPage() {
 
             <Card className="shadow-xl">
                 <CardHeader>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-start gap-4">
                         <Link href={`/profile/${post.publisherId}`}>
                             <Avatar className="h-12 w-12 cursor-pointer">
                                 <AvatarImage src={post.publisherPhotoURL || undefined} />
                                 <AvatarFallback><UserCircle /></AvatarFallback>
                             </Avatar>
                         </Link>
-                        <div>
+                        <div className="flex-grow">
                             <Link href={`/profile/${post.publisherId}`} className="font-semibold cursor-pointer hover:underline text-lg">{post.publisherName}</Link>
                             <p className="text-sm text-muted-foreground">{timeAgo}</p>
                         </div>
+                        {isOwner && (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                        <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem
+                                        onClick={() => setShowDeleteDialog(true)}
+                                        className="text-destructive"
+                                    >
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Eliminar
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        )}
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -225,11 +278,9 @@ export default function PostDetailPage() {
                 </CardFooter>
             </Card>
 
-            {/* Comments Section */}
             <div className="space-y-6">
                 <h2 className="font-headline text-2xl font-bold">Comentarios</h2>
 
-                 {/* Add Comment Form */}
                 {user ? (
                     <Card>
                         <CardContent className="p-4">
@@ -265,7 +316,6 @@ export default function PostDetailPage() {
                 )}
 
 
-                {/* Comments List */}
                 <div className="space-y-4">
                     {comments.length > 0 ? (
                         comments.map(comment => (
@@ -290,6 +340,27 @@ export default function PostDetailPage() {
                     )}
                 </div>
             </div>
+
+            <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>¿Estás seguro de que quieres eliminar esta publicación?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Esta acción no se puede deshacer. Esto eliminará permanentemente tu publicación.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleDelete}
+                            disabled={isDeleting}
+                            className={cn(buttonVariants({ variant: 'destructive' }))}
+                        >
+                            {isDeleting ? 'Eliminando...' : 'Eliminar'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

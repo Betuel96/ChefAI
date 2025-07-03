@@ -15,10 +15,11 @@ import {
   updateDoc,
   runTransaction,
   increment,
+  deleteDoc,
 } from 'firebase/firestore';
 import { db, storage } from './firebase';
 import type { PublishedPost, ProfileData as ProfileDataType, Comment } from '@/types';
-import { ref, uploadString, getDownloadURL } from 'firebase/storage';
+import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
 
 // Function to create a new post (recipe or text)
 export async function createPost(
@@ -61,113 +62,122 @@ export async function createPost(
 // Function to get all published posts
 export async function getPublishedPosts(): Promise<PublishedPost[]> {
     if (!db) throw new Error('Firestore is not initialized.');
-    try {
-        const recipesCollection = collection(db, 'published_recipes');
-        const q = query(recipesCollection, orderBy('createdAt', 'desc'));
-        const snapshot = await getDocs(q);
-        return snapshot.docs.map(doc => {
-            const data = doc.data();
-            const createdAtTimestamp = data.createdAt as Timestamp;
-            return {
-                id: doc.id,
-                publisherId: data.publisherId,
-                publisherName: data.publisherName,
-                publisherPhotoURL: data.publisherPhotoURL || null,
-                imageUrl: data.imageUrl || null,
-                createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
-                type: data.type || 'recipe',
-                content: data.content || data.name,
-                instructions: data.instructions,
-                additionalIngredients: data.additionalIngredients,
-                equipment: data.equipment,
-                likesCount: data.likesCount || 0,
-                commentsCount: data.commentsCount || 0,
-            } as PublishedPost;
-        });
-    } catch (error) {
-        console.error(`[DEBUG] PERMISSION_ERROR in getPublishedPosts. Failed to read 'published_recipes' collection. Check Firestore rules.`, error);
-        return [];
-    }
+    const recipesCollection = collection(db, 'published_recipes');
+    const q = query(recipesCollection, orderBy('createdAt', 'desc'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => {
+        const data = doc.data();
+        const createdAtTimestamp = data.createdAt as Timestamp;
+        return {
+            id: doc.id,
+            publisherId: data.publisherId,
+            publisherName: data.publisherName,
+            publisherPhotoURL: data.publisherPhotoURL || null,
+            imageUrl: data.imageUrl || null,
+            createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
+            type: data.type || 'recipe',
+            content: data.content || data.name,
+            instructions: data.instructions,
+            additionalIngredients: data.additionalIngredients,
+            equipment: data.equipment,
+            likesCount: data.likesCount || 0,
+            commentsCount: data.commentsCount || 0,
+        } as PublishedPost;
+    });
 }
 
 // Function to get posts published by a specific user
 export async function getUserPublishedPosts(userId: string): Promise<PublishedPost[]> {
     if (!db) throw new Error('Firestore is not initialized.');
-    try {
-        const recipesCollection = collection(db, 'published_recipes');
-        const q = query(recipesCollection, where('publisherId', '==', userId), orderBy('createdAt', 'desc'));
-        const snapshot = await getDocs(q);
-        return snapshot.docs.map(doc => {
-            const data = doc.data();
-            const createdAtTimestamp = data.createdAt as Timestamp;
-            return {
-                id: doc.id,
-                publisherId: data.publisherId,
-                publisherName: data.publisherName,
-                publisherPhotoURL: data.publisherPhotoURL || null,
-                imageUrl: data.imageUrl || null,
-                createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
-                type: data.type || 'recipe',
-                content: data.content || data.name,
-                instructions: data.instructions,
-                additionalIngredients: data.additionalIngredients,
-                equipment: data.equipment,
-                likesCount: data.likesCount || 0,
-                commentsCount: data.commentsCount || 0,
-            } as PublishedPost;
-        });
-    } catch (error) {
-        console.error(`[DEBUG] PERMISSION_ERROR in getUserPublishedPosts. Failed to query 'published_recipes' for userId: ${userId}. Check Firestore rules.`, error);
-        return [];
-    }
+    const recipesCollection = collection(db, 'published_recipes');
+    const q = query(recipesCollection, where('publisherId', '==', userId), orderBy('createdAt', 'desc'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => {
+        const data = doc.data();
+        const createdAtTimestamp = data.createdAt as Timestamp;
+        return {
+            id: doc.id,
+            publisherId: data.publisherId,
+            publisherName: data.publisherName,
+            publisherPhotoURL: data.publisherPhotoURL || null,
+            imageUrl: data.imageUrl || null,
+            createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
+            type: data.type || 'recipe',
+            content: data.content || data.name,
+            instructions: data.instructions,
+            additionalIngredients: data.additionalIngredients,
+            equipment: data.equipment,
+            likesCount: data.likesCount || 0,
+            commentsCount: data.commentsCount || 0,
+        } as PublishedPost;
+    });
 }
 
 // Function to get a single post by its ID
 export async function getPost(postId: string): Promise<PublishedPost | null> {
     if (!db) throw new Error('Firestore is not initialized.');
-    try {
-        const postRef = doc(db, 'published_recipes', postId);
-        const docSnap = await getDoc(postRef);
+    const postRef = doc(db, 'published_recipes', postId);
+    const docSnap = await getDoc(postRef);
 
-        if (!docSnap.exists()) {
-            console.error(`Post with ID ${postId} not found.`);
-            return null;
+    if (!docSnap.exists()) {
+        console.error(`Post with ID ${postId} not found.`);
+        return null;
+    }
+    const data = docSnap.data();
+    const createdAtTimestamp = data.createdAt as Timestamp;
+    return {
+        id: docSnap.id,
+        ...data,
+        createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
+        likesCount: data.likesCount || 0,
+        commentsCount: data.commentsCount || 0,
+    } as PublishedPost;
+}
+
+// Function to delete a post and its associated image
+export async function deletePost(postId: string): Promise<void> {
+    if (!db || !storage) {
+        throw new Error('Firebase no está configurado.');
+    }
+    const postRef = doc(db, 'published_recipes', postId);
+    try {
+        const postSnap = await getDoc(postRef);
+        if (postSnap.exists()) {
+            const postData = postSnap.data();
+            if (postData.imageUrl) {
+                try {
+                    const imageRef = ref(storage, postData.imageUrl);
+                    await deleteObject(imageRef);
+                } catch (storageError: any) {
+                    if (storageError.code !== 'storage/object-not-found') {
+                        console.error('Error al eliminar la imagen del post:', storageError);
+                    }
+                }
+            }
         }
-        const data = docSnap.data();
-        const createdAtTimestamp = data.createdAt as Timestamp;
-        return {
-            id: docSnap.id,
-            ...data,
-            createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
-            likesCount: data.likesCount || 0,
-            commentsCount: data.commentsCount || 0,
-        } as PublishedPost;
+        await deleteDoc(postRef);
     } catch (error) {
-         console.error(`[DEBUG] PERMISSION_ERROR in getPost. Failed to read post with ID: ${postId}. Check Firestore rules.`, error);
-         return null;
+        console.error('Error al eliminar el post:', error);
+        throw new Error('No se pudo eliminar la publicación.');
     }
 }
+
 
 // Function to get comments for a post
 export async function getComments(postId: string): Promise<Comment[]> {
     if (!db) throw new Error('Firestore is not initialized.');
-    try {
-        const commentsRef = collection(db, 'published_recipes', postId, 'comments');
-        const q = query(commentsRef, orderBy('createdAt', 'desc'));
-        const snapshot = await getDocs(q);
-        return snapshot.docs.map(doc => {
-            const data = doc.data();
-            const createdAtTimestamp = data.createdAt as Timestamp;
-            return {
-                id: doc.id,
-                ...data,
-                createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
-            } as Comment;
-        });
-    } catch (error) {
-        console.error(`[DEBUG] PERMISSION_ERROR in getComments. Failed to read subcollection for post ID: ${postId}. Check Firestore rules.`, error);
-        return [];
-    }
+    const commentsRef = collection(db, 'published_recipes', postId, 'comments');
+    const q = query(commentsRef, orderBy('createdAt', 'desc'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => {
+        const data = doc.data();
+        const createdAtTimestamp = data.createdAt as Timestamp;
+        return {
+            id: doc.id,
+            ...data,
+            createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
+        } as Comment;
+    });
 }
 
 // Function to add a comment to a post
@@ -228,35 +238,30 @@ export async function toggleLikePost(postId: string, userId: string): Promise<vo
 export async function getProfileData(userId: string): Promise<ProfileDataType | null> {
     if (!db) throw new Error("Firestore not initialized.");
     
-    try {
-        const userDocRef = doc(db, 'users', userId);
-        const followersRef = collection(db, 'users', userId, 'followers');
-        const followingRef = collection(db, 'users', userId, 'following');
+    const userDocRef = doc(db, 'users', userId);
+    const followersRef = collection(db, 'users', userId, 'followers');
+    const followingRef = collection(db, 'users', userId, 'following');
 
-        const [userDoc, followersSnap, followingSnap] = await Promise.all([
-            getDoc(userDocRef),
-            getDocs(followersRef),
-            getDocs(followingRef)
-        ]);
+    const [userDoc, followersSnap, followingSnap] = await Promise.all([
+        getDoc(userDocRef),
+        getDocs(followersRef),
+        getDocs(followingRef)
+    ]);
 
-        if (!userDoc.exists()) {
-            return null;
-        }
-        
-        const data = userDoc.data();
-        const createdAtTimestamp = data.createdAt as Timestamp;
-
-        return {
-            id: userDoc.id,
-            ...data,
-            followersCount: followersSnap.size,
-            followingCount: followingSnap.size,
-            createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
-        } as ProfileDataType;
-    } catch (error) {
-        console.error(`[DEBUG] PERMISSION_ERROR in getProfileData. Failed to read data for userId: ${userId}. Check Firestore rules for 'users', 'followers', and 'following'.`, error);
+    if (!userDoc.exists()) {
         return null;
     }
+    
+    const data = userDoc.data();
+    const createdAtTimestamp = data.createdAt as Timestamp;
+
+    return {
+        id: userDoc.id,
+        ...data,
+        followersCount: followersSnap.size,
+        followingCount: followingSnap.size,
+        createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
+    } as ProfileDataType;
 }
 
 
