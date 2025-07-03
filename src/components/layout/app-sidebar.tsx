@@ -34,7 +34,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { auth as firebaseAuth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
 import { Skeleton } from '../ui/skeleton';
 import { Button } from '../ui/button';
 import { cn } from '@/lib/utils';
@@ -103,7 +103,7 @@ export function AppSidebar() {
             </div>
           )}
           {user && isOpen && (
-             <Link href={`/profile/${user.uid}`} className="block w-full">
+             <Link href="/pro" className="block w-full">
                 <div className="flex flex-col items-start gap-2 p-2 pb-4 border-b mb-4 hover:bg-muted/50 rounded-md transition-colors">
                   <Avatar>
                       <AvatarImage src={user.photoURL || undefined} />
