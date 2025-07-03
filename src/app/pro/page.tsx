@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
+import { resendVerificationEmail } from '@/lib/users';
 
 const proFeatures = [
   'Generaciones ilimitadas de recetas',
@@ -27,6 +28,7 @@ const proFeatures = [
 export default function ProPage() {
   const { user, loading } = useAuth();
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -68,17 +70,40 @@ export default function ProPage() {
       setIsRedirecting(false);
     }
   };
+  
+  const handleResend = async () => {
+    setIsSending(true);
+    const result = await resendVerificationEmail();
+    if (result.success) {
+      toast({
+        title: 'Correo Enviado',
+        description: result.message,
+      });
+    } else {
+      toast({
+        title: 'Error',
+        description: result.message,
+        variant: 'destructive',
+      });
+    }
+    setIsSending(false);
+  };
+
 
   if (loading) {
     return (
-        <div className="max-w-2xl mx-auto space-y-8">
+        <div className="max-w-4xl mx-auto space-y-8">
             <header>
                 <Skeleton className="h-10 w-1/2" />
                 <Skeleton className="h-4 w-1/3 mt-2" />
             </header>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <Skeleton className="h-48 w-full" />
-                <Skeleton className="h-72 w-full" />
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                <div className="lg:col-span-2">
+                    <Skeleton className="h-48 w-full" />
+                </div>
+                <div className="lg:col-span-3">
+                    <Skeleton className="h-72 w-full" />
+                </div>
             </div>
         </div>
     );
@@ -130,17 +155,29 @@ export default function ProPage() {
                         <Mail className='w-4 h-4' />
                         <span>{user.email}</span>
                      </div>
-                     <div className='flex items-center gap-3 text-sm text-muted-foreground'>
-                        {user.emailVerified ? (
-                            <>
-                                <CheckCircle className='w-4 h-4 text-green-500' />
-                                <span>Correo verificado</span>
-                            </>
-                        ) : (
-                             <>
-                                <VenetianMask className='w-4 h-4 text-destructive' />
-                                <span>Correo no verificado</span>
-                            </>
+                     <div className='flex items-center justify-between gap-3 text-sm'>
+                        <div className='flex items-center gap-3 text-muted-foreground'>
+                            {user.emailVerified ? (
+                                <>
+                                    <CheckCircle className='w-4 h-4 text-green-500' />
+                                    <span>Correo verificado</span>
+                                </>
+                            ) : (
+                                <>
+                                    <VenetianMask className='w-4 h-4 text-destructive' />
+                                    <span>Correo no verificado</span>
+                                </>
+                            )}
+                        </div>
+                         {!user.emailVerified && (
+                            <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={handleResend}
+                                disabled={isSending}
+                            >
+                                {isSending ? 'Enviando...' : 'Verificar'}
+                            </Button>
                         )}
                      </div>
                 </CardContent>
