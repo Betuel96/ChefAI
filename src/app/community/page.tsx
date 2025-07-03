@@ -11,9 +11,16 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { UtensilsCrossed, UserCircle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { Timestamp } from 'firebase/firestore';
 
 const RecipePostCard = ({ recipe }: { recipe: PublishedRecipe }) => {
-    const timeAgo = recipe.createdAt ? formatDistanceToNow(recipe.createdAt.toDate(), { addSuffix: true, locale: es }) : '';
+    // The createdAt from Firestore is serialized when passed from server to client.
+    // We need to convert it back to a Date object.
+    const createdAtDate = recipe.createdAt
+      ? new Timestamp((recipe.createdAt as any).seconds, (recipe.createdAt as any).nanoseconds).toDate()
+      : null;
+
+    const timeAgo = createdAtDate ? formatDistanceToNow(createdAtDate, { addSuffix: true, locale: es }) : '';
     
     return (
         <Card className="shadow-lg">

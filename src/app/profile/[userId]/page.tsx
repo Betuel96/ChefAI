@@ -13,8 +13,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { UserCircle, UtensilsCrossed, CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { Timestamp } from 'firebase/firestore';
 
 const ProfileHeader = ({ profile, isFollowing, onFollowToggle, isCurrentUser }: { profile: ProfileData, isFollowing: boolean, onFollowToggle: () => void, isCurrentUser: boolean }) => {
+    const joinedDate = profile.createdAt
+      ? new Timestamp((profile.createdAt as any).seconds, (profile.createdAt as any).nanoseconds).toDate()
+      : null;
+      
     return (
         <div className="flex flex-col sm:flex-row items-center gap-6">
             <Avatar className="h-24 w-24 text-6xl">
@@ -27,10 +32,10 @@ const ProfileHeader = ({ profile, isFollowing, onFollowToggle, isCurrentUser }: 
                     <span><span className="font-bold text-foreground">{profile.followersCount}</span> Seguidores</span>
                     <span><span className="font-bold text-foreground">{profile.followingCount}</span> Siguiendo</span>
                 </div>
-                 {profile.createdAt && (
+                 {joinedDate && (
                     <div className="flex items-center justify-center sm:justify-start gap-2 text-xs text-muted-foreground">
                         <CalendarIcon className="h-3 w-3" />
-                        <span>Se unió en {format(profile.createdAt.toDate(), "MMMM 'de' yyyy", { locale: es })}</span>
+                        <span>Se unió en {format(joinedDate, "MMMM 'de' yyyy", { locale: es })}</span>
                     </div>
                 )}
             </div>
