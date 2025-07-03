@@ -36,7 +36,11 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = React.useState(!isMobile);
 
   React.useEffect(() => {
-    setIsOpen(!isMobile);
+    if (isMobile) {
+      setIsOpen(false);
+    } else {
+      setIsOpen(true);
+    }
   }, [isMobile]);
 
   return (
@@ -50,17 +54,27 @@ const Root = React.forwardRef<
   HTMLElement,
   React.ComponentProps<'aside'>
 >(({ className, ...props }, ref) => {
-  const { isOpen } = useSidebar();
+  const { isOpen, isMobile, setIsOpen } = useSidebar();
   return (
-    <aside
-      ref={ref}
-      className={cn(
-        'fixed left-0 top-0 z-50 flex h-screen flex-col border-r bg-background transition-all duration-300 ease-in-out',
-        isOpen ? 'w-64' : 'w-16',
-        className
+    <>
+      {isMobile && isOpen && (
+        <div
+          onClick={() => setIsOpen(false)}
+          className="fixed inset-0 z-40 bg-black/50"
+          aria-hidden="true"
+        />
       )}
-      {...props}
-    />
+      <aside
+        ref={ref}
+        className={cn(
+          'fixed left-0 top-0 z-50 flex h-screen flex-col border-r bg-background transition-all duration-300 ease-in-out',
+          isOpen ? 'w-64' : 'w-16',
+          isMobile && !isOpen && '-translate-x-full',
+          className
+        )}
+        {...props}
+      />
+    </>
   );
 });
 Root.displayName = 'Sidebar';
@@ -75,7 +89,7 @@ export const SidebarHeader = React.forwardRef<
     <div
       ref={ref}
       className={cn(
-        'flex h-16 items-center border-b px-4',
+        'flex h-16 items-center border-b px-4 shrink-0',
         isOpen ? 'justify-between' : 'justify-center',
         className
       )}
@@ -208,13 +222,13 @@ export const SidebarInset = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => {
-  const { isOpen } = useSidebar();
+  const { isOpen, isMobile } = useSidebar();
   return (
     <div
       ref={ref}
       className={cn(
         'transition-all duration-300 ease-in-out',
-        isOpen ? 'ml-64' : 'ml-16',
+        !isMobile && (isOpen ? 'ml-64' : 'ml-16'),
         className
       )}
       {...props}

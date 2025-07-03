@@ -6,6 +6,7 @@ import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/layout/app-sidebar';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/hooks/use-auth';
+import { MobileHeader } from '@/components/layout/mobile-header';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -32,6 +33,7 @@ export default function RootLayout({
         <AuthProvider>
           <SidebarProvider>
             <AppSidebar />
+            <MobileHeader />
             <SidebarInset>
               <main className="min-h-screen p-4 sm:p-6 lg:p-8">{children}</main>
             </SidebarInset>

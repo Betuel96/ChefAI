@@ -86,7 +86,7 @@ export function AppSidebar() {
           <ChefHat className="w-8 h-8 text-primary" />
           {isOpen && <h1 className="font-headline text-2xl font-bold">ChefAI</h1>}
         </div>
-        <SidebarTrigger />
+        <SidebarTrigger className="hidden sm:flex" />
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu>

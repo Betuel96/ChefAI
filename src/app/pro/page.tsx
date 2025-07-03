@@ -245,7 +245,7 @@ export default function MyProfilePage() {
       <ProfileHeader profile={profile} isFollowing={false} onFollowToggle={() => {}} isCurrentUser={true} />
 
       <Tabs defaultValue="posts" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
             <TabsTrigger value="posts"><BookOpen className="mr-2 h-4 w-4" /> Publicaciones ({posts.length})</TabsTrigger>
             <TabsTrigger value="following"><Users className="mr-2 h-4 w-4" /> Siguiendo ({following.length})</TabsTrigger>
             <TabsTrigger value="followers"><Users className="mr-2 h-4 w-4" /> Seguidores ({followers.length})</TabsTrigger>
