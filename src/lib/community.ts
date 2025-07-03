@@ -54,6 +54,10 @@ export async function createPost(
       await updateDoc(docRef, { imageUrl: downloadURL });
     } catch (error) {
       console.error('Error uploading post image:', error);
+      // Clean up the created post document since the image upload failed
+      await deleteDoc(docRef);
+      // Throw a user-friendly error
+      throw new Error('La publicación no se pudo crear porque falló la subida de la imagen. Comprueba tus reglas de seguridad de Firebase Storage.');
     }
   }
 
@@ -105,7 +109,7 @@ export async function updatePost(
         updateData.imageUrl = downloadURL;
       } catch (error) {
         console.error("Error al subir la imagen:", error);
-        throw new Error("No se pudo subir la imagen. Comprueba tu conexión o los permisos de almacenamiento.");
+        throw new Error("No se pudo subir la imagen. Comprueba tus reglas de seguridad de Firebase Storage.");
       }
     }
   }
