@@ -28,22 +28,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     // This listener handles auth state changes (login/logout)
-    const unsubscribeAuth = onAuthStateChanged(auth, (authUser: User | null) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (authUser: User | null) => {
       if (authUser) {
-        // User is authenticated with Firebase. Now get their profile from Firestore.
-        const userDocRef = doc(db, 'users', authUser.uid);
+        // User is authenticated. Force a reload to get the latest user data (e.g., emailVerified).
+        await authUser.reload();
+        // The `auth.currentUser` is now the freshest user object.
+        const freshUser = auth.currentUser;
+        
+        if (!freshUser) {
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+
+        // Now get their profile from Firestore.
+        const userDocRef = doc(db, 'users', freshUser.uid);
         
         // This listener handles profile data changes (e.g., becoming premium)
         const unsubscribeSnapshot = onSnapshot(userDocRef, (docSnapshot) => {
           if (docSnapshot.exists()) {
             // Combine auth user data with Firestore profile data
             const userAccountData = docSnapshot.data() as UserAccount;
-            setUser({ ...authUser, ...userAccountData });
+            setUser({ ...freshUser, ...userAccountData });
           } else {
             // This can happen if the user document hasn't been created yet during signup.
             // We'll treat them as logged in, but without extra profile data for now.
             // The createUserDocument function will soon create the doc, and this listener will re-run.
-            setUser(authUser as AppUser);
+            setUser(freshUser as AppUser);
           }
           // We have the full user state (or know it's pending creation), so loading is done.
           setLoading(false);
@@ -52,7 +63,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             console.error(
               `[use-auth.tsx > onSnapshot] ¡ERROR DE PERMISOS DE FIRESTORE!
 ----------------------------------------------------------------------
-No se pudo leer el perfil del usuario (UID: ${authUser.uid}).
+No se pudo leer el perfil del usuario (UID: ${freshUser.uid}).
 Esto casi siempre significa que las REGLAS DE SEGURIDAD de Cloud Firestore no se han publicado correctamente.
 
 Causa probable: Las reglas predeterminadas están en "modo de producción", que bloquea todas las lecturas, o las reglas personalizadas no permiten que un usuario lea su propio documento en la colección '/users'.
@@ -69,7 +80,7 @@ Solución:
 Error original:`,
               error
             );
-            setUser(authUser as AppUser); // Fallback to authUser only
+            setUser(freshUser as AppUser); // Fallback to authUser only
             setLoading(false);
         });
 

@@ -53,13 +53,16 @@ export async function signInWithGoogle(): Promise<void> {
     }
     // If it exists, their data is already in Firestore. No action needed.
   } catch (error: any) {
-    console.error(`[users.ts > signInWithGoogle] Error durante el inicio de sesión con Google. Código: "${error.code}". Mensaje: "${error.message}"`);
-    
-    // Provide more specific error messages
+    // Handle the specific case where the user closes the popup.
+    // This is a user action, not a technical error, so we log it for info and stop.
     if (error.code === 'auth/popup-closed-by-user') {
-      // Don't throw an error, just return. The user intentionally closed the popup.
+      console.log('[users.ts > signInWithGoogle] El usuario cerró la ventana de inicio de sesión de Google.');
       return;
     }
+    
+    // For all other errors, log them as critical errors and throw a helpful message.
+    console.error(`[users.ts > signInWithGoogle] Error durante el inicio de sesión con Google. Código: "${error.code}". Mensaje: "${error.message}"`);
+    
     if (error.code === 'auth/unauthorized-domain') {
       const domain = typeof window !== 'undefined' ? window.location.hostname : 'tu-dominio.com';
       throw new Error(`Dominio no autorizado. Por favor, ve a tu Consola de Firebase -> Authentication -> Settings -> Authorized domains y añade el siguiente dominio: ${domain}`);
