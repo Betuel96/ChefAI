@@ -3,17 +3,17 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // PUBLIC RECIPES
+    // RECETAS PÚBLICAS
     // Cualquiera puede leer las recetas publicadas (ideal para una comunidad).
     // Solo los usuarios con correo verificado pueden crearlas.
     // Solo el dueño puede actualizar o borrar sus propias recetas.
     match /published_recipes/{recipeId} {
       allow read: if true;
       allow create: if request.auth != null && request.auth.token.email_verified == true;
-      allow update, delete: if request.auth.uid == resource.data.publisherId;
+      allow update, delete: if request.auth != null && resource.data.publisherId == request.auth.uid;
     }
 
-    // USER DATA & PRIVATE COLLECTIONS
+    // DATOS DE USUARIO Y COLECCIONES PRIVADAS
     match /users/{userId} {
       // Un usuario puede ver el perfil público de otro.
       allow get: if request.auth != null;
