@@ -3,7 +3,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- Funciones Auxiliares (Inspiradas en tu modelo) ---
+    // --- Funciones Auxiliares ---
     function isAuthenticated() {
       return request.auth != null;
     }
@@ -16,22 +16,34 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.token.email_verified == true;
     }
 
+    // Función para verificar si el usuario es el propietario del documento
+    function isResourceOwner() {
+      return request.auth.uid == resource.data.publisherId;
+    }
+
     // --- Colecciones Públicas ---
     match /published_recipes/{recipeId} {
       // Lectura: Cualquiera puede ver las publicaciones de la comunidad.
       allow read: if true;
 
-      // Crear: Solo usuarios autenticados y verificados.
-      allow create: if isVerified();
+      // Crear: Solo usuarios autenticados - CORREGIDO: removido email_verified
+      allow create: if isAuthenticated() && 
+        request.auth.uid == request.resource.data.publisherId &&
+        request.resource.data.publisherId != null;
 
       // Actualizar/Eliminar: Solo el propietario de la publicación.
-      allow update, delete: if isAuthenticated() && request.auth.uid == resource.data.publisherId;
+      allow update: if isAuthenticated() && 
+        request.auth.uid == resource.data.publisherId &&
+        request.auth.uid == request.resource.data.publisherId;
+        
+      allow delete: if isAuthenticated() && 
+        request.auth.uid == resource.data.publisherId;
     }
 
     // --- Colecciones de Usuarios y Datos Privados ---
     match /users/{userId} {
       // Lectura: Cualquier usuario autenticado puede ver perfiles públicos.
-      allow get: if isAuthenticated();
+      allow read: if isAuthenticated();
 
       // Escritura: Solo el propietario puede actualizar su perfil.
       allow write: if isOwner(userId);
@@ -41,6 +53,7 @@ service cloud.firestore {
         // Solo el propietario puede gestionar sus recetas privadas.
         allow read, write, delete: if isOwner(userId);
       }
+      
       match /menus/{menuId} {
         // Solo el propietario puede gestionar sus menús privados.
         allow read, write, delete: if isOwner(userId);
@@ -53,12 +66,35 @@ service cloud.firestore {
         allow read: if isAuthenticated();
         allow write: if isOwner(userId);
       }
+      
       match /followers/{followerId} {
         // Lectura: Cualquiera autenticado puede leer (para contadores).
         // Escritura: El seguidor es quien se añade/quita de la lista.
         allow read: if isAuthenticated();
         allow write: if isOwner(followerId);
       }
+    }
+
+    // --- Reglas adicionales para comentarios y reacciones ---
+    match /published_recipes/{recipeId}/comments/{commentId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && 
+        request.auth.uid == request.resource.data.userId;
+      allow update, delete: if isAuthenticated() && 
+        request.auth.uid == resource.data.userId;
+    }
+
+    match /published_recipes/{recipeId}/likes/{likeId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && 
+        request.auth.uid == request.resource.data.userId;
+      allow delete: if isAuthenticated() && 
+        request.auth.uid == resource.data.userId;
+    }
+
+    // --- Regla de denegación por defecto ---
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
