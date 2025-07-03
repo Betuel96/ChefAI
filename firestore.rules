@@ -3,59 +3,48 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Reglas para los perfiles de usuario
+
+    // Helper function to check if a user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function to check if the user is the owner of the document
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // Users can read their own profile, and anyone can read public profiles
     match /users/{userId} {
-      // Cualquiera puede leer la información pública de un perfil (nombre, foto)
       allow read: if true;
-      // Solo el propio usuario puede crear o actualizar su perfil
-      allow write: if request.auth != null && request.auth.uid == userId;
-
-      // Reglas para las recetas guardadas de un usuario
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId);
+      
+      // Recipes and Menus are user-specific
       match /recipes/{recipeId} {
-        // Solo el propietario del perfil puede leer y escribir sus recetas guardadas
-        allow read, write: if request.auth != null && request.auth.uid == userId;
-      }
-
-      // Reglas para los menús guardados de un usuario
-      match /menus/{menuId} {
-        // Solo el propietario del perfil puede leer y escribir sus menús guardados
-        allow read, write: if request.auth != null && request.auth.uid == userId;
-      }
-
-      // Reglas para la lista de "seguidores" de un usuario
-      match /followers/{followerId} {
-        // Cualquiera puede ver quién sigue a un usuario
-        allow read: if true;
-        // Solo el usuario que va a seguir puede crear el registro de seguidor
-        allow create: if request.auth != null && request.auth.uid == followerId;
-        // Solo el usuario que sigue puede dejar de seguir (eliminar el registro)
-        allow delete: if request.auth != null && request.auth.uid == followerId;
-        // Nadie puede actualizar el registro, solo crear o borrar
-        allow update: if false;
+        allow read, write, delete: if isOwner(userId);
       }
       
-      // Reglas para la lista de "siguiendo" de un usuario
+      match /menus/{menuId} {
+        allow read, write, delete: if isOwner(userId);
+      }
+       // Follow/unfollow rules
+      match /followers/{followerId} {
+        allow read: if true;
+        allow write, delete: if isOwner(followerId) || isOwner(userId);
+      }
       match /following/{followingId} {
-         // Solo el propio usuario puede ver a quién sigue
-        allow read: if request.auth != null && request.auth.uid == userId;
-        // Solo el propio usuario puede añadir a alguien a su lista de "siguiendo"
-        allow create: if request.auth != null && request.auth.uid == userId;
-        // Solo el propio usuario puede eliminar a alguien de su lista de "siguiendo"
-        allow delete: if request.auth != null && request.auth.uid == userId;
-         // Nadie puede actualizar el registro, solo crear o borrar
-        allow update: if false;
+        allow read: if true;
+        allow write, delete: if isOwner(followingId) || isOwner(userId);
       }
     }
 
-    // Reglas para las recetas publicadas en la comunidad
+    // Community recipes can be read by anyone, but only created/updated by authenticated users
     match /published_recipes/{recipeId} {
-      // Cualquiera puede leer las recetas publicadas por la comunidad
       allow read: if true;
-      // Solo un usuario autenticado puede publicar una nueva receta
-      allow create: if request.auth != null;
-      // Nadie puede actualizar o eliminar recetas publicadas (se podría cambiar si se añade la función)
-      allow update, delete: if false; 
+      allow create: if isAuthenticated();
+      // Only the original publisher can update or delete their recipe
+      allow update, delete: if isOwner(resource.data.publisherId);
     }
   }
 }
