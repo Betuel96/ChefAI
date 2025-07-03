@@ -79,13 +79,13 @@ export async function updatePost(
     if (!userId) throw new Error('Post is missing publisherId.');
     
     const imagePath = `users/${userId}/posts/${postId}.png`;
+    const storageRef = ref(storage, imagePath);
 
     if (newImageDataUri === 'DELETE') {
       // Delete existing image if it exists
       if (postData.imageUrl) {
         try {
-          const oldImageRef = ref(storage, imagePath);
-          await deleteObject(oldImageRef);
+          await deleteObject(storageRef);
         } catch (e: any) {
           if (e.code !== 'storage/object-not-found') {
             console.error('Could not delete old image:', e);
@@ -95,7 +95,6 @@ export async function updatePost(
       updateData.imageUrl = null;
     } else {
       // It's a data URI, so upload it. This will overwrite any existing file at the same path.
-      const storageRef = ref(storage, imagePath);
       const snapshot = await uploadString(storageRef, newImageDataUri, 'data_url');
       const downloadURL = await getDownloadURL(snapshot.ref);
       updateData.imageUrl = downloadURL;
@@ -138,7 +137,7 @@ export async function getPublishedPosts(): Promise<PublishedPost[]> {
 export async function getUserPublishedPosts(userId: string): Promise<PublishedPost[]> {
     if (!db) throw new Error('Firestore is not initialized.');
     const recipesCollection = collection(db, 'published_recipes');
-    const q = query(recipesCollection, where('publisherId', '==', userId), orderBy('createdAt', 'desc'));
+    const q = query(recipesCollection, where('publisherId', '==', userId));
     const snapshot = await getDocs(q);
     
     const posts = snapshot.docs.map(doc => {
@@ -161,7 +160,8 @@ export async function getUserPublishedPosts(userId: string): Promise<PublishedPo
         } as PublishedPost;
     });
 
-    return posts;
+    // Manual sort because of indexing issues
+    return posts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
 
 // Function to get a single post by its ID
