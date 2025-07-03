@@ -32,6 +32,20 @@ export interface UserAccount {
 
 export type AppUser = (User & UserAccount) | null;
 
+export interface Comment {
+    id: string;
+    userId: string;
+    userName: string;
+    userPhotoURL?: string | null;
+    text: string;
+    createdAt: string;
+}
+
+export interface Like {
+    userId: string;
+    createdAt: string;
+}
+
 // This will represent any post in the community feed.
 export interface PublishedPost {
     id: string;
@@ -51,6 +65,10 @@ export interface PublishedPost {
     instructions?: string;
     additionalIngredients?: string;
     equipment?: string;
+
+    // Social counts
+    likesCount?: number;
+    commentsCount?: number;
 }
 
 export interface ProfileData extends Omit<UserAccount, 'createdAt' | 'email'> {
