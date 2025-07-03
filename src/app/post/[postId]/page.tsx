@@ -24,7 +24,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
-import { UserCircle, MessageCircle, Send, ArrowLeft, ChefHat, MoreVertical, Trash2 } from 'lucide-react';
+import { UserCircle, MessageCircle, Send, ArrowLeft, ChefHat, MoreVertical, Trash2, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
@@ -221,6 +221,10 @@ export default function PostDetailPage() {
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => router.push(`/edit-post/${post.id}`)}>
+                                        <Pencil className="mr-2 h-4 w-4" />
+                                        Editar
+                                    </DropdownMenuItem>
                                     <DropdownMenuItem
                                         onClick={() => setShowDeleteDialog(true)}
                                         className="text-destructive"

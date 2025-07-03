@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -9,7 +10,7 @@ import type { PublishedPost } from '@/types';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { UtensilsCrossed, UserCircle, MessageCircle, ChefHat, MoreVertical, Trash2 } from 'lucide-react';
+import { UtensilsCrossed, UserCircle, MessageCircle, ChefHat, MoreVertical, Trash2, Pencil } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -26,9 +27,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { useRouter } from 'next/navigation';
 
 const PostCard = ({ post, onPostDeleted }: { post: PublishedPost, onPostDeleted: (postId: string) => void }) => {
     const { user } = useAuth();
+    const router = useRouter();
     const { toast } = useToast();
     const [isLiked, setIsLiked] = useState(false);
     const [likesCount, setLikesCount] = useState(post.likesCount || 0);
@@ -116,6 +119,10 @@ const PostCard = ({ post, onPostDeleted }: { post: PublishedPost, onPostDeleted:
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => router.push(`/edit-post/${post.id}`)}>
+                                    <Pencil className="mr-2 h-4 w-4" />
+                                    Editar
+                                </DropdownMenuItem>
                                 <DropdownMenuItem
                                     onClick={() => setShowDeleteDialog(true)}
                                     className="text-destructive"

@@ -1,3 +1,4 @@
+
 'use server';
 
 import {
@@ -56,6 +57,50 @@ export async function createPost(
   }
 
   return docRef.id;
+}
+
+// Function to update a post
+export async function updatePost(
+  postId: string,
+  updateData: Partial<PublishedPost>,
+  newImageDataUri?: string | null | 'DELETE'
+): Promise<void> {
+  if (!db || !storage) throw new Error('Firestore or Storage is not initialized.');
+  const postRef = doc(db, 'published_recipes', postId);
+
+  // Handle image update first if a new URI is provided or deletion is requested
+  if (newImageDataUri !== null && newImageDataUri !== undefined) {
+    const postSnap = await getDoc(postRef);
+    const postData = postSnap.data();
+    if (!postData) throw new Error("Post not found to update image.");
+
+    const userId = postData.publisherId;
+    if (!userId) throw new Error('Post is missing publisherId.');
+
+    if (newImageDataUri === 'DELETE') {
+      // Delete existing image if it exists
+      if (postData.imageUrl) {
+        try {
+          const oldImageRef = ref(storage, postData.imageUrl);
+          await deleteObject(oldImageRef);
+        } catch (e: any) {
+          if (e.code !== 'storage/object-not-found') {
+            console.error('Could not delete old image:', e);
+          }
+        }
+      }
+      updateData.imageUrl = null;
+    } else {
+      // It's a data URI, so upload it.
+      const storageRef = ref(storage, `users/${userId}/posts/${postId}.png`);
+      const snapshot = await uploadString(storageRef, newImageDataUri, 'data_url');
+      const downloadURL = await getDownloadURL(snapshot.ref);
+      updateData.imageUrl = downloadURL;
+    }
+  }
+
+  // Update the Firestore document with the text fields and potentially new imageUrl
+  await updateDoc(postRef, updateData as { [x: string]: any });
 }
 
 
