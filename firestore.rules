@@ -17,13 +17,12 @@ service cloud.firestore {
       // Lectura: Cualquiera puede ver las publicaciones de la comunidad.
       allow read: if true;
 
-      // Crear: Solo usuarios autenticados.
-      allow create: if isAuthenticated() &&
-        request.auth.uid == request.resource.data.publisherId &&
-        request.resource.data.publisherId != null;
+      // Crear: Solo usuarios autenticados, y deben ser los publicadores.
+      allow create: if isAuthenticated() && 
+        request.auth.uid == request.resource.data.publisherId;
 
       // Actualizar/Eliminar: Solo el propietario de la publicación.
-      allow update, delete: if isAuthenticated() &&
+      allow update, delete: if isAuthenticated() && 
         request.auth.uid == resource.data.publisherId;
     }
 
@@ -62,21 +61,20 @@ service cloud.firestore {
       }
     }
 
-    // --- Reglas adicionales para futuras funciones (Comentarios y Reacciones) ---
-    // NOTA: Estas reglas son para funciones que aún no existen en la app.
+    // --- Reglas adicionales para futuras funciones ---
     match /published_recipes/{recipeId}/comments/{commentId} {
       allow read: if true;
-      allow create: if isAuthenticated() &&
+      allow create: if isAuthenticated() && 
         request.auth.uid == request.resource.data.userId;
-      allow update, delete: if isAuthenticated() &&
+      allow update, delete: if isAuthenticated() && 
         request.auth.uid == resource.data.userId;
     }
 
     match /published_recipes/{recipeId}/likes/{likeId} {
       allow read: if true;
-      allow create: if isAuthenticated() &&
+      allow create: if isAuthenticated() && 
         request.auth.uid == request.resource.data.userId;
-      allow delete: if isAuthenticated() &&
+      allow delete: if isAuthenticated() && 
         request.auth.uid == resource.data.userId;
     }
   }
