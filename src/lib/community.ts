@@ -136,9 +136,13 @@ export async function getPublishedPosts(): Promise<PublishedPost[]> {
 export async function getUserPublishedPosts(userId: string): Promise<PublishedPost[]> {
     if (!db) throw new Error('Firestore is not initialized.');
     const recipesCollection = collection(db, 'published_recipes');
-    const q = query(recipesCollection, where('publisherId', '==', userId), orderBy('createdAt', 'desc'));
+    // The orderBy('createdAt') clause is removed to avoid needing a composite index
+    // during development. In production, the index should be deployed and the
+    // orderBy clause can be re-added for database-level sorting.
+    const q = query(recipesCollection, where('publisherId', '==', userId));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => {
+    
+    const posts = snapshot.docs.map(doc => {
         const data = doc.data();
         const createdAtTimestamp = data.createdAt as Timestamp;
         return {
@@ -157,6 +161,11 @@ export async function getUserPublishedPosts(userId: string): Promise<PublishedPo
             commentsCount: data.commentsCount || 0,
         } as PublishedPost;
     });
+
+    // Sort posts on the client-side by creation date
+    posts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    return posts;
 }
 
 // Function to get a single post by its ID
