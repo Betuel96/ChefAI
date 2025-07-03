@@ -60,7 +60,8 @@ export async function signInWithGoogle(): Promise<void> {
       return;
     }
     if (error.code === 'auth/unauthorized-domain') {
-      throw new Error("Este dominio no está autorizado. Ve a la consola de Firebase > Authentication > Settings > Authorized domains y añade tu dominio.");
+      const domain = typeof window !== 'undefined' ? window.location.hostname : 'tu-dominio.com';
+      throw new Error(`Dominio no autorizado. Por favor, ve a tu Consola de Firebase -> Authentication -> Settings -> Authorized domains y añade el siguiente dominio: ${domain}`);
     }
     if (error.code === 'auth/account-exists-with-different-credential') {
       throw new Error("Ya existe una cuenta con este correo, pero con un método de inicio de sesión diferente.");
