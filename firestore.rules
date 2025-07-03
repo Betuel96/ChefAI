@@ -3,39 +3,30 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ===== Colección de Recetas Públicas =====
-    // Este único bloque controla todo para `published_recipes`.
+    // ===== Colección de Recetas Públicas (VERSIÓN DE PRUEBA) =====
     match /published_recipes/{recipeId} {
-
-      // LECTURA: Permite que cualquiera lea las recetas publicadas.
-      // Esto es ESENCIAL para que la página de Comunidad y los perfiles carguen.
       allow read: if true;
 
-      // ESCRITURA (Crear): Solo usuarios con correo verificado pueden publicar.
-      // Esta es la regla que ya funcionó, como demostró tu captura.
-      allow create: if request.auth != null && request.auth.token.email_verified == true;
+      // PRUEBA DE DIAGNÓSTICO:
+      // Se ha eliminado temporalmente `&& request.auth.token.email_verified == true`
+      // para aislar el problema. Ahora solo comprueba si has iniciado sesión.
+      allow create: if request.auth != null;
 
-      // ESCRITURA (Editar/Borrar): Solo el autor original puede modificar su publicación.
       allow update, delete: if request.auth.uid == resource.data.publisherId;
     }
 
     // ===== Datos de Usuario y Colecciones Privadas =====
     match /users/{userId} {
-      // LECTURA: Cualquier usuario autenticado puede ver el perfil público de otro.
       allow get: if request.auth != null;
-
-      // ESCRITURA: Un usuario solo puede escribir en su propio documento de perfil.
       allow write: if request.auth.uid == userId;
 
-      // --- Sub-colecciones privadas ---
       match /recipes/{recipeId} {
         allow read, write: if request.auth.uid == userId;
       }
       match /menus/{menuId} {
         allow read, write: if request.auth.uid == userId;
       }
-      
-      // --- Sub-colecciones de "Seguir" ---
+
       match /following/{targetUserId} {
         allow read: if request.auth != null;
         allow write: if request.auth.uid == userId;
