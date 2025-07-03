@@ -49,7 +49,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setLoading(false);
         }, (error) => {
             // Handle errors fetching the document
-            console.error(`[use-auth.tsx > onSnapshot] Error al escuchar el perfil del usuario (UID: ${authUser.uid}). Esto es probablemente un problema de reglas de Firestore. Revisa que el usuario autenticado tenga permiso para leer su propio documento en /users/{userId}.`, error);
+            console.error(
+              `[use-auth.tsx > onSnapshot] ¡ERROR DE PERMISOS DE FIRESTORE!
+----------------------------------------------------------------------
+No se pudo leer el perfil del usuario (UID: ${authUser.uid}).
+Esto casi siempre significa que las REGLAS DE SEGURIDAD de Cloud Firestore no se han publicado correctamente.
+
+Causa probable: Las reglas predeterminadas están en "modo de producción", que bloquea todas las lecturas.
+
+Solución:
+1. Ve a la Consola de Firebase -> Cloud Firestore -> Pestaña "Reglas".
+2. Pega el contenido del archivo 'firestore.rules' del proyecto.
+3. Haz clic en "Publicar".
+
+Error original:`,
+              error
+            );
             setUser(authUser as AppUser); // Fallback to authUser only
             setLoading(false);
         });
