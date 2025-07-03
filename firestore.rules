@@ -3,44 +3,40 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // RECETAS PÚBLICAS
-    // Cualquiera puede leer las recetas publicadas (ideal para una comunidad).
-    // Solo los usuarios con correo verificado pueden crearlas.
-    // Solo el dueño puede actualizar o borrar sus propias recetas.
+    // ===== PUBLIC DATA =====
+    // Cualquiera puede leer las recetas publicadas y los perfiles de usuario.
     match /published_recipes/{recipeId} {
       allow read: if true;
+    }
+    match /users/{userId} {
+      allow get: if request.auth != null;
+    }
+    
+    // ===== SECURED WRITES & PRIVATE DATA =====
+    match /published_recipes/{recipeId} {
+      // Solo usuarios verificados pueden crear recetas.
       allow create: if request.auth != null && request.auth.token.email_verified == true;
-      allow update, delete: if request.auth != null && resource.data.publisherId == request.auth.uid;
+      // Solo el autor puede editar o borrar su receta.
+      allow update, delete: if request.auth.uid == resource.data.publisherId;
     }
 
-    // DATOS DE USUARIO Y COLECCIONES PRIVADAS
     match /users/{userId} {
-      // Un usuario puede ver el perfil público de otro.
-      allow get: if request.auth != null;
-      // Un usuario solo puede escribir en su propio perfil y colecciones privadas.
-      allow create, update, delete: if request.auth.uid == userId;
+      // Un usuario solo puede escribir en su propio perfil y datos privados.
+      allow write: if request.auth.uid == userId;
 
-      // Un usuario solo puede leer y escribir en sus propias recetas guardadas.
       match /recipes/{recipeId} {
         allow read, write: if request.auth.uid == userId;
       }
-      // Un usuario solo puede leer y escribir en sus propios menús guardados.
       match /menus/{menuId} {
         allow read, write: if request.auth.uid == userId;
       }
-      
-      // La lista de a quién sigue un usuario es pública para lectura.
-      // Un usuario solo puede modificar su propia lista de "seguidos".
-      match /following/{targetUserId} {
-        allow read: if request.auth != null;
-        allow create, delete: if request.auth.uid == userId;
+      match /following/{targetId} {
+          allow read: if request.auth != null;
+          allow write: if request.auth.uid == userId;
       }
-      
-      // La lista de seguidores de un usuario es pública para lectura.
-      // Un usuario solo puede agregarse o quitarse a sí mismo de la lista de seguidores de otro.
       match /followers/{followerId} {
-        allow read: if request.auth != null;
-        allow create, delete: if request.auth.uid == followerId; 
+          allow read: if request.auth != null;
+          allow write: if request.auth.uid == followerId;
       }
     }
   }
