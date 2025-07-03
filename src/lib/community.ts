@@ -63,22 +63,26 @@ export async function createPost(
 // Function to update a post
 export async function updatePost(
   postId: string,
+  currentUserId: string,
   updateData: Partial<PublishedPost>,
   newImageDataUri?: string | null | 'DELETE'
 ): Promise<void> {
   if (!db || !storage) throw new Error('Firestore or Storage is not initialized.');
   const postRef = doc(db, 'published_recipes', postId);
+  
+  const postSnap = await getDoc(postRef);
+  if (!postSnap.exists()) {
+      throw new Error("La publicación no existe.");
+  }
+  const postData = postSnap.data();
+
+  if (postData.publisherId !== currentUserId) {
+    throw new Error("No tienes permiso para editar esta publicación.");
+  }
 
   // Handle image update first if a new URI is provided or deletion is requested
   if (newImageDataUri !== null && newImageDataUri !== undefined) {
-    const postSnap = await getDoc(postRef);
-    const postData = postSnap.data();
-    if (!postData) throw new Error("Post not found to update image.");
-
-    const userId = postData.publisherId;
-    if (!userId) throw new Error('Post is missing publisherId.');
-    
-    const imagePath = `users/${userId}/posts/${postId}.png`;
+    const imagePath = `users/${currentUserId}/posts/${postId}.png`;
     const storageRef = ref(storage, imagePath);
 
     if (newImageDataUri === 'DELETE') {

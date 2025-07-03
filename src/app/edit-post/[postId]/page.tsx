@@ -130,7 +130,7 @@ export default function EditPostPage() {
   };
 
   const submitUpdate = async (updateData: Partial<PublishedPost>) => {
-    if (!post) return;
+    if (!post || !user) return;
     setIsUpdating(true);
 
     let imageAction: string | null | 'DELETE' = null;
@@ -141,7 +141,7 @@ export default function EditPostPage() {
     }
 
     try {
-        await updatePost(post.id, updateData, imageAction);
+        await updatePost(post.id, user.uid, updateData, imageAction);
         toast({
             title: '¡Publicación Actualizada!',
             description: 'Tus cambios han sido guardados.',
