@@ -1,19 +1,27 @@
 // src/app/pro/page.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/use-auth';
+import { useToast } from '@/hooks/use-toast';
+import { getProfileData, getUserPublishedPosts, getFollowingList, getFollowersList } from '@/lib/community';
+import { resendVerificationEmail } from '@/lib/users';
+import type { ProfileData, PublishedPost, ProfileListItem } from '@/types';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAuth } from '@/hooks/use-auth';
-import { CheckCircle, Gem, LogIn, UserCircle, Mail, VenetianMask } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { resendVerificationEmail } from '@/lib/users';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ProfileHeader } from '@/components/profile/ProfileHeader';
+import { PostGrid } from '@/components/profile/PostGrid';
+import { UserList } from '@/components/profile/UserList';
+
+import Link from 'next/link';
+import { CheckCircle, Gem, LogIn, UserCircle, Mail, VenetianMask, BookOpen, Users, Settings } from 'lucide-react';
+
 
 const proFeatures = [
   'Generaciones ilimitadas de recetas',
@@ -24,24 +32,15 @@ const proFeatures = [
   'Sin anuncios',
 ];
 
-
-export default function ProPage() {
-  const { user, loading } = useAuth();
+const AccountSettings = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  const { toast } = useToast();
-  const router = useRouter();
+
+  if (!user) return null;
 
   const handleUpgrade = async () => {
-    if (!user) {
-      toast({
-        title: 'Debes Iniciar Sesión',
-        description: 'Por favor, inicia sesión para suscribirte a Pro.',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
     setIsRedirecting(true);
     try {
       const response = await fetch('/api/create-checkout-session', {
@@ -49,18 +48,13 @@ export default function ProPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user.uid }),
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'No se pudo iniciar el proceso de pago.');
       }
-
       const { url } = await response.json();
-      if (url) {
-        window.location.href = url;
-      } else {
-        throw new Error('No se recibió la URL de pago.');
-      }
+      if (url) window.location.href = url;
+      else throw new Error('No se recibió la URL de pago.');
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -70,87 +64,26 @@ export default function ProPage() {
       setIsRedirecting(false);
     }
   };
-  
+
   const handleResend = async () => {
     setIsSending(true);
     const result = await resendVerificationEmail();
-    if (result.success) {
-      toast({
-        title: 'Correo Enviado',
-        description: result.message,
-      });
-    } else {
-      toast({
-        title: 'Error',
-        description: result.message,
-        variant: 'destructive',
-      });
-    }
+    toast({
+      title: result.success ? 'Correo Enviado' : 'Error',
+      description: result.message,
+      variant: result.success ? 'default' : 'destructive',
+    });
     setIsSending(false);
   };
 
-
-  if (loading) {
-    return (
-        <div className="max-w-4xl mx-auto space-y-8">
-            <header>
-                <Skeleton className="h-10 w-1/2" />
-                <Skeleton className="h-4 w-1/3 mt-2" />
-            </header>
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-                <div className="lg:col-span-2">
-                    <Skeleton className="h-48 w-full" />
-                </div>
-                <div className="lg:col-span-3">
-                    <Skeleton className="h-72 w-full" />
-                </div>
-            </div>
-        </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="flex justify-center items-center min-h-[calc(100vh-8rem)]">
-        <Card className="max-w-md w-full shadow-lg p-8 text-center">
-            <LogIn className="w-12 h-12 text-primary mx-auto mb-4" />
-            <CardTitle className='font-headline text-2xl'>Inicia sesión para ver tu cuenta</CardTitle>
-            <CardDescription className='mt-2 mb-6'>No has iniciado sesión. Accede a tu cuenta para gestionar tu suscripción y ver tu perfil.</CardDescription>
-            <Button asChild>
-                <Link href="/login">Acceder / Registrarse</Link>
-            </Button>
-        </Card>
-      </div>
-    );
-  }
-
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      <header>
-        <h1 className="font-headline text-4xl font-bold text-primary">Mi Cuenta</h1>
-        <p className="text-muted-foreground mt-2 text-lg">Gestiona tu información personal y tu suscripción.</p>
-      </header>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
+    <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start max-w-4xl mx-auto pt-6">
         <div className="lg:col-span-2 space-y-8">
             <Card>
                 <CardHeader>
                     <CardTitle className='font-headline'>Información del Perfil</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="flex items-center gap-4">
-                        <Avatar className="h-16 w-16 text-3xl">
-                            <AvatarImage src={user.photoURL || undefined} />
-                            <AvatarFallback>
-                                <UserCircle />
-                            </AvatarFallback>
-                        </Avatar>
-                        <div>
-                            <p className="font-bold text-lg">{user.displayName}</p>
-                            <p className="text-sm text-muted-foreground">{user.isPremium ? 'Miembro Pro' : 'Plan Gratuito'}</p>
-                        </div>
-                    </div>
-                     <Separator />
                      <div className='flex items-center gap-3 text-sm text-muted-foreground'>
                         <Mail className='w-4 h-4' />
                         <span>{user.email}</span>
@@ -170,12 +103,7 @@ export default function ProPage() {
                             )}
                         </div>
                          {!user.emailVerified && (
-                            <Button
-                                variant="secondary"
-                                size="sm"
-                                onClick={handleResend}
-                                disabled={isSending}
-                            >
+                            <Button variant="secondary" size="sm" onClick={handleResend} disabled={isSending}>
                                 {isSending ? 'Enviando...' : 'Verificar'}
                             </Button>
                         )}
@@ -203,15 +131,12 @@ export default function ProPage() {
                         <Switch
                             checked={user.isPremium}
                             onCheckedChange={(checked) => {
-                                if (checked && !user.isPremium) {
-                                    handleUpgrade();
-                                }
+                                if (checked && !user.isPremium) handleUpgrade();
                             }}
                             disabled={user.isPremium || isRedirecting}
                             aria-readonly
                         />
                     </div>
-                    
                     <ul className="space-y-3 text-sm">
                         {proFeatures.map((feature) => (
                         <li key={feature} className="flex items-center gap-3">
@@ -220,7 +145,6 @@ export default function ProPage() {
                         </li>
                         ))}
                     </ul>
-                    
                     {!user.isPremium && (
                         <>
                             <Button onClick={handleUpgrade} className="w-full text-lg py-6" disabled={isRedirecting}>
@@ -231,11 +155,120 @@ export default function ProPage() {
                             </p>
                         </>
                     )}
-
                 </CardContent>
             </Card>
         </div>
       </div>
+  );
+}
+
+export default function MyProfilePage() {
+  const { user, loading: authLoading } = useAuth();
+  
+  const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [posts, setPosts] = useState<PublishedPost[]>([]);
+  const [following, setFollowing] = useState<ProfileListItem[]>([]);
+  const [followers, setFollowers] = useState<ProfileListItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
+
+    const fetchData = async () => {
+        setIsLoading(true);
+        try {
+            const [profileData, publishedPosts, followingList, followersList] = await Promise.all([
+                getProfileData(user.uid),
+                getUserPublishedPosts(user.uid),
+                getFollowingList(user.uid),
+                getFollowersList(user.uid),
+            ]);
+
+            setProfile(profileData);
+            setPosts(publishedPosts);
+            setFollowing(followingList);
+            setFollowers(followersList);
+
+        } catch (error) {
+            console.error("Error fetching my profile data:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    fetchData();
+  }, [user, authLoading]);
+
+
+  if (authLoading || isLoading) {
+    return (
+        <div className="max-w-4xl mx-auto space-y-8">
+            <header>
+                <Skeleton className="h-10 w-1/2" />
+                <Skeleton className="h-4 w-1/3 mt-2" />
+            </header>
+            <Skeleton className="h-48 w-full" />
+        </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="flex justify-center items-center min-h-[calc(100vh-8rem)]">
+        <Card className="max-w-md w-full shadow-lg p-8 text-center">
+            <LogIn className="w-12 h-12 text-primary mx-auto mb-4" />
+            <CardTitle className='font-headline text-2xl'>Inicia sesión para ver tu perfil</CardTitle>
+            <CardDescription className='mt-2 mb-6'>No has iniciado sesión. Accede a tu cuenta para ver tu perfil y gestionar tu cuenta.</CardDescription>
+            <Button asChild>
+                <Link href="/login">Acceder / Registrarse</Link>
+            </Button>
+        </Card>
+      </div>
+    );
+  }
+  
+  if (!profile) {
+    // This might happen briefly if the user document is still being created
+    return (
+        <div className="flex justify-center items-center min-h-[calc(100vh-8rem)]">
+            Cargando perfil...
+        </div>
+    )
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-8">
+      <ProfileHeader profile={profile} isFollowing={false} onFollowToggle={() => {}} isCurrentUser={true} />
+
+      <Tabs defaultValue="posts" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="posts"><BookOpen className="mr-2 h-4 w-4" /> Publicaciones ({posts.length})</TabsTrigger>
+            <TabsTrigger value="following"><Users className="mr-2 h-4 w-4" /> Siguiendo ({following.length})</TabsTrigger>
+            <TabsTrigger value="followers"><Users className="mr-2 h-4 w-4" /> Seguidores ({followers.length})</TabsTrigger>
+            <TabsTrigger value="account"><Settings className="mr-2 h-4 w-4" /> Cuenta</TabsTrigger>
+        </TabsList>
+        <TabsContent value="posts" className="mt-6">
+            <PostGrid posts={posts} />
+             {posts.length === 0 && (
+                <p className="text-center text-muted-foreground pt-10">
+                  Todavía no has publicado nada. ¡Ve al <Link href="/publish" className="underline text-primary">creador de publicaciones</Link>!
+                </p>
+            )}
+        </TabsContent>
+        <TabsContent value="following" className="mt-6">
+            <UserList users={following} emptyMessage="Aún no sigues a nadie." />
+        </TabsContent>
+        <TabsContent value="followers" className="mt-6">
+            <UserList users={followers} emptyMessage="Aún no tienes seguidores." />
+        </TabsContent>
+        <TabsContent value="account">
+            <AccountSettings />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -13,8 +12,7 @@ import {
   Sparkles,
   LogIn,
   LogOut,
-  UserCircle,
-  Gem,
+  User as UserIcon,
   Users,
   PlusSquare,
 } from 'lucide-react';
@@ -36,8 +34,7 @@ import { signOut } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
 import { Skeleton } from '../ui/skeleton';
-import { Button } from '../ui/button';
-import { cn } from '@/lib/utils';
+import { UserCircle } from 'lucide-react';
 
 const aiToolsItems = [
   { href: '/generator', label: 'Generador de Recetas', icon: Sparkles },
@@ -81,8 +78,6 @@ export function AppSidebar() {
       });
     }
   };
-
-  const isCommunityActive = pathname === '/community' || pathname.startsWith('/profile') || pathname === '/publish';
 
   return (
     <Sidebar>
@@ -169,17 +164,10 @@ export function AppSidebar() {
           
            <SidebarMenuItem>
               <Link href="/pro">
-                <Button
-                  variant={pathname === '/pro' ? 'secondary' : 'ghost'}
-                  className={cn(
-                    'h-12 w-full justify-start gap-3 px-4',
-                    pathname !== '/pro' &&
-                      'bg-primary/10 text-primary hover:bg-primary/20'
-                  )}
-                >
-                  <Gem />
-                  <span>ChefAI Pro</span>
-                </Button>
+                <SidebarMenuButton isActive={pathname === '/pro'} tooltip="Mi Perfil">
+                  <UserIcon />
+                  <span>Mi Perfil</span>
+                </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
         </SidebarMenu>
