@@ -1,3 +1,4 @@
+
 import {
   doc,
   setDoc,
@@ -52,7 +53,7 @@ export async function signInWithGoogle(): Promise<void> {
     }
     // If it exists, their data is already in Firestore. No action needed.
   } catch (error: any) {
-    console.error("Error durante el inicio de sesión con Google: ", error.code, error.message);
+    console.error(`[users.ts > signInWithGoogle] Error durante el inicio de sesión con Google. Código: "${error.code}". Mensaje: "${error.message}"`);
     
     // Provide more specific error messages
     if (error.code === 'auth/popup-closed-by-user') {
@@ -66,9 +67,11 @@ export async function signInWithGoogle(): Promise<void> {
     if (error.code === 'auth/account-exists-with-different-credential') {
       throw new Error("Ya existe una cuenta con este correo, pero con un método de inicio de sesión diferente.");
     }
-    // This is a key error to catch. It means the developer needs to enable Google Sign-In in the Firebase Console.
     if (error.code === 'auth/operation-not-allowed') {
-      throw new Error("Inicio de sesión con Google no habilitado. Revisa la configuración de Firebase.");
+      throw new Error("Inicio de sesión con Google no habilitado. Ve a tu Consola de Firebase -> Authentication -> Sign-in method y habilítalo.");
+    }
+     if (error.code === 'unavailable' || (error.message && error.message.toLowerCase().includes('offline'))) {
+       throw new Error("Error de permisos de Firestore. No se pudo leer el perfil de usuario después de iniciar sesión. Por favor, revisa que tus reglas de Firestore (`firestore.rules`) permitan la lectura del documento del usuario (ej: /users/{userId}).");
     }
     
     throw new Error("No se pudo iniciar sesión con Google. Inténtalo de nuevo.");

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
@@ -48,7 +49,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setLoading(false);
         }, (error) => {
             // Handle errors fetching the document
-            console.error("Error fetching user profile:", error);
+            console.error(`[use-auth.tsx > onSnapshot] Error al escuchar el perfil del usuario (UID: ${authUser.uid}). Esto es probablemente un problema de reglas de Firestore. Revisa que el usuario autenticado tenga permiso para leer su propio documento en /users/{userId}.`, error);
             setUser(authUser as AppUser); // Fallback to authUser only
             setLoading(false);
         });

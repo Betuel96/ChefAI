@@ -1,48 +1,51 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Users can read public profile data of any user.
-    // Users can only create their own profile document and update their own.
+    // Helper function to check if a user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if the user is the owner of a document
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // USERS collection
     match /users/{userId} {
-      allow read: if true;
-      allow create: if request.auth != null && request.auth.uid == userId;
-      allow update: if request.auth != null && request.auth.uid == userId;
-      // No one can delete a user document from the client.
-      allow delete: if false;
+      // Anyone can create their own user document (on signup)
+      allow create: if request.auth.uid == userId;
+      // Only the owner can read or update their own profile
+      allow read, update: if isOwner(userId);
 
-      // Recipes are private to the user.
-      match /recipes/{recipeId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
-      }
-
-      // Menus are private to the user.
-      match /menus/{menuId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Subcollections for user-specific data (recipes, menus)
+      match /{collection}/{docId} {
+        // Users can create, read, update, and delete their own documents
+        allow read, write, delete: if isOwner(userId);
       }
       
-      // Users can manage their own following list.
-      match /following/{targetUserId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
-      }
-
-      // Followers list can be read by anyone, but only written to via the follow/unfollow logic.
-      // The `followUser` function writes to `users/{targetUserId}/followers/{currentUserId}`.
-      // So the user writing is the `currentUserId`.
+      // Subcollections for following/followers
       match /followers/{followerId} {
-        allow read: if true;
-        allow write: if request.auth != null && request.auth.uid == followerId;
+          allow read, create: if isAuthenticated();
+          allow delete: if isOwner(userId) || isOwner(followerId);
+      }
+      match /following/{followingId} {
+          allow read, create: if isAuthenticated();
+          allow delete: if isOwner(userId) || isOwner(followingId);
       }
     }
 
-    // Published recipes can be read by anyone.
-    // Only authenticated users with a verified email can create recipes.
-    // Only the owner can update or delete their recipe.
+    // PUBLISHED_RECIPES collection
     match /published_recipes/{recipeId} {
-      allow read: if true;
-      allow create: if request.auth != null && request.auth.token.email_verified == true;
-      allow update, delete: if request.auth != null && resource.data.publisherId == request.auth.uid;
+      // Any authenticated user can read all published recipes
+      allow read: if isAuthenticated();
+      // Users can only create recipes if they are the publisher specified in the document
+      allow create: if isAuthenticated() && request.resource.data.publisherId == request.auth.uid;
+      // Only the original publisher can update or delete their recipe
+      allow update, delete: if isAuthenticated() && resource.data.publisherId == request.auth.uid;
     }
   }
 }
