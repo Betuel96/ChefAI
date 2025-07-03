@@ -1,44 +1,56 @@
 rules_version = '2';
 
+// Estas son las reglas para Cloud Firestore
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- User Profile Data ---
-    // A user can read their own profile.
-    // Anyone authenticated can get another user's public profile.
-    // A user can only update their own profile.
+    // Reglas para la colección 'users'
     match /users/{userId} {
+      
+      // PERMISO DE LECTURA DE PERFILES:
+      // Cualquier usuario autenticado puede LEER el perfil de otro usuario.
+      // Esto es necesario para la página de perfil público y la comunidad.
       allow get: if request.auth != null;
-      allow update: if request.auth.uid == userId;
+
+      // PERMISO DE ESCRITURA DE PERFILES:
+      // Un usuario solo puede crear, editar o borrar SU PROPIO perfil.
+      allow write: if request.auth.uid == userId;
+
+      // REGLAS PARA SUBCOLECCIONES PRIVADAS (Recetas y Menús guardados)
+      // Un usuario solo puede acceder a sus propias recetas y menús.
+      match /recipes/{recipeId} {
+        allow read, write: if request.auth.uid == userId;
+      }
+      match /menus/{menuId} {
+        allow read, write: if request.auth.uid == userId;
+      }
+
+      // REGLAS PARA SUBCOLECCIONES DE SEGUIMIENTO (followers/following)
+      // Cualquiera puede VER quién sigue a quién, pero solo el usuario involucrado puede ESCRIBIR.
+      match /followers/{followerId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth.uid == followerId; // Solo el seguidor puede escribir/borrar
+      }
+      match /following/{followingId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth.uid == userId; // Solo el usuario que sigue puede escribir/borrar
+      }
     }
 
-    // --- User's Private Content (Recipes and Menus) ---
-    // A user has full control over their own recipes and menus.
-    match /users/{userId}/{collection in ['recipes', 'menus']}/{docId} {
-      allow read, write, delete: if request.auth.uid == userId;
-    }
-    
-    // --- Following Logic ---
-    // A user has full control over their own 'following' list.
-    match /users/{userId}/following/{followedId} {
-        allow read, write, delete: if request.auth.uid == userId;
-    }
-    
-    // --- Followers Logic ---
-    // ANYONE authenticated can see who follows a user.
-    // A user can add/remove THEMSELVES from another user's followers list.
-    match /users/{followedId}/followers/{followerId} {
-        allow list, get: if request.auth != null;
-        allow create, delete: if request.auth.uid == followerId;
-    }
-
-    // --- Publicly Published Recipes ---
-    // Anyone authenticated can read published recipes.
-    // A user can only create/update/delete their own publications.
+    // Reglas para la colección pública 'published_recipes'
     match /published_recipes/{recipeId} {
-      allow list, get: if request.auth != null;
+      
+      // PERMISO DE LECTURA:
+      // Cualquier usuario autenticado puede LEER todas las recetas publicadas.
+      allow read: if request.auth != null;
+
+      // PERMISO DE CREACIÓN:
+      // Un usuario solo puede CREAR una publicación si el 'publisherId' es su propio UID.
       allow create: if request.auth.uid == request.resource.data.publisherId;
-      update, delete: if request.auth.uid == resource.data.publisherId;
+
+      // PERMISO DE EDICIÓN/BORRADO:
+      // Un usuario solo puede EDITAR o BORRAR sus propias publicaciones.
+      allow update, delete: if request.auth.uid == resource.data.publisherId;
     }
   }
 }
