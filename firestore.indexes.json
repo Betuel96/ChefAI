@@ -1,7 +1,7 @@
 {
   "indexes": [
     {
-      "collectionGroup": "published_recipes",
+      "collectionId": "published_recipes",
       "queryScope": "COLLECTION",
       "fields": [
         {

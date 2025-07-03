@@ -3,49 +3,47 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ===== Public Collections =====
-
-    // Cualquiera puede leer las recetas publicadas.
-    // Esto es crucial para que la página de la comunidad funcione para todos.
+    // Rule for the public recipes collection
     match /published_recipes/{recipeId} {
+      // Anyone can read published recipes
       allow read: if true;
-
-      // Solo usuarios autenticados y con correo verificado pueden crear recetas.
+      // Only authenticated, verified users can create them
       allow create: if request.auth != null && request.auth.token.email_verified == true;
-
-      // Solo el autor original puede actualizar o eliminar su propia receta.
+      // Only the author can update or delete their own recipe
       allow update, delete: if request.auth.uid == resource.data.publisherId;
     }
 
-
-    // ===== User Data & Private Subcollections =====
-
+    // Rules for user-specific data
     match /users/{userId} {
-      // Cualquier usuario autenticado puede ver los datos públicos de un perfil.
+      // Any authenticated user can get public profile data
       allow get: if request.auth != null;
+      // A user can only create or update their own profile
+      allow create, update, delete: if request.auth.uid == userId;
 
-      // Un usuario solo puede escribir en su propio documento.
-      allow write: if request.auth.uid == userId;
-      
-      // --- Private Collections ---
-      // Un usuario solo puede acceder a sus propias recetas y menús guardados.
+      // --- Rules for user sub-collections ---
+
+      // Only the user can read/write their private recipes
       match /recipes/{recipeId} {
         allow read, write: if request.auth.uid == userId;
       }
+      
+      // Only the user can read/write their private menus
       match /menus/{menuId} {
         allow read, write: if request.auth.uid == userId;
       }
       
-      // --- Social Graph Collections ---
-      // Cualquiera puede leer las listas de seguidores/seguidos para los contadores.
-      // Un usuario solo puede modificar su propia lista de a quién sigue.
+      // Rules for the social graph
       match /following/{targetUserId} {
+        // Anyone can see who a user is following
         allow read: if request.auth != null;
+        // A user can only change their own following list
         allow write: if request.auth.uid == userId;
       }
-      // Un usuario solo puede añadirse o quitarse a sí mismo de los seguidores de otro.
+      
       match /followers/{followerId} {
+        // Anyone can see a user's followers
         allow read: if request.auth != null;
+        // A user can add/remove themselves as a follower
         allow write: if request.auth.uid == followerId;
       }
     }
