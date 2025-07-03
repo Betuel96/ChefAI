@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { searchUsers } from '@/lib/community';
 import type { AppUser, Mention } from '@/types';
 
+import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
