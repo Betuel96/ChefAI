@@ -1,3 +1,4 @@
+
 // src/app/post/[postId]/page.tsx
 'use client';
 
@@ -23,7 +24,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
-import { UserCircle, UtensilsCrossed, Heart, MessageCircle, Send, ArrowLeft } from 'lucide-react';
+import { UserCircle, MessageCircle, Send, ArrowLeft, ChefHat } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 
@@ -214,7 +215,7 @@ export default function PostDetailPage() {
                 </CardContent>
                 <CardFooter className="flex items-center gap-6 pt-4 border-t">
                      <Button variant="ghost" onClick={handleLikeClick} className="flex items-center gap-2 text-muted-foreground">
-                        <Heart className={cn("w-6 h-6", isLiked && "fill-red-500 text-red-500")} />
+                        <ChefHat className={cn("w-6 h-6 transition-colors", isLiked && "fill-primary text-primary")} />
                         <span className="font-semibold">{likesCount}</span>
                     </Button>
                     <div className="flex items-center gap-2 text-muted-foreground">

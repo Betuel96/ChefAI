@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -9,7 +10,7 @@ import type { PublishedPost } from '@/types';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { UtensilsCrossed, UserCircle, Heart, MessageCircle } from 'lucide-react';
+import { UtensilsCrossed, UserCircle, MessageCircle, ChefHat } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -105,7 +106,7 @@ const PostCard = ({ post }: { post: PublishedPost }) => {
             </Link>
             <CardFooter className="flex items-center gap-4 pt-4 border-t">
                  <Button variant="ghost" size="sm" onClick={handleLikeClick} className="flex items-center gap-2 text-muted-foreground">
-                    <Heart className={cn("w-5 h-5", isLiked && "fill-red-500 text-red-500")} />
+                    <ChefHat className={cn("w-5 h-5 transition-colors", isLiked && "fill-primary text-primary")} />
                     <span>{likesCount}</span>
                 </Button>
                 <Link href={`/post/${post.id}`} className="flex items-center gap-2">
