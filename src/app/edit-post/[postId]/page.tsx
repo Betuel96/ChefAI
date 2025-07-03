@@ -147,10 +147,10 @@ export default function EditPostPage() {
             description: 'Tus cambios han sido guardados.',
         });
         router.push(`/post/${post.id}`);
-    } catch (error) {
+    } catch (error: any) {
         toast({
             title: 'Error al Actualizar',
-            description: 'No se pudieron guardar tus cambios. Inténtalo de nuevo.',
+            description: error.message || 'No se pudieron guardar tus cambios. Inténtalo de nuevo.',
             variant: 'destructive',
         });
     } finally {
@@ -333,4 +333,3 @@ export default function EditPostPage() {
     </div>
   );
 }
-

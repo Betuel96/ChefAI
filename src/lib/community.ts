@@ -94,10 +94,15 @@ export async function updatePost(
       }
       updateData.imageUrl = null;
     } else {
-      // It's a data URI, so upload it. This will overwrite any existing file at the same path.
-      const snapshot = await uploadString(storageRef, newImageDataUri, 'data_url');
-      const downloadURL = await getDownloadURL(snapshot.ref);
-      updateData.imageUrl = downloadURL;
+      try {
+        // It's a data URI, so upload it. This will overwrite any existing file at the same path.
+        const snapshot = await uploadString(storageRef, newImageDataUri, 'data_url');
+        const downloadURL = await getDownloadURL(snapshot.ref);
+        updateData.imageUrl = downloadURL;
+      } catch (error) {
+        console.error("Error al subir la imagen:", error);
+        throw new Error("No se pudo subir la imagen. Comprueba tu conexión o los permisos de almacenamiento.");
+      }
     }
   }
 
