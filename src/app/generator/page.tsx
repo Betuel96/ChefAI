@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { generateRecipe } from '@/ai/flows/generate-recipe';
 import { generateRecipeImage } from '@/ai/flows/generate-recipe-image';
 import { addRecipe } from '@/lib/recipes';
-import { publishRecipe } from '@/lib/community';
+import { createPost } from '@/lib/community';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -166,11 +166,19 @@ export default function RecipeGeneratorPage() {
     }
     setIsPublishing(true);
     try {
-        await publishRecipe(
+        const postData = {
+            type: 'recipe' as const,
+            content: generatedRecipe.name,
+            instructions: generatedRecipe.instructions,
+            additionalIngredients: generatedRecipe.additionalIngredients,
+            equipment: generatedRecipe.equipment
+        };
+
+        await createPost(
             user.uid,
             user.displayName || 'Usuario Anónimo',
             user.photoURL,
-            generatedRecipe,
+            postData,
             imageUrl
         );
         toast({

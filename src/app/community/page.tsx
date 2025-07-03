@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { getPublishedRecipes } from '@/lib/community';
-import type { PublishedRecipe } from '@/types';
+import { getPublishedPosts } from '@/lib/community';
+import type { PublishedPost } from '@/types';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -12,44 +12,50 @@ import { UtensilsCrossed, UserCircle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
-const RecipePostCard = ({ recipe }: { recipe: PublishedRecipe }) => {
-    const createdAtDate = recipe.createdAt ? new Date(recipe.createdAt) : null;
+const PostCard = ({ post }: { post: PublishedPost }) => {
+    const createdAtDate = post.createdAt ? new Date(post.createdAt) : null;
     const timeAgo = createdAtDate ? formatDistanceToNow(createdAtDate, { addSuffix: true, locale: es }) : '';
     
     return (
         <Card className="shadow-lg">
             <CardHeader>
                 <div className="flex items-center gap-3">
-                    <Link href={`/profile/${recipe.publisherId}`}>
+                    <Link href={`/profile/${post.publisherId}`}>
                         <Avatar className="cursor-pointer">
-                            <AvatarImage src={recipe.publisherPhotoURL || undefined} />
+                            <AvatarImage src={post.publisherPhotoURL || undefined} />
                             <AvatarFallback><UserCircle /></AvatarFallback>
                         </Avatar>
                     </Link>
                     <div>
-                        <Link href={`/profile/${recipe.publisherId}`}>
-                            <p className="font-semibold cursor-pointer hover:underline">{recipe.publisherName}</p>
+                        <Link href={`/profile/${post.publisherId}`}>
+                            <p className="font-semibold cursor-pointer hover:underline">{post.publisherName}</p>
                         </Link>
                         <p className="text-xs text-muted-foreground">{timeAgo}</p>
                     </div>
                 </div>
             </CardHeader>
-            {recipe.imageUrl ? (
+            {post.imageUrl ? (
                 <div className="aspect-video relative overflow-hidden">
                     <Image
-                        src={recipe.imageUrl}
-                        alt={`Imagen de ${recipe.name}`}
+                        src={post.imageUrl}
+                        alt={`Imagen de ${post.content}`}
                         fill
                         className="object-cover"
                     />
                 </div>
             ) : (
-                <div className="aspect-video bg-muted flex items-center justify-center text-muted-foreground">
-                    <UtensilsCrossed className="w-12 h-12" />
-                </div>
+                post.type === 'recipe' && (
+                    <div className="aspect-video bg-muted flex items-center justify-center text-muted-foreground">
+                        <UtensilsCrossed className="w-12 h-12" />
+                    </div>
+                )
             )}
             <CardContent className="pt-4">
-                <CardTitle className="font-headline text-2xl">{recipe.name}</CardTitle>
+                {post.type === 'recipe' ? (
+                     <CardTitle className="font-headline text-2xl">{post.content}</CardTitle>
+                ) : (
+                    <p className="text-foreground whitespace-pre-wrap">{post.content}</p>
+                )}
             </CardContent>
             <CardFooter>
                 {/* Like, comment, save buttons can go here later */}
@@ -59,22 +65,22 @@ const RecipePostCard = ({ recipe }: { recipe: PublishedRecipe }) => {
 };
 
 export default function CommunityPage() {
-    const [recipes, setRecipes] = useState<PublishedRecipe[]>([]);
+    const [posts, setPosts] = useState<PublishedPost[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const fetchRecipes = async () => {
+        const fetchPosts = async () => {
             setIsLoading(true);
             try {
-                const fetchedRecipes = await getPublishedRecipes();
-                setRecipes(fetchedRecipes);
+                const fetchedPosts = await getPublishedPosts();
+                setPosts(fetchedPosts);
             } catch (error) {
-                console.error("Error fetching published recipes:", error);
+                console.error("Error fetching published posts:", error);
             } finally {
                 setIsLoading(false);
             }
         };
-        fetchRecipes();
+        fetchPosts();
     }, []);
 
     return (
@@ -104,8 +110,8 @@ export default function CommunityPage() {
                 </div>
             ) : (
                 <div className="space-y-8">
-                    {recipes.length > 0 ? (
-                        recipes.map(recipe => <RecipePostCard key={recipe.id} recipe={recipe} />)
+                    {posts.length > 0 ? (
+                        posts.map(post => <PostCard key={post.id} post={post} />)
                     ) : (
                         <div className="text-center text-muted-foreground py-10">
                             <p className="font-semibold">¡La comunidad está tranquila!</p>

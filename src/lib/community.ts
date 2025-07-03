@@ -14,40 +14,52 @@ import {
   deleteDoc,
   writeBatch,
   Timestamp,
+  updateDoc,
 } from 'firebase/firestore';
-import { db } from './firebase';
-import type { Recipe, UserAccount, PublishedRecipe as PublishedRecipeType, ProfileData as ProfileDataType } from '@/types';
+import { db, storage } from './firebase';
+import type { PublishedPost, ProfileData as ProfileDataType } from '@/types';
+import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 
-
-// Function to publish a recipe
-export async function publishRecipe(
+// Function to create a new post (recipe or text)
+export async function createPost(
   userId: string,
   userName: string,
   userPhotoURL: string | null,
-  recipe: Recipe,
-  imageUrl: string | null
+  postData: Omit<PublishedPost, 'id' | 'createdAt' | 'publisherId' | 'publisherName' | 'publisherPhotoURL' | 'imageUrl'>,
+  imageDataUri: string | null
 ): Promise<string> {
-  if (!db) throw new Error('Firestore is not initialized.');
+  if (!db || !storage) throw new Error('Firestore or Storage is not initialized.');
 
-  // The user document is no longer fetched here. We rely on the auth
-  // information passed directly from the client. This makes the function
-  // more resilient against race conditions where the user document
-  // might not have been created yet.
+  // The collection is named `published_recipes` for legacy reasons, but stores all post types.
+  const postsCollection = collection(db, 'published_recipes');
   
-  const publishedRecipesCollection = collection(db, 'published_recipes');
-  const docRef = await addDoc(publishedRecipesCollection, {
-    ...recipe,
-    imageUrl,
+  const docRef = await addDoc(postsCollection, {
+    ...postData,
     publisherId: userId,
     publisherName: userName,
     publisherPhotoURL: userPhotoURL,
     createdAt: serverTimestamp(),
+    imageUrl: null, // Start with null, update after upload
   });
+
+  if (imageDataUri) {
+    const storageRef = ref(storage, `users/${userId}/posts/${docRef.id}.png`);
+    try {
+      const snapshot = await uploadString(storageRef, imageDataUri, 'data_url');
+      const downloadURL = await getDownloadURL(snapshot.ref);
+      await updateDoc(docRef, { imageUrl: downloadURL });
+    } catch (error) {
+      console.error('Error uploading post image:', error);
+      // Don't delete the doc, let the post exist without an image
+    }
+  }
+
   return docRef.id;
 }
 
-// Function to get all published recipes
-export async function getPublishedRecipes(): Promise<PublishedRecipeType[]> {
+
+// Function to get all published posts
+export async function getPublishedPosts(): Promise<PublishedPost[]> {
     if (!db) throw new Error('Firestore is not initialized.');
     const recipesCollection = collection(db, 'published_recipes');
     const q = query(recipesCollection, orderBy('createdAt', 'desc'));
@@ -56,15 +68,23 @@ export async function getPublishedRecipes(): Promise<PublishedRecipeType[]> {
         const data = doc.data();
         const createdAtTimestamp = data.createdAt as Timestamp;
         return {
-            ...data,
             id: doc.id,
-            createdAt: createdAtTimestamp.toDate().toISOString(),
-        } as PublishedRecipeType;
+            publisherId: data.publisherId,
+            publisherName: data.publisherName,
+            publisherPhotoURL: data.publisherPhotoURL || null,
+            imageUrl: data.imageUrl || null,
+            createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
+            type: data.type || 'recipe', // Default to recipe for old data
+            content: data.content || data.name, // Handle old data where name was used
+            instructions: data.instructions,
+            additionalIngredients: data.additionalIngredients,
+            equipment: data.equipment,
+        } as PublishedPost;
     });
 }
 
-// Function to get recipes published by a specific user
-export async function getUserPublishedRecipes(userId: string): Promise<PublishedRecipeType[]> {
+// Function to get posts published by a specific user
+export async function getUserPublishedPosts(userId: string): Promise<PublishedPost[]> {
     if (!db) throw new Error('Firestore is not initialized.');
     const recipesCollection = collection(db, 'published_recipes');
     const q = query(recipesCollection, where('publisherId', '==', userId), orderBy('createdAt', 'desc'));
@@ -72,11 +92,19 @@ export async function getUserPublishedRecipes(userId: string): Promise<Published
     return snapshot.docs.map(doc => {
         const data = doc.data();
         const createdAtTimestamp = data.createdAt as Timestamp;
-        return { 
-            ...data,
+        return {
             id: doc.id,
-            createdAt: createdAtTimestamp.toDate().toISOString(),
-        } as PublishedRecipeType;
+            publisherId: data.publisherId,
+            publisherName: data.publisherName,
+            publisherPhotoURL: data.publisherPhotoURL || null,
+            imageUrl: data.imageUrl || null,
+            createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
+            type: data.type || 'recipe',
+            content: data.content || data.name,
+            instructions: data.instructions,
+            additionalIngredients: data.additionalIngredients,
+            equipment: data.equipment,
+        } as PublishedPost;
     });
 }
 
@@ -106,7 +134,7 @@ export async function getProfileData(userId: string): Promise<ProfileDataType | 
         ...data,
         followersCount: followersSnap.size,
         followingCount: followingSnap.size,
-        createdAt: createdAtTimestamp.toDate().toISOString(),
+        createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
     } as ProfileDataType;
 }
 

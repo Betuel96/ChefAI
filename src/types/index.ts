@@ -1,10 +1,11 @@
 import type { GenerateRecipeOutput } from '@/ai/flows/generate-recipe';
 import type { CreateWeeklyMealPlanOutput, DailyMealPlan as DailyMealPlanType } from '@/ai/flows/create-weekly-meal-plan';
 import type { User } from 'firebase/auth';
-import type { Timestamp } from 'firebase/firestore';
 
-export type Recipe = GenerateRecipeOutput & { imageUrl?: string | null };
-export type SavedRecipe = Recipe & { id: string };
+// The core recipe structure from AI
+export type Recipe = GenerateRecipeOutput;
+// A recipe saved to a user's private collection
+export type SavedRecipe = Recipe & { id: string; imageUrl?: string | null };
 
 export type WeeklyPlan = CreateWeeklyMealPlanOutput;
 export type DailyMealPlan = DailyMealPlanType;
@@ -26,17 +27,30 @@ export interface UserAccount {
     email: string | null;
     photoURL: string | null;
     isPremium: boolean;
-    createdAt: any; // Firestore timestamp
+    createdAt: string; 
 }
 
 export type AppUser = (User & UserAccount) | null;
 
-export interface PublishedRecipe extends Recipe {
+// This will represent any post in the community feed.
+export interface PublishedPost {
     id: string;
     publisherId: string;
     publisherName: string;
     publisherPhotoURL?: string | null;
     createdAt: string;
+    imageUrl?: string | null;
+    
+    type: 'recipe' | 'text'; // To distinguish between post types
+    
+    // For text posts, this is the status content.
+    // For recipe posts, this is the recipe name.
+    content: string; 
+    
+    // These are only present if type is 'recipe'
+    instructions?: string;
+    additionalIngredients?: string;
+    equipment?: string;
 }
 
 export interface ProfileData extends Omit<UserAccount, 'createdAt' | 'email'> {

@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useParams } from 'next/navigation';
-import { getProfileData, getUserPublishedRecipes, followUser, unfollowUser, getFollowingStatus } from '@/lib/community';
-import type { ProfileData, PublishedRecipe } from '@/types';
+import { getProfileData, getUserPublishedPosts, followUser, unfollowUser, getFollowingStatus } from '@/lib/community';
+import type { ProfileData, PublishedPost } from '@/types';
 import { useAuth } from '@/hooks/use-auth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -46,16 +46,16 @@ const ProfileHeader = ({ profile, isFollowing, onFollowToggle, isCurrentUser }: 
 };
 
 
-const RecipeGrid = ({ recipes }: { recipes: PublishedRecipe[] }) => {
+const PostGrid = ({ posts }: { posts: PublishedPost[] }) => {
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {recipes.map(recipe => (
-                <Card key={recipe.id} className="overflow-hidden">
+            {posts.map(post => (
+                <Card key={post.id} className="overflow-hidden">
                     <div className="aspect-square relative">
-                         {recipe.imageUrl ? (
+                         {post.imageUrl ? (
                             <Image
-                                src={recipe.imageUrl}
-                                alt={`Imagen de ${recipe.name}`}
+                                src={post.imageUrl}
+                                alt={`Imagen de ${post.content}`}
                                 fill
                                 className="object-cover"
                             />
@@ -66,7 +66,7 @@ const RecipeGrid = ({ recipes }: { recipes: PublishedRecipe[] }) => {
                         )}
                     </div>
                     <CardContent className="p-4">
-                        <p className="font-semibold truncate">{recipe.name}</p>
+                        <p className="font-semibold truncate">{post.content}</p>
                     </CardContent>
                 </Card>
             ))}
@@ -79,7 +79,7 @@ export default function ProfilePage() {
     const { user } = useAuth();
     const params = useParams<{ userId: string }>();
     const [profile, setProfile] = useState<ProfileData | null>(null);
-    const [recipes, setRecipes] = useState<PublishedRecipe[]>([]);
+    const [posts, setPosts] = useState<PublishedPost[]>([]);
     const [isFollowing, setIsFollowing] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -93,14 +93,14 @@ export default function ProfilePage() {
         const fetchData = async () => {
             setIsLoading(true);
             try {
-                const [profileData, publishedRecipes] = await Promise.all([
+                const [profileData, publishedPosts] = await Promise.all([
                     getProfileData(params.userId),
-                    getUserPublishedRecipes(params.userId),
+                    getUserPublishedPosts(params.userId),
                 ]);
 
                 if (profileData) {
                     setProfile(profileData);
-                    setRecipes(publishedRecipes);
+                    setPosts(publishedPosts);
                     if (user && !isCurrentUser) {
                         const followingStatus = await getFollowingStatus(user.uid, params.userId);
                         setIsFollowing(followingStatus);
@@ -158,9 +158,9 @@ export default function ProfilePage() {
     return (
         <div className="max-w-4xl mx-auto space-y-8">
             <ProfileHeader profile={profile} isFollowing={isFollowing} onFollowToggle={handleFollowToggle} isCurrentUser={isCurrentUser} />
-            <RecipeGrid recipes={recipes} />
-             {recipes.length === 0 && (
-                <p className="text-center text-muted-foreground pt-10">Este usuario aún no ha publicado ninguna receta.</p>
+            <PostGrid posts={posts} />
+             {posts.length === 0 && (
+                <p className="text-center text-muted-foreground pt-10">Este usuario aún no ha publicado nada.</p>
             )}
         </div>
     );
