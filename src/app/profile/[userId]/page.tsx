@@ -3,9 +3,10 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { getProfileData, getUserPublishedPosts, followUser, unfollowUser, getFollowingStatus } from '@/lib/community';
-import type { ProfileData, PublishedPost } from '@/types';
+import { getProfileData, getUserPublishedPosts, followUser, unfollowUser, getFollowingStatus, getFollowingList, getFollowersList } from '@/lib/community';
+import type { ProfileData, PublishedPost, ProfileListItem } from '@/types';
 import { useAuth } from '@/hooks/use-auth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { UserCircle, UtensilsCrossed, CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const ProfileHeader = ({ profile, isFollowing, onFollowToggle, isCurrentUser }: { profile: ProfileData, isFollowing: boolean, onFollowToggle: () => void, isCurrentUser: boolean }) => {
     const joinedDate = profile.createdAt ? new Date(profile.createdAt) : null;
@@ -51,25 +53,51 @@ const PostGrid = ({ posts }: { posts: PublishedPost[] }) => {
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {posts.map(post => (
-                <Card key={post.id} className="overflow-hidden">
-                    <div className="aspect-square relative">
-                         {post.imageUrl ? (
-                            <Image
-                                src={post.imageUrl}
-                                alt={`Imagen de ${post.content}`}
-                                fill
-                                className="object-cover"
-                            />
-                        ) : (
-                            <div className="bg-muted h-full flex items-center justify-center text-muted-foreground">
-                                <UtensilsCrossed className="w-10 h-10" />
-                            </div>
-                        )}
-                    </div>
-                    <CardContent className="p-4">
-                        <p className="font-semibold truncate">{post.content}</p>
-                    </CardContent>
-                </Card>
+                <Link href={`/post/${post.id}`} key={post.id}>
+                    <Card className="overflow-hidden group">
+                        <div className="aspect-square relative">
+                            {post.imageUrl ? (
+                                <Image
+                                    src={post.imageUrl}
+                                    alt={`Imagen de ${post.content}`}
+                                    fill
+                                    className="object-cover transition-transform duration-300 group-hover:scale-105"
+                                />
+                            ) : (
+                                <div className="bg-muted h-full flex items-center justify-center text-muted-foreground">
+                                    <UtensilsCrossed className="w-10 h-10" />
+                                </div>
+                            )}
+                        </div>
+                        <CardContent className="p-4">
+                            <p className="font-semibold truncate">{post.content}</p>
+                        </CardContent>
+                    </Card>
+                 </Link>
+            ))}
+        </div>
+    );
+};
+
+const UserList = ({ users }: { users: ProfileListItem[] }) => {
+    if (users.length === 0) {
+        return <p className="text-center text-muted-foreground pt-10">No hay usuarios que mostrar.</p>;
+    }
+
+    return (
+        <div className="space-y-4">
+            {users.map(userItem => (
+                <Link href={`/profile/${userItem.id}`} key={userItem.id}>
+                    <Card className="hover:bg-muted/50 transition-colors">
+                        <CardContent className="p-4 flex items-center gap-4">
+                            <Avatar>
+                                <AvatarImage src={userItem.photoURL || undefined} />
+                                <AvatarFallback><UserCircle /></AvatarFallback>
+                            </Avatar>
+                            <p className="font-semibold">{userItem.name}</p>
+                        </CardContent>
+                    </Card>
+                </Link>
             ))}
         </div>
     );
@@ -81,6 +109,8 @@ export default function ProfilePage() {
     const params = useParams<{ userId: string }>();
     const [profile, setProfile] = useState<ProfileData | null>(null);
     const [posts, setPosts] = useState<PublishedPost[]>([]);
+    const [following, setFollowing] = useState<ProfileListItem[]>([]);
+    const [followers, setFollowers] = useState<ProfileListItem[]>([]);
     const [isFollowing, setIsFollowing] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -94,14 +124,18 @@ export default function ProfilePage() {
         const fetchData = async () => {
             setIsLoading(true);
             try {
-                const [profileData, publishedPosts] = await Promise.all([
+                const [profileData, publishedPosts, followingList, followersList] = await Promise.all([
                     getProfileData(params.userId),
                     getUserPublishedPosts(params.userId),
+                    getFollowingList(params.userId),
+                    getFollowersList(params.userId),
                 ]);
 
                 if (profileData) {
                     setProfile(profileData);
                     setPosts(publishedPosts);
+                    setFollowing(followingList);
+                    setFollowers(followersList);
                     if (user && !isCurrentUser) {
                         const followingStatus = await getFollowingStatus(user.uid, params.userId);
                         setIsFollowing(followingStatus);
@@ -120,17 +154,28 @@ export default function ProfilePage() {
     const handleFollowToggle = async () => {
         if (!user || isCurrentUser || !params.userId) return;
         
+        const originalIsFollowing = isFollowing;
+        setIsFollowing(!originalIsFollowing);
+        setProfile(p => {
+            if (!p) return null;
+            const newFollowersCount = originalIsFollowing ? p.followersCount - 1 : p.followersCount + 1;
+            return {...p, followersCount: newFollowersCount };
+        });
+
         try {
-            if (isFollowing) {
+            if (originalIsFollowing) {
                 await unfollowUser(user.uid, params.userId);
-                setProfile(p => p ? {...p, followersCount: p.followersCount - 1} : null);
             } else {
                 await followUser(user.uid, params.userId);
-                setProfile(p => p ? {...p, followersCount: p.followersCount + 1} : null);
             }
-            setIsFollowing(!isFollowing);
         } catch (error) {
             console.error("Error toggling follow:", error);
+            setIsFollowing(originalIsFollowing);
+             setProfile(p => {
+                if (!p) return null;
+                const newFollowersCount = originalIsFollowing ? p.followersCount + 1 : p.followersCount - 1;
+                return {...p, followersCount: newFollowersCount };
+            });
         }
     };
 
@@ -143,8 +188,11 @@ export default function ProfilePage() {
                     <div className="space-y-2 flex-grow">
                         <Skeleton className="h-10 w-1/2" />
                         <Skeleton className="h-4 w-1/3" />
+                         <Skeleton className="h-4 w-1/4" />
                     </div>
+                     <Skeleton className="h-10 w-28" />
                 </div>
+                 <Skeleton className="h-10 w-full" />
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                    {[...Array(3)].map((_, i) => <Skeleton key={i} className="aspect-square" />)}
                 </div>
@@ -159,10 +207,27 @@ export default function ProfilePage() {
     return (
         <div className="max-w-4xl mx-auto space-y-8">
             <ProfileHeader profile={profile} isFollowing={isFollowing} onFollowToggle={handleFollowToggle} isCurrentUser={isCurrentUser} />
-            <PostGrid posts={posts} />
-             {posts.length === 0 && (
-                <p className="text-center text-muted-foreground pt-10">Este usuario aún no ha publicado nada.</p>
-            )}
+            
+            <Tabs defaultValue="posts" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="posts">Publicaciones ({posts.length})</TabsTrigger>
+                    <TabsTrigger value="following">Siguiendo ({following.length})</TabsTrigger>
+                    <TabsTrigger value="followers">Seguidores ({followers.length})</TabsTrigger>
+                </TabsList>
+                <TabsContent value="posts" className="mt-6">
+                    <PostGrid posts={posts} />
+                    {posts.length === 0 && (
+                        <p className="text-center text-muted-foreground pt-10">Este usuario aún no ha publicado nada.</p>
+                    )}
+                </TabsContent>
+                <TabsContent value="following" className="mt-6">
+                    <UserList users={following} />
+                </TabsContent>
+                <TabsContent value="followers" className="mt-6">
+                    <UserList users={followers} />
+                </TabsContent>
+            </Tabs>
+
         </div>
     );
 }

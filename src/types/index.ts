@@ -83,3 +83,9 @@ export interface ProfileData extends Omit<UserAccount, 'createdAt' | 'email'> {
     followersCount: number;
     followingCount: number;
 }
+
+export interface ProfileListItem {
+    id: string;
+    name: string;
+    photoURL?: string | null;
+}

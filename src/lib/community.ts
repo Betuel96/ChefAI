@@ -20,7 +20,7 @@ import {
   limit,
 } from 'firebase/firestore';
 import { db, storage } from './firebase';
-import type { PublishedPost, ProfileData as ProfileDataType, Comment, Mention } from '@/types';
+import type { PublishedPost, ProfileData as ProfileDataType, Comment, Mention, ProfileListItem } from '@/types';
 import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
 
 // Function to create a new post (recipe or text)
@@ -403,4 +403,47 @@ export async function searchUsers(nameQuery: string): Promise<{ id: string; name
     name: doc.data().name,
     photoURL: doc.data().photoURL || null,
   }));
+}
+
+// Helper function to get multiple user profiles from a list of IDs
+async function getProfilesFromIds(userIds: string[]): Promise<ProfileListItem[]> {
+    if (!db || userIds.length === 0) return [];
+    
+    const userDocs: ProfileListItem[] = [];
+    // Firestore 'in' query can take up to 30 elements at once. Chunking the requests.
+    for (let i = 0; i < userIds.length; i += 30) {
+        const batchIds = userIds.slice(i, i + 30);
+        if (batchIds.length === 0) continue;
+        const q = query(collection(db, 'users'), where('__name__', 'in', batchIds));
+        const snapshot = await getDocs(q);
+        snapshot.forEach(docSnap => {
+            const data = docSnap.data();
+            userDocs.push({
+                id: docSnap.id,
+                name: data.name,
+                photoURL: data.photoURL || null,
+            });
+        });
+    }
+    return userDocs;
+}
+
+// Function to get the list of users a specific user is following
+export async function getFollowingList(userId: string): Promise<ProfileListItem[]> {
+    if (!db) throw new Error("Firestore not initialized.");
+    const followingRef = collection(db, 'users', userId, 'following');
+    const followingSnap = await getDocs(followingRef);
+    const followingIds = followingSnap.docs.map(doc => doc.id);
+    
+    return getProfilesFromIds(followingIds);
+}
+
+// Function to get the list of users who are following a specific user
+export async function getFollowersList(userId: string): Promise<ProfileListItem[]> {
+    if (!db) throw new Error("Firestore not initialized.");
+    const followersRef = collection(db, 'users', userId, 'followers');
+    const followersSnap = await getDocs(followersRef);
+    const followerIds = followersSnap.docs.map(doc => doc.id);
+
+    return getProfilesFromIds(followerIds);
 }
