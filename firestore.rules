@@ -1,79 +1,11 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // --- Funciones Auxiliares ---
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-
-    // --- Colecciones Públicas y sus Sub-colecciones ---
-    match /published_recipes/{recipeId} {
-      // Lectura: Cualquiera puede ver las publicaciones.
-      allow read: if true;
-
-      // Crear: Solo usuarios autenticados.
-      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.publisherId;
-
-      // Actualizar/Eliminar: Solo el propietario de la publicación.
-      allow update, delete: if isAuthenticated() && request.auth.uid == resource.data.publisherId;
-
-      // -- Sub-colección de Comentarios --
-      match /comments/{commentId} {
-        // Lectura: Cualquiera puede leer los comentarios de una publicación.
-        allow read: if true;
-        
-        // Crear: Solo usuarios autenticados pueden comentar.
-        allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
-        
-        // Actualizar/Eliminar: Solo el autor del comentario puede modificarlo/borrarlo.
-        allow update, delete: if isAuthenticated() && request.auth.uid == resource.data.userId;
-      }
-
-      // -- Sub-colección de Me Gusta --
-      // El ID del documento de "me gusta" es el UID del usuario.
-      match /likes/{userId} {
-        // Lectura: Cualquiera puede leer quién ha dado "me gusta".
-        allow read: if true;
-        
-        // Crear/Eliminar (Dar/Quitar Me Gusta): Solo el usuario autenticado puede
-        // gestionar su propio "me gusta".
-        allow create, delete: if isAuthenticated() && request.auth.uid == userId;
-      }
-    }
-
-    // --- Colecciones de Usuarios y Datos Privados ---
-    match /users/{userId} {
-      // Lectura: Cualquier usuario autenticado puede ver perfiles.
-      allow read: if isAuthenticated();
-
-      // Escritura: Solo el propietario puede actualizar su perfil.
-      allow write: if isOwner(userId);
-
-      // --- Sub-colecciones de Datos Privados ---
-      match /recipes/{recipeId} {
-        allow read, write, delete: if isOwner(userId);
-      }
-      
-      match /menus/{menuId} {
-        allow read, write, delete: if isOwner(userId);
-      }
-      
-      // --- Sub-colecciones Sociales (Seguidores/Seguidos) ---
-      match /following/{targetUserId} {
-        allow read: if isAuthenticated();
-        allow write: if isOwner(userId);
-      }
-      
-      match /followers/{followerId} {
-        allow read: if isAuthenticated();
-        allow write: if isOwner(followerId);
-      }
+    // ADVERTENCIA: Estas reglas son solo para desarrollo y son inseguras.
+    // Permiten que cualquiera lea y escriba en toda tu base de datos.
+    // Se deben implementar reglas seguras antes de la producción.
+    match /{document=**} {
+      allow read, write: if true;
     }
   }
 }
