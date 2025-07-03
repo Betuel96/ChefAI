@@ -1,10 +1,64 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Estas reglas permiten el acceso de lectura y escritura a toda tu base de datos.
-    // Son solo para fines de diagnóstico y deben ser reemplazadas.
-    match /{document=**} {
-      allow read, write: if true;
+
+    // --- Funciones Auxiliares (Inspiradas en tu modelo) ---
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function isVerified() {
+      return isAuthenticated() && request.auth.token.email_verified == true;
+    }
+
+    // --- Colecciones Públicas ---
+    match /published_recipes/{recipeId} {
+      // Lectura: Cualquiera puede ver las publicaciones de la comunidad.
+      allow read: if true;
+
+      // Crear: Solo usuarios autenticados y verificados.
+      allow create: if isVerified();
+
+      // Actualizar/Eliminar: Solo el propietario de la publicación.
+      allow update, delete: if isAuthenticated() && request.auth.uid == resource.data.publisherId;
+    }
+
+    // --- Colecciones de Usuarios y Datos Privados ---
+    match /users/{userId} {
+      // Lectura: Cualquier usuario autenticado puede ver perfiles públicos.
+      allow get: if isAuthenticated();
+
+      // Escritura: Solo el propietario puede actualizar su perfil.
+      allow write: if isOwner(userId);
+
+      // --- Sub-colecciones de Datos Privados ---
+      match /recipes/{recipeId} {
+        // Solo el propietario puede gestionar sus recetas privadas.
+        allow read, write, delete: if isOwner(userId);
+      }
+      match /menus/{menuId} {
+        // Solo el propietario puede gestionar sus menús privados.
+        allow read, write, delete: if isOwner(userId);
+      }
+      
+      // --- Sub-colecciones Sociales (Seguidores/Seguidos) ---
+      match /following/{targetUserId} {
+        // Lectura: Cualquiera autenticado puede leer (para contadores).
+        // Escritura: Solo el propietario del perfil puede modificar su lista de seguidos.
+        allow read: if isAuthenticated();
+        allow write: if isOwner(userId);
+      }
+      match /followers/{followerId} {
+        // Lectura: Cualquiera autenticado puede leer (para contadores).
+        // Escritura: El seguidor es quien se añade/quita de la lista.
+        allow read: if isAuthenticated();
+        allow write: if isOwner(followerId);
+      }
     }
   }
 }
