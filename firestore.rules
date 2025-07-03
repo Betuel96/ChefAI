@@ -1,12 +1,67 @@
 rules_version = '2';
 
-// REGLAS DE PRUEBA TEMPORALES - NO USAR EN PRODUCCIÓN
-// Estas reglas están abiertas para permitir todas las lecturas y escrituras
-// y así poder diagnosticar si el problema de permisos está en otro lugar.
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if true;
+
+    // Reglas para la colección 'users'
+    match /users/{userId} {
+      // Cualquiera puede crear una cuenta de usuario.
+      allow create: if request.auth != null;
+      
+      // Solo el propietario del perfil puede leer su propio documento completo.
+      // Otros usuarios autenticados solo pueden leerlo para obtener datos de perfil público.
+      allow read: if request.auth != null;
+      
+      // Solo el propietario del perfil puede actualizar sus datos.
+      // Se impide cambiar el email o el createdAt.
+      allow update: if request.auth.uid == userId
+                    && request.resource.data.email == resource.data.email
+                    && request.resource.data.createdAt == resource.data.createdAt;
+                    
+      // No se permite eliminar perfiles de usuario desde el cliente.
+      allow delete: if false;
+
+      // Subcolecciones de 'users'
+      match /recipes/{recipeId} {
+        // El propietario del perfil puede gestionar sus propias recetas.
+        allow read, write, delete: if request.auth.uid == userId;
+      }
+      
+      match /menus/{menuId} {
+         // El propietario del perfil puede gestionar sus propios menús.
+        allow read, write, delete: if request.auth.uid == userId;
+      }
+
+      match /followers/{followerId} {
+        // Cualquiera puede leer la lista de seguidores.
+        allow read: if true;
+        // Solo el usuario que va a seguir puede crear el documento.
+        allow create: if request.auth.uid == followerId;
+        // Solo el usuario que sigue puede eliminar su seguimiento (dejar de seguir).
+        allow delete: if request.auth.uid == followerId;
+      }
+
+      match /following/{followingId} {
+        // Cualquiera puede leer la lista de seguidos.
+        allow read: if true;
+        // Solo el propietario del perfil puede añadir a quien sigue.
+        allow create: if request.auth.uid == userId;
+        // Solo el propietario del perfil puede eliminar a quien sigue.
+        allow delete: if request.auth.uid == userId;
+      }
+    }
+
+    // Reglas para la colección 'published_recipes'
+    match /published_recipes/{recipeId} {
+      // Cualquier usuario autenticado puede leer las recetas publicadas.
+      allow read: if request.auth != null;
+
+      // Un usuario autenticado puede publicar si el ID del editor coincide con su UID.
+      allow create: if request.auth != null && request.resource.data.publisherId == request.auth.uid;
+
+      // Nadie puede actualizar o eliminar recetas publicadas desde el cliente.
+      // Estas operaciones deberían gestionarse desde un backend de administración si es necesario.
+      allow update, delete: if false;
     }
   }
 }
