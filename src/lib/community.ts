@@ -77,12 +77,14 @@ export async function updatePost(
 
     const userId = postData.publisherId;
     if (!userId) throw new Error('Post is missing publisherId.');
+    
+    const imagePath = `users/${userId}/posts/${postId}.png`;
 
     if (newImageDataUri === 'DELETE') {
       // Delete existing image if it exists
       if (postData.imageUrl) {
         try {
-          const oldImageRef = ref(storage, postData.imageUrl);
+          const oldImageRef = ref(storage, imagePath);
           await deleteObject(oldImageRef);
         } catch (e: any) {
           if (e.code !== 'storage/object-not-found') {
@@ -92,8 +94,8 @@ export async function updatePost(
       }
       updateData.imageUrl = null;
     } else {
-      // It's a data URI, so upload it.
-      const storageRef = ref(storage, `users/${userId}/posts/${postId}.png`);
+      // It's a data URI, so upload it. This will overwrite any existing file at the same path.
+      const storageRef = ref(storage, imagePath);
       const snapshot = await uploadString(storageRef, newImageDataUri, 'data_url');
       const downloadURL = await getDownloadURL(snapshot.ref);
       updateData.imageUrl = downloadURL;
@@ -136,10 +138,7 @@ export async function getPublishedPosts(): Promise<PublishedPost[]> {
 export async function getUserPublishedPosts(userId: string): Promise<PublishedPost[]> {
     if (!db) throw new Error('Firestore is not initialized.');
     const recipesCollection = collection(db, 'published_recipes');
-    // The orderBy('createdAt') clause is removed to avoid needing a composite index
-    // during development. In production, the index should be deployed and the
-    // orderBy clause can be re-added for database-level sorting.
-    const q = query(recipesCollection, where('publisherId', '==', userId));
+    const q = query(recipesCollection, where('publisherId', '==', userId), orderBy('createdAt', 'desc'));
     const snapshot = await getDocs(q);
     
     const posts = snapshot.docs.map(doc => {
@@ -161,9 +160,6 @@ export async function getUserPublishedPosts(userId: string): Promise<PublishedPo
             commentsCount: data.commentsCount || 0,
         } as PublishedPost;
     });
-
-    // Sort posts on the client-side by creation date
-    posts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     return posts;
 }
@@ -199,17 +195,21 @@ export async function deletePost(postId: string): Promise<void> {
         const postSnap = await getDoc(postRef);
         if (postSnap.exists()) {
             const postData = postSnap.data();
-            if (postData.imageUrl) {
+            // Delete image from storage if it exists
+            if (postData.imageUrl && postData.publisherId) {
                 try {
-                    const imageRef = ref(storage, postData.imageUrl);
+                    const imagePath = `users/${postData.publisherId}/posts/${postId}.png`;
+                    const imageRef = ref(storage, imagePath);
                     await deleteObject(imageRef);
                 } catch (storageError: any) {
+                    // It's okay if the object doesn't exist, log other errors.
                     if (storageError.code !== 'storage/object-not-found') {
                         console.error('Error al eliminar la imagen del post:', storageError);
                     }
                 }
             }
         }
+        // Delete the firestore document
         await deleteDoc(postRef);
     } catch (error) {
         console.error('Error al eliminar el post:', error);
