@@ -1,19 +1,62 @@
+
 // src/components/profile/ProfileHeader.tsx
 'use client';
 
-import type { ProfileData } from '@/types';
+import type { ProfileData, FollowStatus } from '@/types';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { UserCircle, CalendarIcon, UserPlus, UserCheck, Settings } from 'lucide-react';
+import { UserCircle, CalendarIcon, UserPlus, UserCheck, Settings, Check, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
-export const ProfileHeader = ({ profile, isFollowing, onFollowToggle, isCurrentUser }: { profile: ProfileData, isFollowing: boolean, onFollowToggle: () => void, isCurrentUser: boolean }) => {
+interface ProfileHeaderProps {
+    profile: ProfileData;
+    followStatus: FollowStatus;
+    onFollowToggle: () => void;
+    isCurrentUser: boolean;
+}
+
+export const ProfileHeader = ({ profile, followStatus, onFollowToggle, isCurrentUser }: ProfileHeaderProps) => {
     const joinedDate = profile.createdAt ? new Date(profile.createdAt) : null;
     const router = useRouter();
       
+    const getFollowButton = () => {
+        if (isCurrentUser) {
+            return (
+                <Button onClick={() => router.push('/settings')} variant="outline" size="lg" className="w-full sm:w-auto">
+                    <Settings className="mr-2 h-4 w-4" />
+                    Editar Perfil
+                </Button>
+            );
+        }
+        
+        switch (followStatus) {
+            case 'following':
+                return (
+                    <Button onClick={onFollowToggle} variant="secondary" size="lg" className="w-full sm:w-auto">
+                        <UserCheck className="mr-2 h-4 w-4" />
+                        Siguiendo
+                    </Button>
+                );
+            case 'requested':
+                return (
+                    <Button variant="outline" size="lg" className="w-full sm:w-auto" disabled>
+                        <Clock className="mr-2 h-4 w-4" />
+                        Solicitado
+                    </Button>
+                );
+            case 'not-following':
+                return (
+                     <Button onClick={onFollowToggle} variant="default" size="lg" className="w-full sm:w-auto">
+                        <UserPlus className="mr-2 h-4 w-4" />
+                        {profile.profileType === 'private' ? 'Solicitar seguimiento' : 'Seguir'}
+                    </Button>
+                );
+        }
+    };
+
     return (
         <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
             <Avatar className="h-24 w-24 sm:h-32 sm:w-32 text-6xl">
@@ -43,17 +86,7 @@ export const ProfileHeader = ({ profile, isFollowing, onFollowToggle, isCurrentU
                 )}
             </div>
             <div className="w-full sm:w-auto flex flex-col gap-2">
-                {isCurrentUser ? (
-                    <Button onClick={() => router.push('/settings')} variant="outline" size="lg" className="w-full sm:w-auto">
-                        <Settings className="mr-2 h-4 w-4" />
-                        Editar Perfil
-                    </Button>
-                ) : (
-                    <Button onClick={onFollowToggle} variant={isFollowing ? 'secondary' : 'default'} size="lg" className="w-full sm:w-auto">
-                        {isFollowing ? <UserCheck className="mr-2 h-4 w-4" /> : <UserPlus className="mr-2 h-4 w-4" />}
-                        {isFollowing ? 'Siguiendo' : 'Seguir'}
-                    </Button>
-                )}
+                {getFollowButton()}
             </div>
         </div>
     );

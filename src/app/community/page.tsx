@@ -227,7 +227,7 @@ export default function CommunityPage() {
             <main className="lg:col-span-2 space-y-8">
                 <header>
                     <h1 className="font-headline text-4xl font-bold text-primary">Comunidad ChefAI</h1>
-                    <p className="text-muted-foreground mt-2 text-lg">Descubre qué están cocinando otros usuarios.</p>
+                    <p className="text-muted-foreground mt-2 text-lg">Descubre qué están cocinando otros usuarios con perfiles públicos.</p>
                 </header>
 
                 {isLoading ? (
@@ -258,7 +258,7 @@ export default function CommunityPage() {
                         ) : (
                             <div className="text-center text-muted-foreground py-10">
                                 <p className="font-semibold">¡La comunidad está tranquila!</p>
-                                <p>Sé el primero en publicar una receta desde el Generador.</p>
+                                <p>No hay publicaciones públicas en este momento.</p>
                             </div>
                         )}
                     </div>

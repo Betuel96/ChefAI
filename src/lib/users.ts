@@ -50,6 +50,7 @@ export async function createUserDocument(userId: string, name: string, username:
     email,
     photoURL,
     isPremium: false,
+    profileType: 'public', // Default to public profile
     createdAt: serverTimestamp(),
   });
 
@@ -198,4 +199,17 @@ export async function resendVerificationEmail(): Promise<{ success: boolean; mes
         }
         return { success: false, message: 'No se pudo reenviar el correo de verificación.' };
     }
+}
+
+/**
+ * Updates a user's profile settings, e.g., public/private status.
+ * @param userId The ID of the user.
+ * @param settings The settings to update.
+ */
+export async function updateProfileSettings(userId: string, settings: { profileType: 'public' | 'private' }): Promise<void> {
+  if (!db || !auth?.currentUser || auth.currentUser.uid !== userId) {
+    throw new Error('No autorizado para realizar esta acción.');
+  }
+  const userDocRef = doc(db, 'users', userId);
+  await updateDoc(userDocRef, settings);
 }

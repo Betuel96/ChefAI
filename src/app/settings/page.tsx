@@ -1,3 +1,4 @@
+
 // src/app/settings/page.tsx
 'use client';
 
@@ -5,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { getProfileData } from '@/lib/community';
-import { resendVerificationEmail } from '@/lib/users';
+import { resendVerificationEmail, updateProfileSettings } from '@/lib/users';
 import type { ProfileData, UserAccount } from '@/types';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -14,9 +15,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { EditProfileForm } from '@/components/profile/EditProfileForm';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { ArrowLeft, CheckCircle, Gem, LogIn, Mail, VenetianMask, Terminal } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Gem, LogIn, Mail, VenetianMask, Terminal, Shield, ShieldQuestion } from 'lucide-react';
 
 const proFeatures = [
   'Generaciones ilimitadas de recetas',
@@ -49,6 +51,7 @@ const AccountSettings = ({ profile, onProfileUpdate }: { profile: ProfileData, o
   const { toast } = useToast();
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [isPrivacySaving, setIsPrivacySaving] = useState(false);
 
   if (!user) return null;
 
@@ -87,6 +90,27 @@ const AccountSettings = ({ profile, onProfileUpdate }: { profile: ProfileData, o
     });
     setIsSending(false);
   };
+  
+  const handleProfileTypeChange = async (isPrivate: boolean) => {
+    const newType = isPrivate ? 'private' : 'public';
+    setIsPrivacySaving(true);
+    try {
+      await updateProfileSettings(user.uid, { profileType: newType });
+      onProfileUpdate({ profileType: newType });
+      toast({
+        title: 'Privacidad actualizada',
+        description: `Tu perfil ahora es ${isPrivate ? 'privado' : 'público'}.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error al actualizar',
+        description: 'No se pudo cambiar la privacidad de tu perfil.',
+        variant: 'destructive',
+      });
+    } finally {
+        setIsPrivacySaving(false);
+    }
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start pt-6">
@@ -120,6 +144,30 @@ const AccountSettings = ({ profile, onProfileUpdate }: { profile: ProfileData, o
                             </Button>
                         )}
                      </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle className="font-headline">Privacidad del Perfil</CardTitle>
+                    <CardDescription>Controla quién puede ver tu perfil y publicaciones.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex items-center space-x-4 rounded-md border p-4">
+                        <ShieldQuestion className="w-6 h-6" />
+                        <div className="flex-1 space-y-1">
+                            <Label htmlFor="private-profile-switch">Perfil Privado</Label>
+                            <p className="text-xs text-muted-foreground">
+                                Si está activado, los usuarios deberán solicitar seguirte.
+                            </p>
+                        </div>
+                        <Switch
+                            id="private-profile-switch"
+                            checked={profile.profileType === 'private'}
+                            onCheckedChange={handleProfileTypeChange}
+                            disabled={isPrivacySaving}
+                        />
+                    </div>
                 </CardContent>
             </Card>
 
@@ -209,7 +257,7 @@ export default function SettingsPage() {
     const handleProfileUpdate = (newData: Partial<UserAccount>) => {
         setProfile(prevProfile => {
             if (!prevProfile) return null;
-            return { ...prevProfile, ...newData };
+            return { ...prevProfile, ...newData } as ProfileData;
         });
     };
 

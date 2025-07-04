@@ -43,6 +43,7 @@ export interface UserAccount {
     photoURL: string | null;
     isPremium: boolean;
     createdAt: string; 
+    profileType: 'public' | 'private';
 }
 
 export type AppUser = (User & Partial<UserAccount>) | null;
@@ -76,6 +77,7 @@ export interface PublishedPost {
     imageUrl?: string | null;
     
     type: 'recipe' | 'text'; // To distinguish between post types
+    profileType: 'public' | 'private';
     
     // For text posts, this is the status content.
     // For recipe posts, this is the recipe name.
@@ -104,3 +106,12 @@ export interface ProfileListItem {
     username?: string;
     photoURL?: string | null;
 }
+
+export interface FollowRequest {
+  id: string; // The ID of the user who sent the request
+  name: string;
+  username?: string;
+  photoURL?: string | null;
+}
+
+export type FollowStatus = 'not-following' | 'following' | 'requested';

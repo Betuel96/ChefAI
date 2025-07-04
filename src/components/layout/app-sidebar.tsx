@@ -16,6 +16,7 @@ import {
   User as UserIcon,
   Users,
   PlusSquare,
+  Bell,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -44,8 +45,9 @@ const aiToolsItems = [
 ];
 
 const communityItems = [
-  { href: '/publish', label: 'Crear Publicación', icon: PlusSquare },
   { href: '/community', label: 'Comunidad', icon: Users },
+  { href: '/publish', label: 'Crear Publicación', icon: PlusSquare },
+  { href: '/requests', label: 'Notificaciones', icon: Bell },
 ];
 
 const libraryItems = [
