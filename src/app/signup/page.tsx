@@ -72,12 +72,17 @@ export default function SignupPage() {
       });
       router.push('/');
     } catch (error: any) {
-      console.error(error);
+      console.error("Signup Error:", error);
       let description = 'Ocurrió un error inesperado. Por favor, inténtalo de nuevo.';
+      
       if (error.code === 'auth/email-already-in-use') {
         description = 'Este correo electrónico ya está en uso. Por favor, inicia sesión.';
+      } else if (error.message.includes('Este nombre de usuario ya está en uso')) {
+        description = error.message;
+      } else if (error.code === 'permission-denied' || (error.message && error.message.toLowerCase().includes('permission-denied'))) {
+        description = 'Error de permisos de Firestore. No se pudo crear el perfil. Esto se debe a que las reglas de seguridad de Firestore necesitan ser actualizadas. Por favor, copia el contenido de `firestore.rules` y pégalo en la sección de Reglas de Firestore en la consola de Firebase.';
       }
-      // TODO: Add a check for username uniqueness and handle the error
+      
       toast({
         title: 'Error al Registrarse',
         description,
