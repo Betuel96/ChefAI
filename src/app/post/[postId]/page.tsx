@@ -303,23 +303,23 @@ export default function PostDetailPage() {
             url: window.location.href
         };
 
-        if (navigator.share) {
-            try {
-                await navigator.share(shareData);
-            } catch (error) {
-                console.error('Error al compartir:', error);
+        try {
+            if (!navigator.share) {
+                throw new Error("La API para compartir no es compatible con este navegador.");
             }
-        } else {
+            await navigator.share(shareData);
+        } catch (error) {
+            console.error("Error al usar navigator.share:", error);
             try {
                 await navigator.clipboard.writeText(shareData.url);
                 toast({
                     title: '¡Enlace Copiado!',
-                    description: 'El enlace a la publicación se ha copiado a tu portapapeles.'
+                    description: 'No se pudo abrir el menú de compartir. El enlace se ha copiado en su lugar.'
                 });
             } catch (err) {
                 toast({
                     title: 'Error',
-                    description: 'No se pudo copiar el enlace.',
+                    description: 'No se pudo compartir ni copiar el enlace.',
                     variant: 'destructive'
                 });
             }
