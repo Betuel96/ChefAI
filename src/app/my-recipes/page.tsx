@@ -1,10 +1,8 @@
 
 'use client';
 
-import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
-import type { Recipe, SavedRecipe, ShoppingListCategory } from '@/types';
+import type { SavedRecipe } from '@/types';
 import { Button } from '@/components/ui/button';
 import {
   Accordion,
@@ -32,6 +30,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { getRecipes, deleteRecipe } from '@/lib/recipes';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
+import { PostMedia } from '@/components/community/post-media';
 
 export default function MyRecipesPage() {
   const { user, loading: authLoading } = useAuth();
@@ -66,7 +65,6 @@ export default function MyRecipesPage() {
   const handleDeleteRecipe = async (recipeId: string) => {
     if (!user) return;
     
-    // Optimistic UI update
     const originalRecipes = [...savedRecipes];
     const recipeToDelete = savedRecipes.find(r => r.id === recipeId);
     setSavedRecipes(savedRecipes.filter((recipe) => recipe.id !== recipeId));
@@ -78,7 +76,7 @@ export default function MyRecipesPage() {
         description: `"${recipeToDelete?.name}" ha sido eliminada de tu cuenta.`,
       });
     } catch (error) {
-      setSavedRecipes(originalRecipes); // Revert on error
+      setSavedRecipes(originalRecipes);
       toast({
         title: 'Error al Eliminar',
         description: 'No se pudo eliminar la receta. Inténtalo de nuevo.',
@@ -139,19 +137,20 @@ export default function MyRecipesPage() {
                 </AccordionTrigger>
                 <AccordionContent className="p-6 pt-0 space-y-6">
                 
-                {recipe.imageUrl ? (
+                {recipe.mediaUrl && recipe.mediaType ? (
                   <div className="my-4 rounded-lg overflow-hidden shadow-inner aspect-video relative">
-                    <Image
-                      src={recipe.imageUrl}
-                      alt={`Imagen de ${recipe.name}`}
-                      fill
-                      className="object-cover"
+                    <PostMedia
+                        mediaUrl={recipe.mediaUrl}
+                        mediaType={recipe.mediaType}
+                        altText={`Media for ${recipe.name}`}
+                        className="object-cover"
+                        controls
                     />
                   </div>
                 ) : (
                   <div className="my-4 rounded-lg flex flex-col items-center justify-center bg-muted aspect-video text-muted-foreground">
                     <UtensilsCrossed className="w-10 h-10 mb-2" />
-                    <p>Sin imagen</p>
+                    <p>Sin imagen/video</p>
                   </div>
                 )}
 
@@ -182,7 +181,7 @@ export default function MyRecipesPage() {
                         <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
                         <AlertDialogDescription>
                             Esta acción no se puede deshacer. Esto eliminará permanentemente la
-                            receta "{recipe.name}" y su imagen.
+                            receta "{recipe.name}" y su medio asociado.
                         </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>

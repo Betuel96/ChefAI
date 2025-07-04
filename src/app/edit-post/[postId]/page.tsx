@@ -1,4 +1,3 @@
-
 // src/app/edit-post/[postId]/page.tsx
 'use client';
 
@@ -20,20 +19,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, Save, Image as ImageIcon, Trash2, Terminal } from 'lucide-react';
+import { ArrowLeft, Save, Film, Image as ImageIcon, Trash2, Terminal } from 'lucide-react';
 import Link from 'next/link';
+import { PostMedia } from '@/components/community/post-media';
 
-// Schema for the text post form
-const textPostSchema = z.object({
-  content: z.string().min(1, 'La publicación no puede estar vacía.').max(500, 'La publicación no puede exceder los 500 caracteres.'),
-});
-
-// Schema for the recipe post form
-const recipeFormSchema = z.object({
-  content: z.string().min(5, 'El nombre debe tener al menos 5 caracteres.'),
-  instructions: z.string().min(20, 'Las instrucciones deben tener al menos 20 caracteres.'),
-  additionalIngredients: z.string().min(10, 'Por favor, enumera algunos ingredientes.'),
-  equipment: z.string().min(3, 'Enumera al menos un equipo.'),
+const formSchema = z.object({
+  content: z.string().min(1, 'El contenido no puede estar vacío.'),
+  // Other fields are dynamically added based on post type
 });
 
 const LoadingSkeleton = () => (
@@ -68,15 +60,13 @@ export default function EditPostPage() {
   const [post, setPost] = useState<PublishedPost | null>(null);
   const [loading, setLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [newImageFile, setNewImageFile] = useState<File | null>(null);
-  const [removeCurrentImage, setRemoveCurrentImage] = useState(false);
+  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
+  const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
+  const [newMediaFile, setNewMediaFile] = useState<File | null>(null);
+  const [removeCurrentMedia, setRemoveCurrentMedia] = useState(false);
 
-  const textForm = useForm<z.infer<typeof textPostSchema>>({
-    resolver: zodResolver(textPostSchema),
-  });
-  const recipeForm = useForm<z.infer<typeof recipeFormSchema>>({
-    resolver: zodResolver(recipeFormSchema),
+  const form = useForm({
+    // We'll set the resolver and default values dynamically
   });
 
   useEffect(() => {
@@ -84,48 +74,64 @@ export default function EditPostPage() {
       getPost(params.postId).then(postData => {
         if (postData) {
           setPost(postData);
-          setImagePreview(postData.imageUrl || null);
+          setMediaPreview(postData.mediaUrl || null);
+          setMediaType(postData.mediaType || null);
+
+          let schema, defaultValues;
           if (postData.type === 'text') {
-            textForm.reset({ content: postData.content });
-          } else if (postData.type === 'recipe') {
-            recipeForm.reset({
+            schema = z.object({ content: z.string().min(1, 'La publicación no puede estar vacía.').max(500, 'La publicación no puede exceder los 500 caracteres.') });
+            defaultValues = { content: postData.content };
+          } else { // 'recipe'
+            schema = z.object({
+              content: z.string().min(5, 'El nombre debe tener al menos 5 caracteres.'),
+              instructions: z.string().min(20, 'Las instrucciones deben tener al menos 20 caracteres.'),
+              additionalIngredients: z.string().min(10, 'Por favor, enumera algunos ingredientes.'),
+              equipment: z.string().min(3, 'Enumera al menos un equipo.'),
+            });
+            defaultValues = {
               content: postData.content,
               instructions: postData.instructions || '',
               additionalIngredients: postData.additionalIngredients || '',
               equipment: postData.equipment || '',
-            });
+            };
           }
+          form.reset(defaultValues, {
+            resolver: zodResolver(schema),
+          } as any);
+
         }
         setLoading(false);
       });
     }
-  }, [params.postId, textForm, recipeForm]);
+  }, [params.postId, form]);
 
 
-  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMediaChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      setNewImageFile(file);
-      setRemoveCurrentImage(false);
+      setNewMediaFile(file);
+      setRemoveCurrentMedia(false);
+      setMediaType(file.type.startsWith('video') ? 'video' : 'image');
+      
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result as string);
+        setMediaPreview(reader.result as string);
       };
       reader.readAsDataURL(file);
     }
   };
   
-  const onRemoveImageToggle = (checked: boolean) => {
-    setRemoveCurrentImage(checked);
+  const onRemoveMediaToggle = (checked: boolean) => {
+    setRemoveCurrentMedia(checked);
     if (checked) {
-      setNewImageFile(null);
-      setImagePreview(null);
-      // Reset the file input
-      const fileInput = document.getElementById('image-upload') as HTMLInputElement;
+      setNewMediaFile(null);
+      setMediaPreview(null);
+      setMediaType(null);
+      const fileInput = document.getElementById('media-upload') as HTMLInputElement;
       if (fileInput) fileInput.value = '';
     } else {
-        // If unchecking, restore the original image if it exists
-        setImagePreview(post?.imageUrl || null);
+        setMediaPreview(post?.mediaUrl || null);
+        setMediaType(post?.mediaType || null);
     }
   };
 
@@ -133,15 +139,16 @@ export default function EditPostPage() {
     if (!post || !user) return;
     setIsUpdating(true);
 
-    let imageAction: string | null | 'DELETE' = null;
-    if (removeCurrentImage) {
-        imageAction = 'DELETE';
-    } else if (newImageFile && imagePreview) {
-        imageAction = imagePreview;
+    let mediaAction: string | null | 'DELETE' = null;
+    if (removeCurrentMedia) {
+        mediaAction = 'DELETE';
+    } else if (newMediaFile && mediaPreview) {
+        mediaAction = mediaPreview;
+        updateData.mediaType = mediaType;
     }
 
     try {
-        await updatePost(post.id, user.uid, updateData, imageAction);
+        await updatePost(post.id, user.uid, updateData, mediaAction);
         toast({
             title: '¡Publicación Actualizada!',
             description: 'Tus cambios han sido guardados.',
@@ -158,13 +165,6 @@ export default function EditPostPage() {
     }
   };
   
-  const handleTextSubmit = async (values: z.infer<typeof textPostSchema>) => {
-    await submitUpdate({ content: values.content });
-  }
-  const handleRecipeSubmit = async (values: z.infer<typeof recipeFormSchema>) => {
-     await submitUpdate(values);
-  }
-
   if (loading || authLoading) return <LoadingSkeleton />;
 
   if (!post) {
@@ -193,9 +193,6 @@ export default function EditPostPage() {
     );
   }
 
-  const activeForm = post.type === 'text' ? textForm : recipeForm;
-  const activeSubmitHandler = post.type === 'text' ? handleTextSubmit : handleRecipeSubmit;
-
   return (
     <div className="max-w-2xl mx-auto space-y-8">
       <Link href={`/post/${post.id}`}>
@@ -209,8 +206,8 @@ export default function EditPostPage() {
         <p className="text-muted-foreground mt-2 text-lg">Realiza cambios en tu publicación y guárdalos.</p>
       </header>
 
-      <Form {...activeForm}>
-        <form onSubmit={activeForm.handleSubmit(activeSubmitHandler as any)} className="space-y-6">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(submitUpdate)} className="space-y-6">
             <Card className="shadow-lg">
                 <CardHeader>
                 <CardTitle className="font-headline">Contenido de la Publicación</CardTitle>
@@ -218,7 +215,7 @@ export default function EditPostPage() {
                 <CardContent className="space-y-6">
                  {post.type === 'text' ? (
                      <FormField
-                        control={textForm.control}
+                        control={form.control}
                         name="content"
                         render={({ field }) => (
                         <FormItem>
@@ -233,7 +230,7 @@ export default function EditPostPage() {
                  ) : (
                     <>
                     <FormField
-                        control={recipeForm.control}
+                        control={form.control}
                         name="content"
                         render={({ field }) => (
                         <FormItem>
@@ -244,7 +241,7 @@ export default function EditPostPage() {
                         )}
                     />
                     <FormField
-                        control={recipeForm.control}
+                        control={form.control}
                         name="additionalIngredients"
                         render={({ field }) => (
                         <FormItem>
@@ -255,7 +252,7 @@ export default function EditPostPage() {
                         )}
                     />
                     <FormField
-                        control={recipeForm.control}
+                        control={form.control}
                         name="instructions"
                         render={({ field }) => (
                         <FormItem>
@@ -266,7 +263,7 @@ export default function EditPostPage() {
                         )}
                     />
                     <FormField
-                        control={recipeForm.control}
+                        control={form.control}
                         name="equipment"
                         render={({ field }) => (
                         <FormItem>
@@ -283,41 +280,41 @@ export default function EditPostPage() {
 
             <Card className="shadow-lg">
                 <CardHeader>
-                    <CardTitle className="font-headline">Imagen de la Publicación</CardTitle>
-                    <CardDescription>Cambia o elimina la imagen asociada a tu publicación.</CardDescription>
+                    <CardTitle className="font-headline">Medio de la Publicación</CardTitle>
+                    <CardDescription>Cambia o elimina la imagen o video asociado a tu publicación.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                     {imagePreview ? (
-                        <div className="mt-4 relative">
-                            <img src={imagePreview} alt="Vista previa" className="w-full h-auto max-h-72 object-cover rounded-md" />
+                     {mediaPreview ? (
+                        <div className="mt-4 relative rounded-md overflow-hidden">
+                            <PostMedia mediaUrl={mediaPreview} mediaType={mediaType!} altText="Vista previa" className="w-full h-auto max-h-72 object-cover" />
                         </div>
                      ) : (
                         <div className="flex flex-col justify-center items-center h-40 bg-muted rounded-lg">
                             <ImageIcon className="w-10 h-10 text-muted-foreground mb-2" />
-                            <p className="text-muted-foreground">Esta publicación no tiene imagen.</p>
+                            <p className="text-muted-foreground">Esta publicación no tiene medio.</p>
                         </div>
                      )}
 
                     <FormItem>
-                        <FormLabel>Subir una nueva imagen</FormLabel>
+                        <FormLabel>Subir un nuevo medio</FormLabel>
                         <FormControl>
-                           <Input id="image-upload" type="file" accept="image/png, image/jpeg" onChange={handleImageChange} />
+                           <Input id="media-upload" type="file" accept="image/png, image/jpeg, video/mp4, video/webm" onChange={handleMediaChange} />
                         </FormControl>
                         <FormMessage />
                     </FormItem>
                    
-                    {post.imageUrl && (
+                    {post.mediaUrl && (
                         <div className="flex items-center space-x-2">
                             <Checkbox
-                                id="remove-image"
-                                checked={removeCurrentImage}
-                                onCheckedChange={onRemoveImageToggle}
+                                id="remove-media"
+                                checked={removeCurrentMedia}
+                                onCheckedChange={onRemoveMediaToggle}
                             />
                             <label
-                                htmlFor="remove-image"
+                                htmlFor="remove-media"
                                 className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-destructive"
                             >
-                                Eliminar la imagen actual
+                                Eliminar el medio actual
                             </label>
                         </div>
                     )}

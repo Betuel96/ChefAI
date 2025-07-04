@@ -17,18 +17,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Send, VenetianMask, Mail, PenSquare, Utensils, UserCircle } from 'lucide-react';
+import { Send, VenetianMask, Mail, PenSquare, Utensils, UserCircle, Film } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-
+import { PostMedia } from '@/components/community/post-media';
 
 // Schema for the text post form
 const textPostSchema = z.object({
   content: z.string().min(1, 'La publicación no puede estar vacía.').max(500, 'La publicación no puede exceder los 500 caracteres.'),
-  image: z.instanceof(File).optional(),
 });
 
 // Schema for the recipe post form
@@ -37,7 +36,6 @@ const recipeFormSchema = z.object({
   instructions: z.string().min(20, 'Las instrucciones deben tener al menos 20 caracteres.'),
   additionalIngredients: z.string().min(10, 'Por favor, enumera algunos ingredientes.'),
   equipment: z.string().min(3, 'Enumera al menos un equipo.'),
-  image: z.instanceof(File).optional(),
 });
 
 const LoadingSkeleton = () => (
@@ -69,16 +67,16 @@ export default function PublishPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isPublishing, setIsPublishing] = useState(false);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
+  const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
   const [isSending, setIsSending] = useState(false);
+  const [currentTab, setCurrentTab] = useState('text');
 
-  // Mention state
   const [suggestions, setSuggestions] = useState<ProfileListItem[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [mentionQuery, setMentionQuery] = useState('');
   const [mentions, setMentions] = useState<Map<string, string>>(new Map());
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
 
   const textForm = useForm<z.infer<typeof textPostSchema>>({
     resolver: zodResolver(textPostSchema),
@@ -87,23 +85,15 @@ export default function PublishPage() {
 
   const recipeForm = useForm<z.infer<typeof recipeFormSchema>>({
     resolver: zodResolver(recipeFormSchema),
-    defaultValues: {
-      content: '',
-      instructions: '',
-      additionalIngredients: '',
-      equipment: '',
-    },
+    defaultValues: { content: '', instructions: '', additionalIngredients: '', equipment: '' },
   });
   
-  // Debounce search for mentions
   useEffect(() => {
     const handler = setTimeout(async () => {
       if (mentionQuery) {
         const results = await searchUsers(mentionQuery);
         setSuggestions(results);
-        if (results.length > 0) {
-            setShowSuggestions(true);
-        }
+        if (results.length > 0) setShowSuggestions(true);
       } else {
         setShowSuggestions(false);
       }
@@ -111,7 +101,6 @@ export default function PublishPage() {
 
     return () => clearTimeout(handler);
   }, [mentionQuery]);
-
 
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const text = e.target.value;
@@ -134,12 +123,9 @@ export default function PublishPage() {
     const cursorPos = textareaRef.current?.selectionStart ?? currentText.length;
     const textUpToCursor = currentText.substring(0, cursorPos);
     
-    // Replace the partial @mention with the full one
     const newText = textUpToCursor.replace(/@\S*$/, `@${suggestion.username} `) + currentText.substring(cursorPos);
     
     textForm.setValue('content', newText);
-
-    // Store the mention
     setMentions(prev => new Map(prev).set(`@${suggestion.username}`, suggestion.id));
 
     setShowSuggestions(false);
@@ -147,26 +133,26 @@ export default function PublishPage() {
     textareaRef.current?.focus();
   };
 
-
-  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>, formType: 'text' | 'recipe') => {
+  const handleMediaChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (formType === 'text') textForm.setValue('image', file);
-      else recipeForm.setValue('image', file);
-      
+      const type = file.type.startsWith('video/') ? 'video' : 'image';
+      setMediaType(type);
+
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result as string);
+        setMediaPreview(reader.result as string);
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleTabChange = () => {
-    // Clear forms and image preview when switching tabs
+  const handleTabChange = (value: string) => {
+    setCurrentTab(value);
     textForm.reset();
     recipeForm.reset();
-    setImagePreview(null);
+    setMediaPreview(null);
+    setMediaType(null);
     setMentions(new Map());
     setShowSuggestions(false);
   };
@@ -183,21 +169,23 @@ export default function PublishPage() {
       type: 'text',
       content: values.content,
       mentions: finalMentions,
+      mediaType: mediaType,
     });
   }
 
   async function handleRecipeSubmit(values: z.infer<typeof recipeFormSchema>) {
     await submitPost({
       type: 'recipe',
-      content: values.content, // Recipe name
+      content: values.content,
       instructions: values.instructions,
       additionalIngredients: values.additionalIngredients,
       equipment: values.equipment,
+      mediaType: mediaType,
     });
   }
 
   async function submitPost(postData: any) {
-    if (!user) return; // Should be covered by page-level checks
+    if (!user) return;
 
     setIsPublishing(true);
     try {
@@ -206,7 +194,7 @@ export default function PublishPage() {
           user.displayName || 'Usuario Anónimo',
           user.photoURL,
           postData,
-          imagePreview // Pass the base64 preview string for upload
+          mediaPreview
       );
       
       toast({
@@ -283,12 +271,11 @@ export default function PublishPage() {
           <TabsTrigger value="recipe"><Utensils className="mr-2 h-4 w-4" /> Publicar Receta</TabsTrigger>
         </TabsList>
         
-        {/* TEXT POST TAB */}
         <TabsContent value="text">
           <Card className="shadow-lg">
             <CardHeader>
               <CardTitle className="font-headline">¿Qué estás cocinando?</CardTitle>
-              <CardDescription>Comparte una actualización rápida o una foto.</CardDescription>
+              <CardDescription>Comparte una actualización rápida, foto o video.</CardDescription>
             </CardHeader>
             <CardContent>
               <Form {...textForm}>
@@ -338,21 +325,15 @@ export default function PublishPage() {
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={textForm.control}
-                    name="image"
-                    render={() => (
-                      <FormItem>
-                        <FormLabel>Añadir Imagen (opcional)</FormLabel>
-                        <FormControl>
-                           <Input type="file" accept="image/png, image/jpeg" onChange={(e) => handleImageChange(e, 'text')} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  {imagePreview && (
-                    <div className="mt-4"><img src={imagePreview} alt="Vista previa" className="w-full max-h-64 object-cover rounded-md" /></div>
+                  <FormItem>
+                    <FormLabel>Añadir Foto o Video (opcional)</FormLabel>
+                    <FormControl>
+                       <Input type="file" accept="image/png, image/jpeg, video/mp4, video/webm" onChange={handleMediaChange} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                  {mediaPreview && mediaType && (
+                    <div className="mt-4 rounded-md overflow-hidden"><PostMedia mediaUrl={mediaPreview} mediaType={mediaType} altText="Vista previa" className="w-full max-h-72 object-cover" /></div>
                   )}
                   <Button type="submit" disabled={isPublishing} className="w-full">
                     {isPublishing ? 'Publicando...' : 'Publicar'}
@@ -364,7 +345,6 @@ export default function PublishPage() {
           </Card>
         </TabsContent>
 
-        {/* RECIPE POST TAB */}
         <TabsContent value="recipe">
            <Card className="shadow-lg">
             <CardHeader>
@@ -385,20 +365,14 @@ export default function PublishPage() {
                       </FormItem>
                     )}
                   />
-                   <FormField
-                      control={recipeForm.control}
-                      name="image"
-                      render={() => (
-                        <FormItem>
-                          <FormLabel>Imagen de la Receta (opcional)</FormLabel>
-                          <FormControl><Input type="file" accept="image/png, image/jpeg" onChange={(e) => handleImageChange(e, 'recipe')} /></FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    {imagePreview && (
-                      <div className="mt-4"><img src={imagePreview} alt="Vista previa" className="w-full max-h-64 object-cover rounded-md" /></div>
-                    )}
+                  <FormItem>
+                    <FormLabel>Foto o Video de la Receta (opcional)</FormLabel>
+                    <FormControl><Input type="file" accept="image/png, image/jpeg, video/mp4, video/webm" onChange={handleMediaChange} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                  {mediaPreview && mediaType && (
+                      <div className="mt-4 rounded-md overflow-hidden"><PostMedia mediaUrl={mediaPreview} mediaType={mediaType} altText="Vista previa" className="w-full max-h-72 object-cover" /></div>
+                  )}
                   <FormField
                     control={recipeForm.control}
                     name="additionalIngredients"

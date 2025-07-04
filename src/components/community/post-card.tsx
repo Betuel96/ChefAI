@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
@@ -27,6 +26,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { UtensilsCrossed, UserCircle, MessageCircle, ChefHat, MoreVertical, Trash2, Pencil } from 'lucide-react';
+import { PostMedia } from './post-media';
 
 export const PostCard = ({ post, onPostDeleted }: { post: PublishedPost, onPostDeleted: (postId: string) => void }) => {
     const { user } = useAuth();
@@ -49,7 +49,7 @@ export const PostCard = ({ post, onPostDeleted }: { post: PublishedPost, onPostD
     }, [user, post.id]);
 
     const handleLikeClick = async (e: React.MouseEvent) => {
-        e.stopPropagation(); // Evita que el clic en el botón active el enlace de la tarjeta
+        e.stopPropagation();
         if (!user) {
             toast({
                 title: 'Inicia Sesión para Reaccionar',
@@ -143,12 +143,12 @@ export const PostCard = ({ post, onPostDeleted }: { post: PublishedPost, onPostD
                     )}
                 </div>
 
-                {post.imageUrl ? (
+                {post.mediaUrl && post.mediaType ? (
                     <div className="aspect-video relative overflow-hidden">
-                        <Image
-                            src={post.imageUrl}
-                            alt={`Imagen de ${post.content}`}
-                            fill
+                        <PostMedia
+                            mediaUrl={post.mediaUrl}
+                            mediaType={post.mediaType}
+                            altText={`Media for ${post.content}`}
                             className="object-cover"
                         />
                     </div>

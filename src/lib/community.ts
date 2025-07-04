@@ -29,8 +29,8 @@ export async function createPost(
   userId: string,
   userName: string,
   userPhotoURL: string | null,
-  postData: Omit<PublishedPost, 'id' | 'createdAt' | 'publisherId' | 'publisherName' | 'publisherPhotoURL' | 'imageUrl' | 'likesCount' | 'commentsCount' | 'profileType'>,
-  imageDataUri: string | null
+  postData: Omit<PublishedPost, 'id' | 'createdAt' | 'publisherId' | 'publisherName' | 'publisherPhotoURL' | 'mediaUrl' | 'likesCount' | 'commentsCount' | 'profileType'>,
+  mediaDataUri: string | null
 ): Promise<string> {
     if (!db || !storage) throw new Error('Firestore or Storage is not initialized.');
 
@@ -44,7 +44,7 @@ export async function createPost(
     const postsCollection = collection(db, 'published_recipes');
     const docRef = doc(postsCollection); // Create a reference first to get the ID
 
-    let imageUrl: string | null = null;
+    let mediaUrl: string | null = null;
     let finalPostData: any = {
         ...postData,
         publisherId: userId,
@@ -58,23 +58,21 @@ export async function createPost(
     };
 
     try {
-        if (imageDataUri) {
-            const storageRef = ref(storage, `users/${userId}/posts/${docRef.id}.png`);
-            const snapshot = await uploadString(storageRef, imageDataUri, 'data_url');
-            imageUrl = await getDownloadURL(snapshot.ref);
-            finalPostData.imageUrl = imageUrl;
+        if (mediaDataUri) {
+            const storageRef = ref(storage, `users/${userId}/posts/${docRef.id}`);
+            const snapshot = await uploadString(storageRef, mediaDataUri, 'data_url');
+            mediaUrl = await getDownloadURL(snapshot.ref);
+            finalPostData.mediaUrl = mediaUrl;
         }
 
-        // Set the document data, including the final imageUrl if available
         await setDoc(docRef, finalPostData);
         
-        // Add notifications for mentions
         if (finalPostData.mentions && finalPostData.mentions.length > 0) {
             const fromUser: ProfileListItem = { id: userId, name: userName, username: userData.username, photoURL: userPhotoURL };
             const contentSnippet = (postData.content as string).substring(0, 50);
 
             for (const mention of finalPostData.mentions) {
-                 if (mention.userId === userId) continue; // Don't notify self
+                 if (mention.userId === userId) continue;
                 const notificationRef = doc(collection(db, 'users', mention.userId, 'notifications'));
                 await setDoc(notificationRef, {
                     type: 'mention_post',
@@ -91,7 +89,6 @@ export async function createPost(
     } catch (error) {
         console.error('Error creating post:', error);
         
-        // If image upload fails after the document was potentially created (or vice versa), clean up.
         if (docRef.id) {
             try {
                 await deleteDoc(docRef);
@@ -110,7 +107,7 @@ export async function updatePost(
   postId: string,
   currentUserId: string,
   updateData: Partial<PublishedPost>,
-  newImageDataUri?: string | null | 'DELETE'
+  newMediaDataUri?: string | null | 'DELETE'
 ): Promise<void> {
   if (!db || !storage) throw new Error('Firestore or Storage is not initialized.');
   const postRef = doc(db, 'published_recipes', postId);
@@ -125,31 +122,30 @@ export async function updatePost(
     throw new Error("No tienes permiso para editar esta publicación.");
   }
 
-  // Handle image update first if a new URI is provided or deletion is requested
-  if (newImageDataUri !== null && newImageDataUri !== undefined) {
-    const imagePath = `users/${currentUserId}/posts/${postId}.png`;
-    const storageRef = ref(storage, imagePath);
+  if (newMediaDataUri !== null && newMediaDataUri !== undefined) {
+    const storageRef = ref(storage, `users/${currentUserId}/posts/${postId}`);
 
-    if (newImageDataUri === 'DELETE') {
-      // Delete existing image if it exists
-      if (postData.imageUrl) {
+    if (newMediaDataUri === 'DELETE') {
+      if (postData.mediaUrl) {
         try {
           await deleteObject(storageRef);
         } catch (e: any) {
           if (e.code !== 'storage/object-not-found') {
-            console.error('Could not delete old image:', e);
+            console.error('Could not delete old media:', e);
           }
         }
       }
-      updateData.imageUrl = null; // Set to null in Firestore
+      updateData.mediaUrl = null;
+      updateData.mediaType = null;
     } else {
       try {
-        const snapshot = await uploadString(storageRef, newImageDataUri, 'data_url');
+        const snapshot = await uploadString(storageRef, newMediaDataUri, 'data_url');
         const downloadURL = await getDownloadURL(snapshot.ref);
-        updateData.imageUrl = downloadURL;
+        updateData.mediaUrl = downloadURL;
+        // mediaType should be included in updateData from the client
       } catch (error) {
-        console.error("Error al subir la imagen:", error);
-        throw new Error("No se pudo subir la imagen. Comprueba tu conexión o los permisos de almacenamiento.");
+        console.error("Error al subir el medio:", error);
+        throw new Error("No se pudo subir el medio. Comprueba tu conexión o los permisos de almacenamiento.");
       }
     }
   }
@@ -162,7 +158,6 @@ export async function updatePost(
 export async function getPublishedPosts(): Promise<PublishedPost[]> {
     if (!db) throw new Error('Firestore is not initialized.');
     const recipesCollection = collection(db, 'published_recipes');
-    // Only fetch posts from public profiles
     const q = query(recipesCollection, where('profileType', '==', 'public'), orderBy('createdAt', 'desc'));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => {
@@ -173,7 +168,8 @@ export async function getPublishedPosts(): Promise<PublishedPost[]> {
             publisherId: data.publisherId,
             publisherName: data.publisherName,
             publisherPhotoURL: data.publisherPhotoURL || null,
-            imageUrl: data.imageUrl || null,
+            mediaUrl: data.mediaUrl || null,
+            mediaType: data.mediaType || null,
             type: data.type,
             profileType: data.profileType,
             content: data.content,
@@ -203,7 +199,8 @@ export async function getUserPublishedPosts(userId: string): Promise<PublishedPo
             publisherId: data.publisherId,
             publisherName: data.publisherName,
             publisherPhotoURL: data.publisherPhotoURL || null,
-            imageUrl: data.imageUrl || null,
+            mediaUrl: data.mediaUrl || null,
+            mediaType: data.mediaType || null,
             type: data.type,
             profileType: data.profileType,
             content: data.content,
@@ -235,7 +232,8 @@ export async function getPost(postId: string): Promise<PublishedPost | null> {
         publisherId: data.publisherId,
         publisherName: data.publisherName,
         publisherPhotoURL: data.publisherPhotoURL || null,
-        imageUrl: data.imageUrl || null,
+        mediaUrl: data.mediaUrl || null,
+        mediaType: data.mediaType || null,
         type: data.type,
         profileType: data.profileType,
         content: data.content,
@@ -249,7 +247,7 @@ export async function getPost(postId: string): Promise<PublishedPost | null> {
     } as PublishedPost;
 }
 
-// Function to delete a post and its associated image
+// Function to delete a post and its associated media
 export async function deletePost(postId: string): Promise<void> {
     if (!db || !storage) {
         throw new Error('Firebase no está configurado.');
@@ -259,13 +257,13 @@ export async function deletePost(postId: string): Promise<void> {
         const postSnap = await getDoc(postRef);
         if (postSnap.exists()) {
             const postData = postSnap.data();
-            if (postData.imageUrl && postData.publisherId) {
+            if (postData.mediaUrl && postData.publisherId) {
                 try {
-                    const imageRef = ref(storage, postData.imageUrl);
-                    await deleteObject(imageRef);
+                    const mediaRef = ref(storage, postData.mediaUrl);
+                    await deleteObject(mediaRef);
                 } catch (storageError: any) {
                     if (storageError.code !== 'storage/object-not-found') {
-                        console.error('Error al eliminar la imagen del post:', storageError);
+                        console.error('Error al eliminar el medio del post:', storageError);
                     }
                 }
             }
@@ -340,7 +338,6 @@ export async function addComment(
         const contentSnippet = text.substring(0, 50);
 
         for (const mention of mentions) {
-            // Don't notify user if they mention themselves
             if (mention.userId === userId) continue;
 
             const notificationRef = doc(collection(db, 'users', mention.userId, 'notifications'));
@@ -480,14 +477,12 @@ export async function unfollowUser(currentUserId: string, targetUserId:string) {
 export async function getFollowingStatus(currentUserId: string, targetUserId: string): Promise<FollowStatus> {
     if (!db) throw new Error("Firestore not initialized.");
     
-    // Check if already following
     const followingRef = doc(db, 'users', currentUserId, 'following', targetUserId);
     const followingSnap = await getDoc(followingRef);
     if (followingSnap.exists()) {
         return 'following';
     }
 
-    // Check if a request has been sent
     const requestRef = doc(db, 'users', targetUserId, 'notifications', currentUserId);
     const requestSnap = await getDoc(requestRef);
     if (requestSnap.exists() && requestSnap.data().type === 'follow_request') {
@@ -499,7 +494,6 @@ export async function getFollowingStatus(currentUserId: string, targetUserId: st
 
 export async function sendFollowRequest(currentUserId: string, currentUserProfile: ProfileListItem, targetUserId: string): Promise<void> {
     if (!db) throw new Error("Firestore not initialized.");
-    // Use requester's ID as the document ID for easy lookup/deletion
     const notificationRef = doc(db, 'users', targetUserId, 'notifications', currentUserId);
     await setDoc(notificationRef, {
         type: 'follow_request',
@@ -511,16 +505,13 @@ export async function sendFollowRequest(currentUserId: string, currentUserProfil
 
 export async function acceptFollowRequest(currentUserId: string, requestingUserId: string): Promise<void> {
     if (!db) throw new Error("Firestore not initialized.");
-    // This is the same as a normal follow
     await followUser(requestingUserId, currentUserId);
-    // Delete the request notification
     const notificationRef = doc(db, 'users', currentUserId, 'notifications', requestingUserId);
     await deleteDoc(notificationRef);
 }
 
 export async function declineFollowRequest(currentUserId: string, requestingUserId: string): Promise<void> {
     if (!db) throw new Error("Firestore not initialized.");
-    // Just delete the request notification
     const notificationRef = doc(db, 'users', currentUserId, 'notifications', requestingUserId);
     await deleteDoc(notificationRef);
 }
@@ -548,16 +539,10 @@ export async function getNotifications(userId: string): Promise<Notification[]> 
 
 export async function removeFollower(currentUserId: string, followerId: string): Promise<void> {
     if (!db) throw new Error("Firestore not initialized.");
-    // This is the same as the follower unfollowing the current user.
     await unfollowUser(followerId, currentUserId);
 }
 
 
-/**
- * Searches for users by name or username.
- * @param searchQuery The partial name or username to search for.
- * @returns A promise that resolves to an array of user objects.
- */
 export async function searchUsers(searchQuery: string): Promise<ProfileListItem[]> {
     if (!db || searchQuery.trim() === '') return [];
     
@@ -602,7 +587,6 @@ export async function searchUsers(searchQuery: string): Promise<ProfileListItem[
     return Array.from(usersMap.values());
 }
 
-// Helper function to get multiple user profiles from a list of IDs
 async function getProfilesFromIds(userIds: string[]): Promise<ProfileListItem[]> {
     if (!db || userIds.length === 0) return [];
 
@@ -622,7 +606,6 @@ async function getProfilesFromIds(userIds: string[]): Promise<ProfileListItem[]>
         });
 }
 
-// Function to get the list of users a specific user is following
 export async function getFollowingList(userId: string): Promise<ProfileListItem[]> {
     if (!db) throw new Error("Firestore not initialized.");
     const followingRef = collection(db, 'users', userId, 'following');
@@ -632,7 +615,6 @@ export async function getFollowingList(userId: string): Promise<ProfileListItem[
     return getProfilesFromIds(followingIds);
 }
 
-// Function to get the list of users who are following a specific user
 export async function getFollowersList(userId: string): Promise<ProfileListItem[]> {
     if (!db) throw new Error("Firestore not initialized.");
     const followersRef = collection(db, 'users', userId, 'followers');
@@ -642,30 +624,25 @@ export async function getFollowersList(userId: string): Promise<ProfileListItem[
     return getProfilesFromIds(followerIds);
 }
 
-// Function to get posts from users the current user is following
 export async function getFollowingPosts(userId: string): Promise<PublishedPost[]> {
     if (!db) throw new Error('Firestore is not initialized.');
     
-    // 1. Get the list of users the current user is following
     const followingRef = collection(db, 'users', userId, 'following');
     const followingSnap = await getDocs(followingRef);
     const followingIds = followingSnap.docs.map(doc => doc.id);
 
     if (followingIds.length === 0) {
-        return []; // Return early if the user isn't following anyone
+        return [];
     }
 
-    // 2. Fetch posts from the followed users, handling Firestore's 30-item limit for 'in' queries
     const postsCollection = collection(db, 'published_recipes');
     const posts: PublishedPost[] = [];
     
-    // Split followingIds into chunks of 30
     const chunks: string[][] = [];
     for (let i = 0; i < followingIds.length; i += 30) {
         chunks.push(followingIds.slice(i, i + 30));
     }
 
-    // Execute a query for each chunk
     const queryPromises = chunks.map(chunk => {
         const q = query(
             postsCollection,
@@ -685,7 +662,8 @@ export async function getFollowingPosts(userId: string): Promise<PublishedPost[]
                 publisherId: data.publisherId,
                 publisherName: data.publisherName,
                 publisherPhotoURL: data.publisherPhotoURL || null,
-                imageUrl: data.imageUrl || null,
+                mediaUrl: data.mediaUrl || null,
+                mediaType: data.mediaType || null,
                 type: data.type,
                 profileType: data.profileType,
                 content: data.content,
@@ -700,35 +678,25 @@ export async function getFollowingPosts(userId: string): Promise<PublishedPost[]
         });
     });
     
-    // 3. Sort all the collected posts by date client-side, as Firestore doesn't allow ordering on a different field than the 'in' query.
     posts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     return posts;
 }
 
-/**
- * Gets a list of user suggestions for the current user to follow.
- * It fetches the latest registered users and filters out the current user and anyone they already follow.
- * @param currentUserId The ID of the user for whom to generate suggestions.
- * @returns A promise that resolves to an array of user profile suggestions.
- */
 export async function getFriendSuggestions(currentUserId: string): Promise<ProfileListItem[]> {
   if (!db) throw new Error("Firestore not initialized.");
 
-  // Get the list of users the current user is already following
   const followingRef = collection(db, 'users', currentUserId, 'following');
   const followingSnap = await getDocs(followingRef);
   const followingIds = new Set(followingSnap.docs.map(doc => doc.id));
-  followingIds.add(currentUserId); // Also exclude the user themselves
+  followingIds.add(currentUserId);
 
-  // Fetch the 10 most recently created users
   const usersCollection = collection(db, 'users');
   const q = query(usersCollection, orderBy('createdAt', 'desc'), limit(10));
   const snapshot = await getDocs(q);
 
   const suggestions: ProfileListItem[] = [];
   snapshot.forEach(doc => {
-    // If the user is not already followed and is not the current user, add to suggestions
     if (!followingIds.has(doc.id)) {
       const data = doc.data();
       suggestions.push({
@@ -740,11 +708,9 @@ export async function getFriendSuggestions(currentUserId: string): Promise<Profi
     }
   });
   
-  // Return up to 5 suggestions
   return suggestions.slice(0, 5);
 }
 
-// Function to get the latest post timestamp for a given feed
 export async function getLatestPostTimestamp(
   forFeed: 'public' | 'following',
   userId?: string
@@ -763,9 +729,6 @@ export async function getLatestPostTimestamp(
     const followingIds = followingSnap.docs.map(doc => doc.id);
     if (followingIds.length === 0) return null;
     
-    // Note: This won't work with more than 30 followed users due to 'in' query limitations combined with orderBy.
-    // For a production app, a different data model (e.g., a "timeline" subcollection) would be better.
-    // For this app's scale, we query the latest post from each followed user and find the most recent. This is inefficient but works for small numbers.
     const latestPostPromises = followingIds.map(id => 
         getDocs(query(postsCollection, where('publisherId', '==', id), orderBy('createdAt', 'desc'), limit(1)))
     );
@@ -776,7 +739,6 @@ export async function getLatestPostTimestamp(
 
     if (latestTimestamps.length === 0) return null;
 
-    // Find the most recent timestamp among all latest posts
     return latestTimestamps.reduce((latest, current) => current.seconds > latest.seconds ? current : latest);
   }
   
@@ -787,7 +749,6 @@ export async function getLatestPostTimestamp(
   return snapshot.docs[0].data().createdAt as Timestamp;
 }
 
-// Function to mark all unread notifications as read
 export async function markNotificationsAsRead(userId: string): Promise<void> {
   if (!db) throw new Error('Firestore is not initialized.');
   const notificationsRef = collection(db, 'users', userId, 'notifications');

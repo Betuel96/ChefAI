@@ -18,39 +18,40 @@ import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storag
  * Adds a new recipe to a user's collection in Firestore, optionally uploading an image.
  * @param userId The ID of the user.
  * @param recipe The recipe data to save.
- * @param imageDataUri The base64 data URI of the image to upload.
+ * @param mediaDataUri The base64 data URI of the media to upload.
+ * @param mediaType The type of media being uploaded ('image' or 'video').
  * @returns The ID of the newly created recipe document.
  */
 export async function addRecipe(
   userId: string,
   recipe: Recipe,
-  imageDataUri: string | null
+  mediaDataUri: string | null,
+  mediaType: 'image' | 'video' | null
 ): Promise<string> {
   if (!db) {
     throw new Error('Firestore is not initialized.');
   }
   const recipesCollection = collection(db, 'users', userId, 'recipes');
-  // Add recipe without imageUrl first to get the ID
+  
   const docRef = await addDoc(recipesCollection, {
     ...recipe,
     createdAt: serverTimestamp(),
-    imageUrl: null, // Start with null
+    mediaUrl: null,
+    mediaType: null,
   });
 
-  if (imageDataUri && storage) {
-    const storageRef = ref(storage, `users/${userId}/recipes/${docRef.id}.png`);
+  if (mediaDataUri && storage) {
+    const storageRef = ref(storage, `users/${userId}/recipes/${docRef.id}`);
     try {
-      // Upload the base64 string
-      const snapshot = await uploadString(storageRef, imageDataUri, 'data_url');
+      const snapshot = await uploadString(storageRef, mediaDataUri, 'data_url');
       const downloadURL = await getDownloadURL(snapshot.ref);
 
-      // Update the recipe document with the image URL
       await updateDoc(docRef, {
-        imageUrl: downloadURL,
+        mediaUrl: downloadURL,
+        mediaType: mediaType,
       });
     } catch (error) {
-      console.error('Error uploading image and updating recipe:', error);
-      // Optionally, you could delete the Firestore doc here if image upload is critical
+      console.error('Error uploading media and updating recipe:', error);
     }
   }
 
@@ -80,7 +81,8 @@ export async function getRecipes(userId: string): Promise<SavedRecipe[]> {
         instructions: data.instructions,
         additionalIngredients: data.additionalIngredients,
         equipment: data.equipment,
-        imageUrl: data.imageUrl || null,
+        mediaUrl: data.mediaUrl || null,
+        mediaType: data.mediaType || null,
         createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
       } as SavedRecipe;
     });
@@ -91,7 +93,7 @@ export async function getRecipes(userId: string): Promise<SavedRecipe[]> {
 }
 
 /**
- * Deletes a specific recipe and its associated image from a user's collection.
+ * Deletes a specific recipe and its associated media from a user's collection.
  * @param userId The ID of the user.
  * @param recipeId The ID of the recipe to delete.
  */
@@ -100,18 +102,25 @@ export async function deleteRecipe(userId: string, recipeId: string): Promise<vo
     throw new Error('Firebase services are not initialized.');
   }
   
-  // Delete the Firestore document
-  const recipeDoc = doc(db, 'users', userId, 'recipes', recipeId);
-  await deleteDoc(recipeDoc);
-
-  // Delete the associated image from Storage
-  const storageRef = ref(storage, `users/${userId}/recipes/${recipeId}.png`);
-  try {
-    await deleteObject(storageRef);
-  } catch (error: any) {
-    // It's okay if the image doesn't exist (e.g., old recipes without images)
-    if (error.code !== 'storage/object-not-found') {
-      console.error("Error deleting recipe image:", error);
-    }
+  const recipeDocRef = doc(db, 'users', userId, 'recipes', recipeId);
+  
+  // Get the doc to check for a mediaUrl before deleting
+  const docSnap = await getDoc(recipeDocRef);
+  if (docSnap.exists()) {
+      const data = docSnap.data();
+      if (data.mediaUrl) {
+        // Delete the associated media from Storage
+        const storageRef = ref(storage, data.mediaUrl);
+        try {
+            await deleteObject(storageRef);
+        } catch (error: any) {
+            if (error.code !== 'storage/object-not-found') {
+                console.error("Error deleting recipe media:", error);
+            }
+        }
+      }
   }
+
+  // Delete the Firestore document
+  await deleteDoc(recipeDocRef);
 }

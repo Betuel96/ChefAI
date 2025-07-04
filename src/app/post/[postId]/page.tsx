@@ -1,9 +1,7 @@
 
-// src/app/post/[postId]/page.tsx
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
@@ -42,6 +40,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { CommentInput } from '@/components/community/comment-input';
+import { PostMedia } from '@/components/community/post-media';
 
 type CommentWithReplies = Comment & { replies: CommentWithReplies[] };
 
@@ -416,9 +415,15 @@ export default function PostDetailPage() {
                             <PostContentRenderer content={post.content} mentions={post.mentions} />
                         )}
                     </div>
-                     {post.imageUrl && (
+                     {post.mediaUrl && post.mediaType && (
                         <div className="aspect-video relative overflow-hidden rounded-lg">
-                            <Image src={post.imageUrl} alt={`Imagen de ${post.content}`} fill className="object-cover" />
+                            <PostMedia 
+                                mediaUrl={post.mediaUrl}
+                                mediaType={post.mediaType}
+                                altText={`Media for ${post.content}`}
+                                className="object-cover"
+                                controls
+                            />
                         </div>
                     )}
                     {post.type === 'recipe' && (

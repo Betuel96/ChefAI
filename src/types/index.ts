@@ -8,7 +8,12 @@ export interface Recipe {
     equipment: string;
 }
 // A recipe saved to a user's private collection
-export type SavedRecipe = Recipe & { id: string; imageUrl?: string | null; createdAt: string; };
+export type SavedRecipe = Recipe & { 
+    id: string; 
+    mediaUrl?: string | null; 
+    mediaType?: 'image' | 'video' | null;
+    createdAt: string; 
+};
 
 export interface DailyMealPlan {
     day: string;
@@ -81,7 +86,9 @@ export interface PublishedPost {
     publisherName: string;
     publisherPhotoURL?: string | null;
     createdAt: string;
-    imageUrl?: string | null;
+    
+    mediaUrl?: string | null;
+    mediaType?: 'image' | 'video' | null;
     
     type: 'recipe' | 'text'; // To distinguish between post types
     profileType: 'public' | 'private';
