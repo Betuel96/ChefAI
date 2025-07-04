@@ -714,7 +714,7 @@ export async function getFriendSuggestions(currentUserId: string): Promise<Profi
 export async function getLatestPostTimestamp(
   forFeed: 'public' | 'following',
   userId?: string
-): Promise<Timestamp | null> {
+): Promise<string | null> {
   if (!db) throw new Error('Firestore is not initialized.');
   
   const postsCollection = collection(db, 'published_recipes');
@@ -722,6 +722,12 @@ export async function getLatestPostTimestamp(
 
   if (forFeed === 'public') {
     q = query(postsCollection, where('profileType', '==', 'public'), orderBy('createdAt', 'desc'), limit(1));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) {
+      return null;
+    }
+    const timestamp = snapshot.docs[0].data().createdAt as Timestamp;
+    return timestamp.toDate().toISOString();
   } else {
     if (!userId) return null;
     const followingRef = collection(db, 'users', userId, 'following');
@@ -739,14 +745,9 @@ export async function getLatestPostTimestamp(
 
     if (latestTimestamps.length === 0) return null;
 
-    return latestTimestamps.reduce((latest, current) => current.seconds > latest.seconds ? current : latest);
+    const latest = latestTimestamps.reduce((latest, current) => current.seconds > latest.seconds ? current : latest);
+    return latest.toDate().toISOString();
   }
-  
-  const snapshot = await getDocs(q);
-  if (snapshot.empty) {
-    return null;
-  }
-  return snapshot.docs[0].data().createdAt as Timestamp;
 }
 
 export async function markNotificationsAsRead(userId: string): Promise<void> {

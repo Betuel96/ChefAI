@@ -33,7 +33,7 @@ export const FeedStatusProvider = ({ children }: { children: ReactNode }) => {
     if (settings.publicFeed) {
       const lastVisited = user.lastVisitedFeeds?.public ? new Date(user.lastVisitedFeeds.public) : new Date(0);
       const latestPostTimestamp = await getLatestPostTimestamp('public');
-      if (latestPostTimestamp && latestPostTimestamp.toDate() > lastVisited) {
+      if (latestPostTimestamp && new Date(latestPostTimestamp) > lastVisited) {
         setHasNewPublicPosts(true);
       } else {
         setHasNewPublicPosts(false);
@@ -46,7 +46,7 @@ export const FeedStatusProvider = ({ children }: { children: ReactNode }) => {
     if (settings.followingFeed && user.uid) {
        const lastVisited = user.lastVisitedFeeds?.following ? new Date(user.lastVisitedFeeds.following) : new Date(0);
        const latestPostTimestamp = await getLatestPostTimestamp('following', user.uid);
-       if (latestPostTimestamp && latestPostTimestamp.toDate() > lastVisited) {
+       if (latestPostTimestamp && new Date(latestPostTimestamp) > lastVisited) {
         setHasNewFollowingPosts(true);
        } else {
          setHasNewFollowingPosts(false);
