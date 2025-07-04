@@ -91,6 +91,9 @@ export interface PublishedPost {
     // Social counts
     likesCount?: number;
     commentsCount?: number;
+
+    // Mentions
+    mentions?: Mention[];
 }
 
 export interface ProfileData extends Omit<UserAccount, 'createdAt' | 'email'> {

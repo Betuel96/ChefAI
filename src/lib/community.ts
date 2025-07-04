@@ -54,6 +54,7 @@ export async function createPost(
         createdAt: serverTimestamp(),
         likesCount: 0,
         commentsCount: 0,
+        mentions: postData.mentions || [],
     };
 
     try {
@@ -151,6 +152,7 @@ export async function getPublishedPosts(): Promise<PublishedPost[]> {
             id: doc.id,
             ...data,
             createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
+            mentions: data.mentions || [],
         } as PublishedPost;
     });
 }
@@ -169,6 +171,7 @@ export async function getUserPublishedPosts(userId: string): Promise<PublishedPo
             id: doc.id,
             ...data,
             createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
+            mentions: data.mentions || [],
         } as PublishedPost;
     });
 }
@@ -191,6 +194,7 @@ export async function getPost(postId: string): Promise<PublishedPost | null> {
         createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
         likesCount: data.likesCount || 0,
         commentsCount: data.commentsCount || 0,
+        mentions: data.mentions || [],
     } as PublishedPost;
 }
 
@@ -589,6 +593,7 @@ export async function getFollowingPosts(userId: string): Promise<PublishedPost[]
                 id: doc.id,
                 ...data,
                 createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
+                mentions: data.mentions || [],
             } as PublishedPost);
         });
     });

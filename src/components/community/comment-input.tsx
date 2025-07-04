@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { searchUsers } from '@/lib/community';
-import type { AppUser, Mention } from '@/types';
+import type { AppUser, Mention, ProfileListItem } from '@/types';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -20,7 +20,6 @@ const commentSchema = z.object({
   text: z.string().min(1, 'El comentario no puede estar vacío.').max(500, 'El comentario no puede exceder los 500 caracteres.'),
 });
 
-type UserSuggestion = { id: string; name: string; photoURL: string | null };
 
 interface CommentInputProps {
     user: NonNullable<AppUser>;
@@ -30,7 +29,7 @@ interface CommentInputProps {
 }
 
 export function CommentInput({ user, onSubmit, placeholder, autoFocus = false }: CommentInputProps) {
-  const [suggestions, setSuggestions] = useState<UserSuggestion[]>([]);
+  const [suggestions, setSuggestions] = useState<ProfileListItem[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [mentionQuery, setMentionQuery] = useState('');
   const [mentions, setMentions] = useState<Map<string, string>>(new Map());
@@ -63,7 +62,7 @@ export function CommentInput({ user, onSubmit, placeholder, autoFocus = false }:
 
     const cursorPos = e.target.selectionStart;
     const textUpToCursor = text.substring(0, cursorPos);
-    const mentionMatch = textUpToCursor.match(/@(\w*)$/);
+    const mentionMatch = textUpToCursor.match(/@(\S*)$/);
 
     if (mentionMatch) {
       setMentionQuery(mentionMatch[1]);
@@ -73,18 +72,19 @@ export function CommentInput({ user, onSubmit, placeholder, autoFocus = false }:
     }
   };
 
-  const handleSelectSuggestion = (suggestion: UserSuggestion) => {
+  const handleSelectSuggestion = (suggestion: ProfileListItem) => {
+    if (!suggestion.username) return;
     const currentText = form.getValues('text');
     const cursorPos = textareaRef.current?.selectionStart ?? currentText.length;
     const textUpToCursor = currentText.substring(0, cursorPos);
     
     // Replace the partial @mention with the full one
-    const newText = textUpToCursor.replace(/@(\w*)$/, `@${suggestion.name} `) + currentText.substring(cursorPos);
+    const newText = textUpToCursor.replace(/@\S*$/, `@${suggestion.username} `) + currentText.substring(cursorPos);
     
     form.setValue('text', newText);
 
     // Store the mention
-    setMentions(prev => new Map(prev).set(`@${suggestion.name}`, suggestion.id));
+    setMentions(prev => new Map(prev).set(`@${suggestion.username}`, suggestion.id));
 
     setShowSuggestions(false);
     setMentionQuery('');
@@ -94,9 +94,9 @@ export function CommentInput({ user, onSubmit, placeholder, autoFocus = false }:
   const handleFormSubmit = async (values: z.infer<typeof commentSchema>) => {
     setIsSubmitting(true);
     const finalMentions: Mention[] = [];
-    mentions.forEach((userId, displayName) => {
-        if (values.text.includes(displayName)) {
-            finalMentions.push({ displayName: displayName.substring(1), userId });
+    mentions.forEach((userId, username) => {
+        if (values.text.includes(username)) {
+            finalMentions.push({ displayName: username.substring(1), userId });
         }
     });
 
@@ -144,7 +144,7 @@ export function CommentInput({ user, onSubmit, placeholder, autoFocus = false }:
               </Form>
             </div>
           </PopoverTrigger>
-          <PopoverContent className="w-64 p-1" align="start">
+          <PopoverContent className="w-[--radix-popover-trigger-width] p-1 mt-1" align="start">
              {suggestions.length > 0 ? (
                 suggestions.map(s => (
                     <Button
@@ -157,7 +157,10 @@ export function CommentInput({ user, onSubmit, placeholder, autoFocus = false }:
                             <AvatarImage src={s.photoURL || undefined} />
                             <AvatarFallback><UserCircle /></AvatarFallback>
                         </Avatar>
-                        <span className="text-sm">{s.name}</span>
+                         <div>
+                            <span className="text-sm font-semibold">{s.name}</span>
+                            <span className="text-xs text-muted-foreground ml-2">@{s.username}</span>
+                        </div>
                     </Button>
                 ))
              ) : (

@@ -195,6 +195,34 @@ const PostDetailSkeleton = () => (
     </div>
 );
 
+const PostContentRenderer = ({ content, mentions }: { content: string, mentions?: Mention[] }) => {
+    if (!mentions || mentions.length === 0) {
+        return <p className="text-foreground text-lg whitespace-pre-wrap">{content}</p>;
+    }
+
+    const mentionMap = new Map(mentions.map(m => [`@${m.displayName}`, m.userId]));
+    const names = mentions.map(m => m.displayName.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')).join('|');
+    const regex = new RegExp(`@(${names})`, 'g');
+    
+    const parts = content.split(regex);
+
+    return (
+        <p className="text-foreground text-lg whitespace-pre-wrap">
+            {parts.map((part, i) => {
+                const mentionKey = `@${part}`;
+                if (i % 2 === 1 && mentionMap.has(mentionKey)) {
+                    return (
+                        <Link key={i} href={`/profile/${mentionMap.get(mentionKey)}`} className="font-semibold text-primary hover:underline">
+                            {mentionKey}
+                        </Link>
+                    );
+                }
+                return <span key={i}>{part}</span>;
+            })}
+        </p>
+    );
+}
+
 
 export default function PostDetailPage() {
     const { user } = useAuth();
@@ -385,7 +413,7 @@ export default function PostDetailPage() {
                         {post.type === 'recipe' ? (
                             <h1 className="font-headline text-3xl font-bold text-primary">{post.content}</h1>
                         ) : (
-                            <p className="text-foreground text-lg whitespace-pre-wrap">{post.content}</p>
+                            <PostContentRenderer content={post.content} mentions={post.mentions} />
                         )}
                     </div>
                      {post.imageUrl && (

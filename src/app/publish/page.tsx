@@ -2,7 +2,7 @@
 // src/app/publish/page.tsx
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -10,17 +10,21 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { resendVerificationEmail } from '@/lib/users';
-import { createPost } from '@/lib/community';
+import { createPost, searchUsers } from '@/lib/community';
+import type { Mention, ProfileListItem } from '@/types';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Send, VenetianMask, Mail, PenSquare, Utensils } from 'lucide-react';
+import { Send, VenetianMask, Mail, PenSquare, Utensils, UserCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+
 
 // Schema for the text post form
 const textPostSchema = z.object({
@@ -69,6 +73,14 @@ export default function PublishPage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
 
+  // Mention state
+  const [suggestions, setSuggestions] = useState<ProfileListItem[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState('');
+  const [mentions, setMentions] = useState<Map<string, string>>(new Map());
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+
   const textForm = useForm<z.infer<typeof textPostSchema>>({
     resolver: zodResolver(textPostSchema),
     defaultValues: { content: '' },
@@ -84,6 +96,57 @@ export default function PublishPage() {
     },
   });
   
+  // Debounce search for mentions
+  useEffect(() => {
+    const handler = setTimeout(async () => {
+      if (mentionQuery) {
+        const results = await searchUsers(mentionQuery);
+        setSuggestions(results);
+        if (results.length > 0) {
+            setShowSuggestions(true);
+        }
+      }
+    }, 300);
+
+    return () => clearTimeout(handler);
+  }, [mentionQuery]);
+
+
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const text = e.target.value;
+    textForm.setValue('content', text);
+
+    const cursorPos = e.target.selectionStart;
+    const textUpToCursor = text.substring(0, cursorPos);
+    const mentionMatch = textUpToCursor.match(/@(\w*)$/);
+
+    if (mentionMatch) {
+      setMentionQuery(mentionMatch[1]);
+    } else {
+      setShowSuggestions(false);
+      setMentionQuery('');
+    }
+  };
+  
+  const handleSelectSuggestion = (suggestion: ProfileListItem) => {
+    const currentText = textForm.getValues('content');
+    const cursorPos = textareaRef.current?.selectionStart ?? currentText.length;
+    const textUpToCursor = currentText.substring(0, cursorPos);
+    
+    // Replace the partial @mention with the full one
+    const newText = textUpToCursor.replace(/@\S*$/, `@${suggestion.username} `) + currentText.substring(cursorPos);
+    
+    textForm.setValue('content', newText);
+
+    // Store the mention
+    setMentions(prev => new Map(prev).set(`@${suggestion.username}`, suggestion.id));
+
+    setShowSuggestions(false);
+    setMentionQuery('');
+    textareaRef.current?.focus();
+  };
+
+
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>, formType: 'text' | 'recipe') => {
     const file = event.target.files?.[0];
     if (file) {
@@ -103,12 +166,22 @@ export default function PublishPage() {
     textForm.reset();
     recipeForm.reset();
     setImagePreview(null);
+    setMentions(new Map());
+    setShowSuggestions(false);
   };
 
   async function handleTextSubmit(values: z.infer<typeof textPostSchema>) {
+    const finalMentions: Mention[] = [];
+    mentions.forEach((userId, username) => {
+        if (values.content.includes(username)) {
+            finalMentions.push({ displayName: username.substring(1), userId });
+        }
+    });
+
     await submitPost({
       type: 'text',
       content: values.content,
+      mentions: finalMentions,
     });
   }
 
@@ -219,19 +292,52 @@ export default function PublishPage() {
             <CardContent>
               <Form {...textForm}>
                 <form onSubmit={textForm.handleSubmit(handleTextSubmit)} className="space-y-6">
-                  <FormField
-                    control={textForm.control}
-                    name="content"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Contenido</FormLabel>
-                        <FormControl>
-                          <Textarea placeholder="Ej: ¡Probando una nueva receta de pasta esta noche!" {...field} rows={4} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                   <Popover open={showSuggestions} onOpenChange={setShowSuggestions}>
+                      <PopoverTrigger asChild>
+                         <FormField
+                            control={textForm.control}
+                            name="content"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Contenido</FormLabel>
+                                <FormControl>
+                                <Textarea 
+                                    placeholder="Ej: ¡Probando una nueva receta de pasta esta noche con @usuario!" 
+                                    {...field} 
+                                    rows={4} 
+                                    ref={textareaRef}
+                                    onChange={handleTextChange}
+                                />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[--radix-popover-trigger-width] p-1 mt-1" align="start">
+                            {suggestions.length > 0 ? (
+                                suggestions.map(s => (
+                                    <Button
+                                        key={s.id}
+                                        variant="ghost"
+                                        className="w-full justify-start h-auto p-2"
+                                        onClick={() => handleSelectSuggestion(s)}
+                                    >
+                                        <Avatar className="h-8 w-8 mr-2">
+                                            <AvatarImage src={s.photoURL || undefined} />
+                                            <AvatarFallback><UserCircle /></AvatarFallback>
+                                        </Avatar>
+                                        <div>
+                                            <span className="text-sm font-semibold">{s.name}</span>
+                                            <span className="text-xs text-muted-foreground ml-2">@{s.username}</span>
+                                        </div>
+                                    </Button>
+                                ))
+                            ) : (
+                                <div className="p-2 text-sm text-muted-foreground">No se encontraron usuarios.</div>
+                            )}
+                      </PopoverContent>
+                   </Popover>
                   <FormField
                     control={textForm.control}
                     name="image"
