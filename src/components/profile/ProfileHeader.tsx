@@ -1,3 +1,4 @@
+
 // src/components/profile/ProfileHeader.tsx
 'use client';
 
@@ -19,7 +20,10 @@ export const ProfileHeader = ({ profile, isFollowing, onFollowToggle, isCurrentU
                 <AvatarFallback><UserCircle /></AvatarFallback>
             </Avatar>
             <div className="flex-grow space-y-3 text-center sm:text-left">
-                <h1 className="font-headline text-4xl font-bold">{profile.name}</h1>
+                <div>
+                    <h1 className="font-headline text-4xl font-bold">{profile.name}</h1>
+                    <p className="text-muted-foreground text-lg">@{profile.username}</p>
+                </div>
                 <div className="flex justify-center sm:justify-start gap-6 text-muted-foreground">
                     <div className="text-center">
                         <span className="font-bold text-lg text-foreground">{profile.followersCount}</span>

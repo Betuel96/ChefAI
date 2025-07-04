@@ -1,7 +1,8 @@
+
 // src/app/pro/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { getProfileData, getUserPublishedPosts, getFollowingList, getFollowersList } from '@/lib/community';
@@ -11,17 +12,14 @@ import type { ProfileData, PublishedPost, ProfileListItem } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
-import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProfileHeader } from '@/components/profile/ProfileHeader';
 import { PostGrid } from '@/components/profile/PostGrid';
 import { UserList } from '@/components/profile/UserList';
 
 import Link from 'next/link';
-import { CheckCircle, Gem, LogIn, UserCircle, Mail, VenetianMask, BookOpen, Users, Settings } from 'lucide-react';
-
+import { CheckCircle, Gem, LogIn, Mail, VenetianMask, BookOpen, Users, Settings } from 'lucide-react';
 
 const proFeatures = [
   'Generaciones ilimitadas de recetas',
@@ -129,11 +127,11 @@ const AccountSettings = () => {
                             <p className="text-xs text-muted-foreground">{user.isPremium ? '¡Gracias por tu apoyo!' : 'Desbloquea funciones ilimitadas.'}</p>
                         </div>
                         <Switch
-                            checked={user.isPremium}
+                            checked={!!user.isPremium}
                             onCheckedChange={(checked) => {
                                 if (checked && !user.isPremium) handleUpgrade();
                             }}
-                            disabled={user.isPremium || isRedirecting}
+                            disabled={!!user.isPremium || isRedirecting}
                             aria-readonly
                         />
                     </div>
@@ -162,6 +160,25 @@ const AccountSettings = () => {
   );
 }
 
+const MyProfilePageSkeleton = () => (
+     <div className="max-w-4xl mx-auto space-y-8">
+        <div className="flex flex-col sm:flex-row items-center gap-6">
+            <Skeleton className="h-24 w-24 rounded-full sm:h-32 sm:w-32" />
+            <div className="space-y-3 flex-grow text-center sm:text-left">
+                <Skeleton className="h-10 w-1/2 mx-auto sm:mx-0" />
+                <Skeleton className="h-5 w-1/3 mx-auto sm:mx-0" />
+                <div className="flex justify-center sm:justify-start gap-6">
+                    <Skeleton className="h-8 w-20" />
+                    <Skeleton className="h-8 w-20" />
+                </div>
+                <Skeleton className="h-4 w-1/4 mx-auto sm:mx-0" />
+            </div>
+        </div>
+         <Skeleton className="h-10 w-full" />
+        <Skeleton className="aspect-square w-full" />
+    </div>
+);
+
 export default function MyProfilePage() {
   const { user, loading: authLoading } = useAuth();
   
@@ -169,34 +186,44 @@ export default function MyProfilePage() {
   const [posts, setPosts] = useState<PublishedPost[]>([]);
   const [following, setFollowing] = useState<ProfileListItem[]>([]);
   const [followers, setFollowers] = useState<ProfileListItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [isLoadingSocials, setIsLoadingSocials] = useState(true);
 
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
-      setIsLoading(false);
+      setIsLoadingProfile(false);
+      setIsLoadingSocials(false);
       return;
     }
 
     const fetchData = async () => {
-        setIsLoading(true);
+        setIsLoadingProfile(true);
+        setIsLoadingSocials(true);
+        
         try {
-            const [profileData, publishedPosts, followingList, followersList] = await Promise.all([
-                getProfileData(user.uid),
+            const profileData = await getProfileData(user.uid);
+            setProfile(profileData);
+        } catch (error) {
+            console.error("Error fetching my profile data:", error);
+        } finally {
+            setIsLoadingProfile(false);
+        }
+
+        try {
+             const [publishedPosts, followingList, followersList] = await Promise.all([
                 getUserPublishedPosts(user.uid),
                 getFollowingList(user.uid),
                 getFollowersList(user.uid),
             ]);
 
-            setProfile(profileData);
             setPosts(publishedPosts);
             setFollowing(followingList);
             setFollowers(followersList);
-
         } catch (error) {
-            console.error("Error fetching my profile data:", error);
+             console.error("Error fetching my social data:", error);
         } finally {
-            setIsLoading(false);
+             setIsLoadingSocials(false);
         }
     };
 
@@ -204,16 +231,8 @@ export default function MyProfilePage() {
   }, [user, authLoading]);
 
 
-  if (authLoading || isLoading) {
-    return (
-        <div className="max-w-4xl mx-auto space-y-8">
-            <header>
-                <Skeleton className="h-10 w-1/2" />
-                <Skeleton className="h-4 w-1/3 mt-2" />
-            </header>
-            <Skeleton className="h-48 w-full" />
-        </div>
-    );
+  if (authLoading || isLoadingProfile) {
+    return <MyProfilePageSkeleton />;
   }
 
   if (!user) {
@@ -232,7 +251,6 @@ export default function MyProfilePage() {
   }
   
   if (!profile) {
-    // This might happen briefly if the user document is still being created
     return (
         <div className="flex justify-center items-center min-h-[calc(100vh-8rem)]">
             Cargando perfil...
@@ -252,18 +270,13 @@ export default function MyProfilePage() {
             <TabsTrigger value="account"><Settings className="mr-2 h-4 w-4" /> Cuenta</TabsTrigger>
         </TabsList>
         <TabsContent value="posts" className="mt-6">
-            <PostGrid posts={posts} />
-             {posts.length === 0 && (
-                <p className="text-center text-muted-foreground pt-10">
-                  Todavía no has publicado nada. ¡Ve al <Link href="/publish" className="underline text-primary">creador de publicaciones</Link>!
-                </p>
-            )}
+            {isLoadingSocials ? <Skeleton className="h-64 w-full" /> : <PostGrid posts={posts} />}
         </TabsContent>
         <TabsContent value="following" className="mt-6">
-            <UserList users={following} emptyMessage="Aún no sigues a nadie." />
+            {isLoadingSocials ? <Skeleton className="h-64 w-full" /> : <UserList users={following} emptyMessage="Aún no sigues a nadie." />}
         </TabsContent>
         <TabsContent value="followers" className="mt-6">
-            <UserList users={followers} emptyMessage="Aún no tienes seguidores." />
+            {isLoadingSocials ? <Skeleton className="h-64 w-full" /> : <UserList users={followers} emptyMessage="Aún no tienes seguidores." />}
         </TabsContent>
         <TabsContent value="account">
             <AccountSettings />

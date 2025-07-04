@@ -1,3 +1,4 @@
+
 'use client';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -23,6 +24,7 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 const formSchema = z.object({
   name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres.'),
+  username: z.string().min(3, 'El nombre de usuario debe tener al menos 3 caracteres.').regex(/^[a-zA-Z0-9_]+$/, 'Solo se permiten letras, números y guiones bajos.'),
   email: z.string().email('Por favor, introduce un correo electrónico válido.'),
   password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres.'),
 });
@@ -35,6 +37,7 @@ export default function SignupPage() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
+      username: '',
       email: '',
       password: '',
     },
@@ -58,7 +61,7 @@ export default function SignupPage() {
       await updateProfile(user, { displayName: values.name });
       
       // Create user document in Firestore
-      await createUserDocument(user.uid, values.name, values.email, user.photoURL);
+      await createUserDocument(user.uid, values.name, values.username, values.email, user.photoURL);
 
       // Send verification email
       await sendEmailVerification(user);
@@ -74,6 +77,7 @@ export default function SignupPage() {
       if (error.code === 'auth/email-already-in-use') {
         description = 'Este correo electrónico ya está en uso. Por favor, inicia sesión.';
       }
+      // TODO: Add a check for username uniqueness and handle the error
       toast({
         title: 'Error al Registrarse',
         description,
@@ -126,9 +130,22 @@ export default function SignupPage() {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nombre</FormLabel>
+                    <FormLabel>Nombre Completo</FormLabel>
                     <FormControl>
                       <Input placeholder="Tu nombre" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+               <FormField
+                control={form.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nombre de Usuario</FormLabel>
+                    <FormControl>
+                      <Input placeholder="tu_usuario_unico" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

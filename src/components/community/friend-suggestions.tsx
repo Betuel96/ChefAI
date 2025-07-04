@@ -1,3 +1,4 @@
+
 // src/components/community/friend-suggestions.tsx
 'use client';
 
@@ -50,6 +51,7 @@ const SuggestionItem = ({ suggestion, currentUserId }: { suggestion: ProfileList
                 </Avatar>
                 <div className="truncate">
                     <p className="font-semibold text-sm truncate">{suggestion.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">@{suggestion.username}</p>
                 </div>
             </Link>
             <Button size="sm" variant={isFollowing ? 'secondary' : 'outline'} onClick={handleFollowToggle} disabled={isLoading}>
@@ -94,7 +96,10 @@ export const FriendSuggestions = () => {
                         <div key={i} className="flex items-center justify-between gap-3">
                             <div className="flex items-center gap-3">
                                 <Skeleton className="h-10 w-10 rounded-full" />
-                                <Skeleton className="h-4 w-24" />
+                                <div className='space-y-2'>
+                                    <Skeleton className="h-4 w-24" />
+                                    <Skeleton className="h-3 w-16" />
+                                </div>
                             </div>
                             <Skeleton className="h-9 w-24 rounded-md" />
                         </div>

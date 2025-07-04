@@ -23,7 +23,7 @@ export interface WeeklyPlan {
     weeklyMealPlan: DailyMealPlan[];
 }
 
-export type SavedWeeklyPlan = WeeklyPlan & { id: string; createdAt: string; };
+export type SavedWeeklyPlan = WeeklyPlan & { id:string; createdAt: string; };
 
 export interface ShoppingListItem {
   id: string;
@@ -38,13 +38,14 @@ export interface ShoppingListCategory {
 
 export interface UserAccount {
     name:string;
+    username: string;
     email: string | null;
     photoURL: string | null;
     isPremium: boolean;
     createdAt: string; 
 }
 
-export type AppUser = (User & UserAccount) | null;
+export type AppUser = (User & Partial<UserAccount>) | null;
 
 export type Mention = { displayName: string; userId: string; };
 
@@ -100,5 +101,6 @@ export interface ProfileData extends Omit<UserAccount, 'createdAt' | 'email'> {
 export interface ProfileListItem {
     id: string;
     name: string;
+    username: string;
     photoURL?: string | null;
 }

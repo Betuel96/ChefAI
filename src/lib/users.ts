@@ -15,16 +15,22 @@ import { db, auth, googleProvider } from './firebase';
  * Creates a user document in Firestore upon signup.
  * @param userId The ID of the user from Firebase Auth.
  * @param name The user's display name.
+ * @param username The user's unique username.
  * @param email The user's email address.
  * @param photoURL The user's photo URL.
  */
-export async function createUserDocument(userId: string, name: string, email: string | null, photoURL: string | null = null): Promise<void> {
+export async function createUserDocument(userId: string, name: string, username: string, email: string | null, photoURL: string | null = null): Promise<void> {
   if (!db) {
     throw new Error('Firestore is not initialized.');
   }
   const userDocRef = doc(db, 'users', userId);
+
+  // TODO: Add a check for username uniqueness using a separate collection or transaction
+  // For now, we assume it's unique.
+  
   await setDoc(userDocRef, {
     name,
+    username,
     email,
     photoURL,
     isPremium: false,
@@ -49,7 +55,11 @@ export async function signInWithGoogle(): Promise<void> {
 
     // If not, create a new document for the user
     if (!docSnap.exists()) {
-      await createUserDocument(user.uid, user.displayName || 'Usuario de Google', user.email, user.photoURL);
+      // Generate a default username from email, sanitized, with random numbers for uniqueness
+      const sanitizedEmail = (user.email?.split('@')[0] || 'user').replace(/[^a-zA-Z0-9]/g, '');
+      const defaultUsername = `${sanitizedEmail}${Math.floor(1000 + Math.random() * 9000)}`;
+
+      await createUserDocument(user.uid, user.displayName || 'Usuario de Google', defaultUsername, user.email, user.photoURL);
     }
     // If it exists, their data is already in Firestore. No action needed.
   } catch (error: any) {

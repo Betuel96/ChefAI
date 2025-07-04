@@ -1,3 +1,4 @@
+
 // src/components/layout/user-search.tsx
 'use client';
 
@@ -68,7 +69,10 @@ export const UserSearch = () => {
                                         <AvatarImage src={user.photoURL || undefined} />
                                         <AvatarFallback><UserCircle /></AvatarFallback>
                                     </Avatar>
-                                    <span className="text-sm font-medium">{user.name}</span>
+                                    <div>
+                                        <p className="text-sm font-medium">{user.name}</p>
+                                        <p className="text-xs text-muted-foreground">@{user.username}</p>
+                                    </div>
                                 </div>
                             </Link>
                         ))}

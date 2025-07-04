@@ -18,6 +18,7 @@ import {
   increment,
   deleteDoc,
   limit,
+  setDoc,
 } from 'firebase/firestore';
 import { db, storage } from './firebase';
 import type { PublishedPost, ProfileData as ProfileDataType, Comment, Mention, ProfileListItem } from '@/types';
@@ -31,39 +32,45 @@ export async function createPost(
   postData: Omit<PublishedPost, 'id' | 'createdAt' | 'publisherId' | 'publisherName' | 'publisherPhotoURL' | 'imageUrl' | 'likesCount' | 'commentsCount'>,
   imageDataUri: string | null
 ): Promise<string> {
-  if (!db || !storage) throw new Error('Firestore or Storage is not initialized.');
+    if (!db || !storage) throw new Error('Firestore or Storage is not initialized.');
 
-  const postsCollection = collection(db, 'published_recipes');
-  
-  const docRef = doc(postsCollection); // Create a reference first to get the ID
+    const postsCollection = collection(db, 'published_recipes');
+    const docRef = doc(postsCollection); // Create a reference first to get the ID
 
-  let imageUrl: string | null = null;
-  if (imageDataUri) {
-    const storageRef = ref(storage, `users/${userId}/posts/${docRef.id}.png`);
+    let imageUrl: string | null = null;
+    let finalPostData: any = {
+        ...postData,
+        publisherId: userId,
+        publisherName: userName,
+        publisherPhotoURL: userPhotoURL,
+        createdAt: serverTimestamp(),
+        likesCount: 0,
+        commentsCount: 0,
+    };
+
     try {
-      const snapshot = await uploadString(storageRef, imageDataUri, 'data_url');
-      imageUrl = await getDownloadURL(snapshot.ref);
+        if (imageDataUri) {
+            const storageRef = ref(storage, `users/${userId}/posts/${docRef.id}.png`);
+            const snapshot = await uploadString(storageRef, imageDataUri, 'data_url');
+            imageUrl = await getDownloadURL(snapshot.ref);
+            finalPostData.imageUrl = imageUrl;
+        }
+
+        // Set the document data, including the final imageUrl if available
+        await setDoc(docRef, finalPostData);
+        return docRef.id;
     } catch (error) {
-      console.error('Error uploading post image:', error);
-      // Throw a user-friendly error
-      throw new Error('La publicación no se pudo crear porque falló la subida de la imagen. Comprueba tus reglas de seguridad de Firebase Storage.');
+        console.error('Error creating post:', error);
+        
+        // If image upload fails after the document was potentially created (or vice versa), clean up.
+        // This is a "best effort" cleanup. A more robust solution might use Cloud Functions.
+        if (docRef.id) {
+            await deleteDoc(docRef).catch(delErr => console.error("Cleanup failed: could not delete post doc.", delErr));
+        }
+        
+        // Throw a user-friendly error
+        throw new Error('La publicación no se pudo crear. Esto puede deberse a las reglas de seguridad de Firebase Storage. Asegúrate de que los usuarios autenticados tengan permiso de escritura.');
     }
-  }
-  
-  // Now set the document data, including the final imageUrl
-  await setDoc(docRef, {
-    ...postData,
-    publisherId: userId,
-    publisherName: userName,
-    publisherPhotoURL: userPhotoURL,
-    createdAt: serverTimestamp(),
-    imageUrl: imageUrl, // This will be null if no image was provided, or the URL if it succeeded
-    likesCount: 0,
-    commentsCount: 0,
-  });
-
-
-  return docRef.id;
 }
 
 
@@ -408,27 +415,52 @@ export async function getFollowingStatus(currentUserId: string, targetUserId: st
 
 
 /**
- * Searches for users by display name for mention suggestions.
- * @param nameQuery The partial name to search for.
+ * Searches for users by name or username.
+ * @param searchQuery The partial name or username to search for.
  * @returns A promise that resolves to an array of user objects.
  */
-export async function searchUsers(nameQuery: string): Promise<{ id: string; name: string; photoURL: string | null }[]> {
-  if (!db || nameQuery.trim() === '') return [];
-  const usersCollection = collection(db, 'users');
-  // Firestore "starts with" query
-  const q = query(
-    usersCollection, 
-    where('name', '>=', nameQuery),
-    where('name', '<=', nameQuery + '\uf8ff'),
-    limit(5)
-  );
+export async function searchUsers(searchQuery: string): Promise<ProfileListItem[]> {
+    if (!db || searchQuery.trim() === '') return [];
+    
+    const usersCollection = collection(db, 'users');
+    const nameQuery = query(
+        usersCollection, 
+        where('name', '>=', searchQuery),
+        where('name', '<=', searchQuery + '\uf8ff'),
+        limit(5)
+    );
+    const usernameQuery = query(
+        usersCollection,
+        where('username', '>=', searchQuery),
+        where('username', '<=', searchQuery + '\uf8ff'),
+        limit(5)
+    );
 
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({
-    id: doc.id,
-    name: doc.data().name,
-    photoURL: doc.data().photoURL || null,
-  }));
+    const [nameSnapshot, usernameSnapshot] = await Promise.all([
+        getDocs(nameQuery),
+        getDocs(usernameQuery),
+    ]);
+
+    const usersMap = new Map<string, ProfileListItem>();
+
+    const processSnapshot = (snapshot: typeof nameSnapshot) => {
+        snapshot.docs.forEach(doc => {
+            if (!usersMap.has(doc.id)) {
+                const data = doc.data();
+                usersMap.set(doc.id, {
+                    id: doc.id,
+                    name: data.name,
+                    username: data.username,
+                    photoURL: data.photoURL || null,
+                });
+            }
+        });
+    };
+
+    processSnapshot(nameSnapshot);
+    processSnapshot(usernameSnapshot);
+
+    return Array.from(usersMap.values());
 }
 
 // Helper function to get multiple user profiles from a list of IDs
@@ -447,6 +479,7 @@ async function getProfilesFromIds(userIds: string[]): Promise<ProfileListItem[]>
             userDocs.push({
                 id: docSnap.id,
                 name: data.name,
+                username: data.username,
                 photoURL: data.photoURL || null,
             });
         });
@@ -502,6 +535,7 @@ export async function getFriendSuggestions(currentUserId: string): Promise<Profi
       suggestions.push({
         id: doc.id,
         name: data.name,
+        username: data.username,
         photoURL: data.photoURL || null,
       });
     }

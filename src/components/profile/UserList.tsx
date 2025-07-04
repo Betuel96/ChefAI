@@ -1,3 +1,4 @@
+
 // src/components/profile/UserList.tsx
 'use client';
 
@@ -22,7 +23,10 @@ export const UserList = ({ users, emptyMessage }: { users: ProfileListItem[], em
                                 <AvatarImage src={userItem.photoURL || undefined} />
                                 <AvatarFallback><UserCircle /></AvatarFallback>
                             </Avatar>
-                            <p className="font-semibold">{userItem.name}</p>
+                            <div>
+                                <p className="font-semibold">{userItem.name}</p>
+                                <p className="text-sm text-muted-foreground">@{userItem.username}</p>
+                            </div>
                         </CardContent>
                     </Card>
                 </Link>
