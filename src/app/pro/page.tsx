@@ -1,25 +1,23 @@
-
 // src/app/pro/page.tsx
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
-import { getProfileData, getUserPublishedPosts, getFollowingList, getFollowersList } from '@/lib/community';
+import { getProfileData, getUserPublishedPosts } from '@/lib/community';
 import { resendVerificationEmail } from '@/lib/users';
-import type { ProfileData, PublishedPost, ProfileListItem } from '@/types';
+import type { ProfileData, PublishedPost } from '@/types';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Separator } from '@/components/ui/separator';
 import { ProfileHeader } from '@/components/profile/ProfileHeader';
 import { PostGrid } from '@/components/profile/PostGrid';
-import { UserList } from '@/components/profile/UserList';
 
 import Link from 'next/link';
-import { CheckCircle, Gem, LogIn, Mail, VenetianMask, BookOpen, Users, Settings } from 'lucide-react';
+import { CheckCircle, Gem, LogIn, Mail, VenetianMask, Settings } from 'lucide-react';
 
 const proFeatures = [
   'Generaciones ilimitadas de recetas',
@@ -75,7 +73,7 @@ const AccountSettings = () => {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start max-w-4xl mx-auto pt-6">
+    <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start pt-6">
         <div className="lg:col-span-2 space-y-8">
             <Card>
                 <CardHeader>
@@ -168,14 +166,14 @@ const MyProfilePageSkeleton = () => (
                 <Skeleton className="h-10 w-1/2 mx-auto sm:mx-0" />
                 <Skeleton className="h-5 w-1/3 mx-auto sm:mx-0" />
                 <div className="flex justify-center sm:justify-start gap-6">
-                    <Skeleton className="h-8 w-20" />
-                    <Skeleton className="h-8 w-20" />
+                    <Skeleton className="h-5 w-20" />
+                    <Skeleton className="h-5 w-20" />
                 </div>
                 <Skeleton className="h-4 w-1/4 mx-auto sm:mx-0" />
             </div>
         </div>
-         <Skeleton className="h-10 w-full" />
-        <Skeleton className="aspect-square w-full" />
+         <Skeleton className="h-px w-full" />
+         <Skeleton className="aspect-square w-full" />
     </div>
 );
 
@@ -184,46 +182,28 @@ export default function MyProfilePage() {
   
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [posts, setPosts] = useState<PublishedPost[]>([]);
-  const [following, setFollowing] = useState<ProfileListItem[]>([]);
-  const [followers, setFollowers] = useState<ProfileListItem[]>([]);
-  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
-  const [isLoadingSocials, setIsLoadingSocials] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
-      setIsLoadingProfile(false);
-      setIsLoadingSocials(false);
+      setIsLoading(false);
       return;
     }
 
     const fetchData = async () => {
-        setIsLoadingProfile(true);
-        setIsLoadingSocials(true);
-        
+        setIsLoading(true);
         try {
-            const profileData = await getProfileData(user.uid);
-            setProfile(profileData);
-        } catch (error) {
-            console.error("Error fetching my profile data:", error);
-        } finally {
-            setIsLoadingProfile(false);
-        }
-
-        try {
-             const [publishedPosts, followingList, followersList] = await Promise.all([
+             const [profileData, publishedPosts] = await Promise.all([
+                getProfileData(user.uid),
                 getUserPublishedPosts(user.uid),
-                getFollowingList(user.uid),
-                getFollowersList(user.uid),
             ]);
-
+            setProfile(profileData);
             setPosts(publishedPosts);
-            setFollowing(followingList);
-            setFollowers(followersList);
         } catch (error) {
-             console.error("Error fetching my social data:", error);
+             console.error("Error fetching my profile data:", error);
         } finally {
-             setIsLoadingSocials(false);
+             setIsLoading(false);
         }
     };
 
@@ -231,7 +211,7 @@ export default function MyProfilePage() {
   }, [user, authLoading]);
 
 
-  if (authLoading || isLoadingProfile) {
+  if (authLoading || isLoading) {
     return <MyProfilePageSkeleton />;
   }
 
@@ -262,26 +242,20 @@ export default function MyProfilePage() {
     <div className="max-w-4xl mx-auto space-y-8">
       <ProfileHeader profile={profile} isFollowing={false} onFollowToggle={() => {}} isCurrentUser={true} />
 
-      <Tabs defaultValue="posts" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
-            <TabsTrigger value="posts"><BookOpen className="mr-2 h-4 w-4" /> Publicaciones ({posts.length})</TabsTrigger>
-            <TabsTrigger value="following"><Users className="mr-2 h-4 w-4" /> Siguiendo ({following.length})</TabsTrigger>
-            <TabsTrigger value="followers"><Users className="mr-2 h-4 w-4" /> Seguidores ({followers.length})</TabsTrigger>
-            <TabsTrigger value="account"><Settings className="mr-2 h-4 w-4" /> Cuenta</TabsTrigger>
-        </TabsList>
-        <TabsContent value="posts" className="mt-6">
-            {isLoadingSocials ? <Skeleton className="h-64 w-full" /> : <PostGrid posts={posts} />}
-        </TabsContent>
-        <TabsContent value="following" className="mt-6">
-            {isLoadingSocials ? <Skeleton className="h-64 w-full" /> : <UserList users={following} emptyMessage="Aún no sigues a nadie." />}
-        </TabsContent>
-        <TabsContent value="followers" className="mt-6">
-            {isLoadingSocials ? <Skeleton className="h-64 w-full" /> : <UserList users={followers} emptyMessage="Aún no tienes seguidores." />}
-        </TabsContent>
-        <TabsContent value="account">
-            <AccountSettings />
-        </TabsContent>
-      </Tabs>
+      <Separator />
+
+      <h2 className="font-headline text-2xl font-bold text-center">Mis Publicaciones</h2>
+      <PostGrid posts={posts} />
+
+      <Separator />
+
+      <div className="space-y-4">
+        <h2 className="font-headline text-2xl font-bold text-center flex items-center justify-center gap-2">
+            <Settings className="h-6 w-6" />
+            Configuración de la Cuenta
+        </h2>
+        <AccountSettings />
+      </div>
     </div>
   );
 }

@@ -1,14 +1,13 @@
-
 // src/components/profile/ProfileHeader.tsx
 'use client';
 
 import type { ProfileData } from '@/types';
+import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { UserCircle, CalendarIcon, UserPlus, UserCheck } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
 
 export const ProfileHeader = ({ profile, isFollowing, onFollowToggle, isCurrentUser }: { profile: ProfileData, isFollowing: boolean, onFollowToggle: () => void, isCurrentUser: boolean }) => {
     const joinedDate = profile.createdAt ? new Date(profile.createdAt) : null;
@@ -25,14 +24,14 @@ export const ProfileHeader = ({ profile, isFollowing, onFollowToggle, isCurrentU
                     <p className="text-muted-foreground text-lg">@{profile.username}</p>
                 </div>
                 <div className="flex justify-center sm:justify-start gap-6 text-muted-foreground">
-                    <div className="text-center">
+                    <Link href={`/profile/${profile.id}/followers`} className="text-center hover:text-primary transition-colors">
                         <span className="font-bold text-lg text-foreground">{profile.followersCount}</span>
                         <p className="text-xs">Seguidores</p>
-                    </div>
-                     <div className="text-center">
+                    </Link>
+                     <Link href={`/profile/${profile.id}/following`} className="text-center hover:text-primary transition-colors">
                         <span className="font-bold text-lg text-foreground">{profile.followingCount}</span>
                         <p className="text-xs">Siguiendo</p>
-                    </div>
+                    </Link>
                 </div>
                  {joinedDate && (
                     <div className="flex items-center justify-center sm:justify-start gap-2 text-xs text-muted-foreground">
