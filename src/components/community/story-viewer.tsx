@@ -4,10 +4,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import type { Story, StoryGroup } from '@/types';
+import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogOverlay } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PostMedia } from '@/components/community/post-media';
-import { X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Share2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
@@ -27,6 +28,7 @@ export function StoryViewer({ groups, startIndex, onClose }: StoryViewerProps) {
   const [isPaused, setIsPaused] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const { toast } = useToast();
 
   const currentGroup = groups[currentGroupIndex];
   const currentStory = currentGroup?.stories[currentStoryIndex];
@@ -49,6 +51,37 @@ export function StoryViewer({ groups, startIndex, onClose }: StoryViewerProps) {
       setCurrentGroupIndex(prev => prev - 1);
       // Go to the last story of the previous group
       setCurrentStoryIndex(groups[currentGroupIndex - 1].stories.length - 1);
+    }
+  };
+
+  const handleShare = async () => {
+    if (!currentGroup) return;
+    const shareData = {
+        title: `Mira la historia de ${currentGroup.publisherName} en ChefAI`,
+        text: `Mira la historia de ${currentGroup.publisherName}`,
+        url: `${window.location.origin}/profile/${currentGroup.publisherId}`
+    };
+
+    if (navigator.share) {
+        try {
+            await navigator.share(shareData);
+        } catch (error) {
+            console.error('Error al compartir:', error);
+        }
+    } else {
+        try {
+            await navigator.clipboard.writeText(shareData.url);
+            toast({
+                title: '¡Enlace Copiado!',
+                description: 'El enlace al perfil del usuario se ha copiado a tu portapapeles.'
+            });
+        } catch (err) {
+            toast({
+                title: 'Error',
+                description: 'No se pudo copiar el enlace.',
+                variant: 'destructive'
+            });
+        }
     }
   };
   
@@ -148,10 +181,15 @@ export function StoryViewer({ groups, startIndex, onClose }: StoryViewerProps) {
             
             </div>
             
-            {/* Close Button */}
-            <button onClick={onClose} className="absolute top-4 right-4 text-white z-30" aria-label="Close stories">
-                <X className="w-8 h-8"/>
-            </button>
+            {/* Control Buttons */}
+            <div className="absolute top-4 right-4 flex items-center gap-4 z-30">
+                <button onClick={handleShare} className="text-white" aria-label="Compartir historia">
+                    <Share2 className="w-7 h-7" />
+                </button>
+                <button onClick={onClose} className="text-white" aria-label="Cerrar historias">
+                    <X className="w-8 h-8"/>
+                </button>
+            </div>
             
             {/* Nav Chevrons */}
             {currentGroupIndex > 0 && (

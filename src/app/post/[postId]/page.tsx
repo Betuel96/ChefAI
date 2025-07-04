@@ -26,7 +26,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
-import { UserCircle, MessageCircle, Send, ArrowLeft, ChefHat, MoreVertical, Trash2, Pencil, Reply } from 'lucide-react';
+import { UserCircle, MessageCircle, Send, ArrowLeft, ChefHat, MoreVertical, Trash2, Pencil, Reply, Share2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
@@ -294,6 +294,37 @@ export default function PostDetailPage() {
             });
         }
     };
+
+    const handleShare = async () => {
+        if (!post) return;
+        const shareData = {
+            title: `Mira esta publicación de ${post.publisherName} en ChefAI`,
+            text: post.content,
+            url: window.location.href
+        };
+
+        if (navigator.share) {
+            try {
+                await navigator.share(shareData);
+            } catch (error) {
+                console.error('Error al compartir:', error);
+            }
+        } else {
+            try {
+                await navigator.clipboard.writeText(shareData.url);
+                toast({
+                    title: '¡Enlace Copiado!',
+                    description: 'El enlace a la publicación se ha copiado a tu portapapeles.'
+                });
+            } catch (err) {
+                toast({
+                    title: 'Error',
+                    description: 'No se pudo copiar el enlace.',
+                    variant: 'destructive'
+                });
+            }
+        }
+    };
     
     const handleLikeClick = async () => {
         if (!user || !post) {
@@ -446,7 +477,7 @@ export default function PostDetailPage() {
                         </div>
                     )}
                 </CardContent>
-                <CardFooter className="flex items-center gap-6 pt-4 border-t">
+                <CardFooter className="flex items-center gap-4 pt-4 border-t">
                      <Button variant="ghost" onClick={handleLikeClick} className="flex items-center gap-2 text-muted-foreground">
                         <ChefHat className={cn("w-6 h-6 transition-colors", isLiked && "fill-primary text-primary")} />
                         <span className="font-semibold">{likesCount}</span>
@@ -455,6 +486,9 @@ export default function PostDetailPage() {
                         <MessageCircle className="w-6 h-6" />
                         <span className="font-semibold">{post.commentsCount || 0}</span>
                     </div>
+                    <Button variant="ghost" onClick={handleShare} className="flex items-center gap-2 text-muted-foreground ml-auto">
+                        <Share2 className="w-6 h-6" />
+                    </Button>
                 </CardFooter>
             </Card>
 

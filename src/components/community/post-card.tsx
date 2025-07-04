@@ -25,7 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { UtensilsCrossed, UserCircle, MessageCircle, ChefHat, MoreVertical, Trash2, Pencil } from 'lucide-react';
+import { UtensilsCrossed, UserCircle, MessageCircle, ChefHat, MoreVertical, Trash2, Pencil, Share2 } from 'lucide-react';
 import { PostMedia } from './post-media';
 
 export const PostCard = ({ post, onPostDeleted }: { post: PublishedPost, onPostDeleted: (postId: string) => void }) => {
@@ -47,6 +47,39 @@ export const PostCard = ({ post, onPostDeleted }: { post: PublishedPost, onPostD
             isPostLiked(post.id, user.uid).then(setIsLiked);
         }
     }, [user, post.id]);
+
+    const handleShare = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        e.preventDefault();
+
+        const shareData = {
+            title: `Mira esta publicación de ${post.publisherName} en ChefAI`,
+            text: post.content,
+            url: `${window.location.origin}/post/${post.id}`
+        };
+
+        if (navigator.share) {
+            try {
+                await navigator.share(shareData);
+            } catch (error) {
+                console.error('Error al compartir:', error);
+            }
+        } else {
+            try {
+                await navigator.clipboard.writeText(shareData.url);
+                toast({
+                    title: '¡Enlace Copiado!',
+                    description: 'El enlace a la publicación se ha copiado a tu portapapeles.'
+                });
+            } catch (err) {
+                toast({
+                    title: 'Error',
+                    description: 'No se pudo copiar el enlace.',
+                    variant: 'destructive'
+                });
+            }
+        }
+    };
 
     const handleLikeClick = async (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -171,6 +204,9 @@ export const PostCard = ({ post, onPostDeleted }: { post: PublishedPost, onPostD
                         <span>{post.commentsCount || 0}</span>
                     </Button>
                 </Link>
+                <Button variant="ghost" size="sm" onClick={handleShare} className="flex items-center gap-2 text-muted-foreground ml-auto">
+                    <Share2 className="w-5 h-5" />
+                </Button>
             </CardFooter>
         </Card>
         <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
