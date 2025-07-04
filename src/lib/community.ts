@@ -21,7 +21,7 @@ import {
   setDoc,
 } from 'firebase/firestore';
 import { db, storage } from './firebase';
-import type { PublishedPost, ProfileData as ProfileDataType, Comment, Mention, ProfileListItem, Notification, UserAccount } from '@/types';
+import type { PublishedPost, ProfileData as ProfileDataType, Comment, Mention, ProfileListItem, Notification, UserAccount, Story, StoryGroup } from '@/types';
 import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
 
 // Function to create a new post (recipe or text)
@@ -763,4 +763,123 @@ export async function markNotificationsAsRead(userId: string): Promise<void> {
   });
 
   await batch.commit();
+}
+
+// --- STORIES ---
+
+export async function createStory(userId: string, mediaDataUri: string, mediaType: 'image' | 'video'): Promise<string> {
+    if (!db || !storage) throw new Error('Firestore or Storage is not initialized.');
+
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
+    if (!userSnap.exists()) {
+        throw new Error('User profile not found.');
+    }
+    const userData = userSnap.data() as UserAccount;
+
+    const storiesCollection = collection(db, 'stories');
+    const docRef = doc(storiesCollection); // Create a reference first to get the ID
+
+    try {
+        const storageRef = ref(storage, `users/${userId}/stories/${docRef.id}`);
+        const snapshot = await uploadString(storageRef, mediaDataUri, 'data_url');
+        const mediaUrl = await getDownloadURL(snapshot.ref);
+
+        await setDoc(docRef, {
+            publisherId: userId,
+            publisherName: userData.name,
+            publisherPhotoURL: userData.photoURL || null,
+            mediaUrl,
+            mediaType,
+            createdAt: serverTimestamp(),
+        });
+
+        return docRef.id;
+    } catch (error) {
+        console.error('Error creating story:', error);
+        throw new Error('No se pudo crear la historia. Por favor, revisa tus reglas de seguridad de Firebase Storage.');
+    }
+}
+
+export async function getStoriesForFeed(currentUserId: string): Promise<StoryGroup[]> {
+    if (!db) throw new Error('Firestore is not initialized.');
+
+    // 1. Get the list of users the current user is following
+    const followingRef = collection(db, 'users', currentUserId, 'following');
+    const followingSnap = await getDocs(followingRef);
+    const followingIds = followingSnap.docs.map(doc => doc.id);
+    
+    // 2. Always include the current user's own stories
+    const allUserIds = Array.from(new Set([currentUserId, ...followingIds]));
+
+    if (allUserIds.length === 0) {
+        return [];
+    }
+
+    // 3. Fetch stories from the last 24 hours for these users
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const storiesCollection = collection(db, 'stories');
+    const stories: Story[] = [];
+
+    // Firestore 'in' query is limited to 30 items per query
+    const chunks: string[][] = [];
+    for (let i = 0; i < allUserIds.length; i += 30) {
+        chunks.push(allUserIds.slice(i, i + 30));
+    }
+
+    const queryPromises = chunks.map(chunk => {
+        const q = query(
+            storiesCollection,
+            where('publisherId', 'in', chunk),
+            where('createdAt', '>=', twentyFourHoursAgo),
+            orderBy('createdAt', 'desc')
+        );
+        return getDocs(q);
+    });
+
+    const querySnapshots = await Promise.all(queryPromises);
+
+    querySnapshots.forEach(snapshot => {
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const createdAtTimestamp = data.createdAt as Timestamp;
+            stories.push({
+                id: doc.id,
+                publisherId: data.publisherId,
+                publisherName: data.publisherName,
+                publisherPhotoURL: data.publisherPhotoURL || null,
+                mediaUrl: data.mediaUrl,
+                mediaType: data.mediaType,
+                createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
+            } as Story);
+        });
+    });
+
+    // 4. Group stories by publisher
+    const groups: { [key: string]: StoryGroup } = {};
+    for (const story of stories) {
+        if (!groups[story.publisherId]) {
+            groups[story.publisherId] = {
+                publisherId: story.publisherId,
+                publisherName: story.publisherName,
+                publisherPhotoURL: story.publisherPhotoURL,
+                stories: [],
+            };
+        }
+        // Add stories in chronological order
+        groups[story.publisherId].stories.unshift(story);
+    }
+    
+    const groupedStories = Object.values(groups);
+
+    // 5. Sort groups to show current user first, then others by most recent story
+    groupedStories.sort((a, b) => {
+        if (a.publisherId === currentUserId) return -1;
+        if (b.publisherId === currentUserId) return 1;
+        const aLastStoryTime = new Date(a.stories[a.stories.length - 1].createdAt).getTime();
+        const bLastStoryTime = new Date(b.stories[b.stories.length - 1].createdAt).getTime();
+        return bLastStoryTime - aLastStoryTime;
+    });
+
+    return groupedStories;
 }

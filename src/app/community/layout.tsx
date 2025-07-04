@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FriendSuggestions } from '@/components/community/friend-suggestions';
+import { StoriesBar } from '@/components/community/stories-bar';
 
 export default function CommunityLayout({
     children,
@@ -19,6 +20,8 @@ export default function CommunityLayout({
                     <h1 className="font-headline text-4xl font-bold text-primary">Comunidad ChefAI</h1>
                     <p className="text-muted-foreground mt-2 text-lg">Descubre qué están cocinando otros usuarios.</p>
                 </header>
+
+                <StoriesBar />
                 
                 <Tabs value={pathname} className="w-full">
                     <TabsList className="grid w-full grid-cols-2">

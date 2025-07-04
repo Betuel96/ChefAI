@@ -136,3 +136,20 @@ export interface Notification {
     read: boolean;
     createdAt: string;
 }
+
+export interface Story {
+    id: string;
+    publisherId: string;
+    publisherName: string;
+    publisherPhotoURL: string | null;
+    mediaUrl: string;
+    mediaType: 'image' | 'video';
+    createdAt: string; // ISO String
+}
+
+export interface StoryGroup {
+    publisherId: string;
+    publisherName: string;
+    publisherPhotoURL: string | null;
+    stories: Story[];
+}
