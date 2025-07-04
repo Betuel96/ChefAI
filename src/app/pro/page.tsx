@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { getProfileData, getUserPublishedPosts } from '@/lib/community';
 import { resendVerificationEmail } from '@/lib/users';
-import type { ProfileData, PublishedPost } from '@/types';
+import type { ProfileData, PublishedPost, UserAccount } from '@/types';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,6 +15,7 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { ProfileHeader } from '@/components/profile/ProfileHeader';
 import { PostGrid } from '@/components/profile/PostGrid';
+import { EditProfileForm } from '@/components/profile/EditProfileForm';
 
 import Link from 'next/link';
 import { CheckCircle, Gem, LogIn, Mail, VenetianMask, Settings } from 'lucide-react';
@@ -28,7 +29,7 @@ const proFeatures = [
   'Sin anuncios',
 ];
 
-const AccountSettings = () => {
+const AccountSettings = ({ profile, onProfileUpdate }: { profile: ProfileData, onProfileUpdate: (newData: Partial<UserAccount>) => void }) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isRedirecting, setIsRedirecting] = useState(false);
@@ -77,7 +78,7 @@ const AccountSettings = () => {
         <div className="lg:col-span-2 space-y-8">
             <Card>
                 <CardHeader>
-                    <CardTitle className='font-headline'>Información del Perfil</CardTitle>
+                    <CardTitle className='font-headline'>Información de la Cuenta</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                      <div className='flex items-center gap-3 text-sm text-muted-foreground'>
@@ -106,6 +107,9 @@ const AccountSettings = () => {
                      </div>
                 </CardContent>
             </Card>
+
+            <EditProfileForm profile={profile} onProfileUpdate={onProfileUpdate} />
+
         </div>
         <div className="lg:col-span-3">
              <Card className="shadow-lg border-2 border-primary/50">
@@ -210,6 +214,12 @@ export default function MyProfilePage() {
     fetchData();
   }, [user, authLoading]);
 
+  const handleProfileUpdate = (newData: Partial<UserAccount>) => {
+    setProfile(prevProfile => {
+        if (!prevProfile) return null;
+        return { ...prevProfile, ...newData };
+    });
+  };
 
   if (authLoading || isLoading) {
     return <MyProfilePageSkeleton />;
@@ -252,9 +262,9 @@ export default function MyProfilePage() {
       <div className="space-y-4">
         <h2 className="font-headline text-2xl font-bold text-center flex items-center justify-center gap-2">
             <Settings className="h-6 w-6" />
-            Configuración de la Cuenta
+            Configuración
         </h2>
-        <AccountSettings />
+        <AccountSettings profile={profile} onProfileUpdate={handleProfileUpdate} />
       </div>
     </div>
   );

@@ -38,7 +38,7 @@ export interface ShoppingListCategory {
 
 export interface UserAccount {
     name:string;
-    username: string;
+    username?: string;
     email: string | null;
     photoURL: string | null;
     isPremium: boolean;
@@ -101,6 +101,6 @@ export interface ProfileData extends Omit<UserAccount, 'createdAt' | 'email'> {
 export interface ProfileListItem {
     id: string;
     name: string;
-    username: string;
+    username?: string;
     photoURL?: string | null;
 }

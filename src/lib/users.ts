@@ -4,12 +4,21 @@ import {
   setDoc,
   serverTimestamp,
   getDoc,
+  writeBatch,
+  query,
+  collection,
+  where,
+  getDocs,
+  updateDoc
 } from 'firebase/firestore';
 import {
   signInWithPopup,
   sendEmailVerification,
+  updateProfile,
 } from 'firebase/auth';
-import { db, auth, googleProvider } from './firebase';
+import { db, auth, googleProvider, storage } from './firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import type { UserAccount } from '@/types';
 
 /**
  * Creates a user document in Firestore upon signup.
@@ -24,11 +33,18 @@ export async function createUserDocument(userId: string, name: string, username:
     throw new Error('Firestore is not initialized.');
   }
   const userDocRef = doc(db, 'users', userId);
-
-  // TODO: Add a check for username uniqueness using a separate collection or transaction
-  // For now, we assume it's unique.
+  const usernameDocRef = doc(db, 'usernames', username);
   
-  await setDoc(userDocRef, {
+  const batch = writeBatch(db);
+
+  // TODO: Add Firestore rule to ensure usernames collection documents can't be overwritten.
+  // This client-side check is a good first step.
+  const usernameSnap = await getDoc(usernameDocRef);
+  if (usernameSnap.exists()) {
+    throw new Error('Este nombre de usuario ya está en uso.');
+  }
+
+  batch.set(userDocRef, {
     name,
     username,
     email,
@@ -36,6 +52,74 @@ export async function createUserDocument(userId: string, name: string, username:
     isPremium: false,
     createdAt: serverTimestamp(),
   });
+
+  batch.set(usernameDocRef, { userId });
+
+  await batch.commit();
+}
+
+
+/**
+ * Updates a user's profile information in Auth, Firestore, and optionally Storage.
+ * @param userId The ID of the user to update.
+ * @param data The new profile data (name, username).
+ * @param newImageFile The new image file to upload.
+ */
+export async function updateUserProfile(
+    userId: string,
+    data: { name: string; username: string },
+    newImageFile?: File | null
+): Promise<{ updatedData: Partial<UserAccount> }> {
+    if (!auth || !db) throw new Error('Firebase no está inicializado.');
+    if (auth.currentUser?.uid !== userId) throw new Error('No autorizado.');
+
+    const userDocRef = doc(db, 'users', userId);
+    const currentUser = auth.currentUser;
+    const userSnap = await getDoc(userDocRef);
+    if (!userSnap.exists()) throw new Error('El perfil de usuario no existe.');
+    const oldUserData = userSnap.data();
+
+    const batch = writeBatch(db);
+    let finalPhotoURL = oldUserData.photoURL;
+    const updatedData: Partial<UserAccount> = { name: data.name };
+
+    // Handle username change with uniqueness check
+    if (data.username !== oldUserData.username) {
+        const newUsernameRef = doc(db, 'usernames', data.username);
+        const oldUsernameRef = doc(db, 'usernames', oldUserData.username);
+
+        const newUsernameSnap = await getDoc(newUsernameRef);
+        if (newUsernameSnap.exists()) {
+            throw new Error('Este nombre de usuario ya está en uso. Por favor, elige otro.');
+        }
+
+        batch.delete(oldUsernameRef);
+        batch.set(newUsernameRef, { userId });
+        batch.update(userDocRef, { username: data.username });
+        updatedData.username = data.username;
+    }
+
+    // Handle image upload
+    if (newImageFile && storage) {
+        const imageRef = ref(storage, `users/${userId}/profile.png`);
+        await uploadBytes(imageRef, newImageFile);
+        finalPhotoURL = await getDownloadURL(imageRef);
+    }
+
+    // Update Auth profile
+    await updateProfile(currentUser, {
+        displayName: data.name,
+        photoURL: finalPhotoURL,
+    });
+
+    // Update Firestore document
+    batch.update(userDocRef, { name: data.name, photoURL: finalPhotoURL });
+    updatedData.name = data.name;
+    updatedData.photoURL = finalPhotoURL;
+
+    await batch.commit();
+    
+    return { updatedData };
 }
 
 /**
