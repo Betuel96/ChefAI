@@ -25,14 +25,16 @@ export const PostMedia = ({ mediaUrl, mediaType, altText, className, controls = 
             />
         );
     }
+    
+    const useFill = !className?.includes('w-') && !className?.includes('h-');
 
     return (
         <Image
             src={mediaUrl}
             alt={altText}
-            fill={!className?.includes('w-') && !className?.includes('h-')}
-            width={className?.includes('w-') ? undefined : 1920}
-            height={className?.includes('h-') ? undefined : 1080}
+            fill={useFill}
+            width={useFill ? undefined : 1920}
+            height={useFill ? undefined : 1080}
             className={className}
         />
     );
