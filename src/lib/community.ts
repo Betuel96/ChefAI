@@ -1,4 +1,3 @@
-
 'use server';
 
 import {
@@ -21,7 +20,7 @@ import {
   setDoc,
 } from 'firebase/firestore';
 import { db, storage } from './firebase';
-import type { PublishedPost, ProfileData as ProfileDataType, Comment, Mention, ProfileListItem, FollowRequest, FollowStatus, UserAccount } from '@/types';
+import type { PublishedPost, ProfileData as ProfileDataType, Comment, Mention, ProfileListItem, Notification, UserAccount } from '@/types';
 import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
 
 // Function to create a new post (recipe or text)
@@ -67,6 +66,26 @@ export async function createPost(
 
         // Set the document data, including the final imageUrl if available
         await setDoc(docRef, finalPostData);
+        
+        // Add notifications for mentions
+        if (finalPostData.mentions && finalPostData.mentions.length > 0) {
+            const fromUser: ProfileListItem = { id: userId, name: userName, username: userData.username, photoURL: userPhotoURL };
+            const contentSnippet = (postData.content as string).substring(0, 50);
+
+            for (const mention of finalPostData.mentions) {
+                 if (mention.userId === userId) continue; // Don't notify self
+                const notificationRef = doc(collection(db, 'users', mention.userId, 'notifications'));
+                await setDoc(notificationRef, {
+                    type: 'mention_post',
+                    fromUser,
+                    postId: docRef.id,
+                    contentSnippet,
+                    read: false,
+                    createdAt: serverTimestamp()
+                });
+            }
+        }
+
         return docRef.id;
     } catch (error) {
         console.error('Error creating post:', error);
@@ -276,6 +295,32 @@ export async function addComment(
         commentsCount: increment(1)
     });
 
+    // Add notifications for mentions
+    if (mentions && mentions.length > 0) {
+        const userRef = doc(db, 'users', userId);
+        const userSnap = await getDoc(userRef);
+        const userData = userSnap.data();
+
+        const fromUser: ProfileListItem = { id: userId, name: userName, username: userData?.username, photoURL: userPhotoURL };
+        const contentSnippet = text.substring(0, 50);
+
+        for (const mention of mentions) {
+            // Don't notify user if they mention themselves
+            if (mention.userId === userId) continue;
+
+            const notificationRef = doc(collection(db, 'users', mention.userId, 'notifications'));
+            await setDoc(notificationRef, {
+                type: 'mention_comment',
+                fromUser,
+                postId: postId,
+                commentId: newCommentRef.id,
+                contentSnippet,
+                read: false,
+                createdAt: serverTimestamp()
+            });
+        }
+    }
+
     return newCommentRef.id;
 }
 
@@ -403,9 +448,9 @@ export async function getFollowingStatus(currentUserId: string, targetUserId: st
     }
 
     // Check if a request has been sent
-    const requestRef = doc(db, 'users', targetUserId, 'followRequests', currentUserId);
+    const requestRef = doc(db, 'users', targetUserId, 'notifications', currentUserId);
     const requestSnap = await getDoc(requestRef);
-    if (requestSnap.exists()) {
+    if (requestSnap.exists() && requestSnap.data().type === 'follow_request') {
         return 'requested';
     }
 
@@ -414,44 +459,45 @@ export async function getFollowingStatus(currentUserId: string, targetUserId: st
 
 export async function sendFollowRequest(currentUserId: string, currentUserProfile: ProfileListItem, targetUserId: string): Promise<void> {
     if (!db) throw new Error("Firestore not initialized.");
-    const requestRef = doc(db, 'users', targetUserId, 'followRequests', currentUserId);
-    await setDoc(requestRef, {
-        name: currentUserProfile.name,
-        username: currentUserProfile.username,
-        photoURL: currentUserProfile.photoURL,
-        timestamp: serverTimestamp(),
+    // Use requester's ID as the document ID for easy lookup/deletion
+    const notificationRef = doc(db, 'users', targetUserId, 'notifications', currentUserId);
+    await setDoc(notificationRef, {
+        type: 'follow_request',
+        fromUser: currentUserProfile,
+        read: false,
+        createdAt: serverTimestamp(),
     });
 }
 
 export async function acceptFollowRequest(currentUserId: string, requestingUserId: string): Promise<void> {
     if (!db) throw new Error("Firestore not initialized.");
-    // This is the same as a normal follow, but we also delete the request
+    // This is the same as a normal follow
     await followUser(requestingUserId, currentUserId);
-    // Delete the request
-    const requestRef = doc(db, 'users', currentUserId, 'followRequests', requestingUserId);
-    await deleteDoc(requestRef);
+    // Delete the request notification
+    const notificationRef = doc(db, 'users', currentUserId, 'notifications', requestingUserId);
+    await deleteDoc(notificationRef);
 }
 
 export async function declineFollowRequest(currentUserId: string, requestingUserId: string): Promise<void> {
     if (!db) throw new Error("Firestore not initialized.");
-    const requestRef = doc(db, 'users', currentUserId, 'followRequests', requestingUserId);
-    await deleteDoc(requestRef);
+    // Just delete the request notification
+    const notificationRef = doc(db, 'users', currentUserId, 'notifications', requestingUserId);
+    await deleteDoc(notificationRef);
 }
 
-export async function getFollowRequests(userId: string): Promise<FollowRequest[]> {
+export async function getNotifications(userId: string): Promise<Notification[]> {
     if (!db) throw new Error("Firestore not initialized.");
-    const requestsRef = collection(db, 'users', userId, 'followRequests');
-    const q = query(requestsRef, orderBy('timestamp', 'desc'));
+    const notificationsRef = collection(db, 'users', userId, 'notifications');
+    const q = query(notificationsRef, orderBy('createdAt', 'desc'));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => {
         const data = doc.data();
-        // Manually construct the object to avoid passing a non-serializable Timestamp.
+        const createdAtTimestamp = data.createdAt as Timestamp;
         return {
             id: doc.id,
-            name: data.name,
-            username: data.username,
-            photoURL: data.photoURL || null,
-        } as FollowRequest;
+            ...data,
+            createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
+        } as Notification;
     });
 }
 

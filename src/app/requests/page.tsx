@@ -1,19 +1,21 @@
-
+// src/app/requests/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
-import { getFollowRequests, acceptFollowRequest, declineFollowRequest } from '@/lib/community';
-import type { FollowRequest } from '@/types';
+import { getNotifications, acceptFollowRequest, declineFollowRequest } from '@/lib/community';
+import type { Notification } from '@/types';
 import { useToast } from '@/hooks/use-toast';
+import { formatDistanceToNow } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { UserCircle, Bell, Check, X } from 'lucide-react';
-import { UserList } from '@/components/profile/UserList';
+import { UserCircle, Bell, Check, X, MessageSquare, UserPlus } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const RequestsPageSkeleton = () => (
     <div className="max-w-md mx-auto space-y-6">
@@ -44,11 +46,10 @@ const RequestsPageSkeleton = () => (
     </div>
 );
 
-
 export default function RequestsPage() {
     const { user: currentUser } = useAuth();
     const { toast } = useToast();
-    const [requests, setRequests] = useState<FollowRequest[]>([]);
+    const [notifications, setNotifications] = useState<Notification[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
@@ -60,11 +61,11 @@ export default function RequestsPage() {
         const fetchData = async () => {
             setIsLoading(true);
             try {
-                const requestsData = await getFollowRequests(currentUser.uid);
-                setRequests(requestsData);
+                const notificationsData = await getNotifications(currentUser.uid);
+                setNotifications(notificationsData);
             } catch (error) {
-                console.error("Error fetching follow requests:", error);
-                toast({ title: 'Error', description: 'No se pudieron cargar las solicitudes.', variant: 'destructive' });
+                console.error("Error fetching notifications:", error);
+                toast({ title: 'Error', description: 'No se pudieron cargar las notificaciones.', variant: 'destructive' });
             } finally {
                 setIsLoading(false);
             }
@@ -72,27 +73,89 @@ export default function RequestsPage() {
 
         fetchData();
     }, [currentUser, toast]);
-    
-    const handleRequest = async (requestingUserId: string, action: 'accept' | 'decline') => {
+
+    const handleRequest = async (notification: Notification, action: 'accept' | 'decline') => {
         if (!currentUser) return;
         
-        const originalRequests = [...requests];
+        const originalNotifications = [...notifications];
         // Optimistic update
-        setRequests(requests.filter(r => r.id !== requestingUserId));
+        setNotifications(notifications.filter(n => n.id !== notification.id));
         
         try {
             if (action === 'accept') {
-                await acceptFollowRequest(currentUser.uid, requestingUserId);
+                await acceptFollowRequest(currentUser.uid, notification.fromUser.id);
                 toast({ title: 'Solicitud aceptada' });
             } else {
-                await declineFollowRequest(currentUser.uid, requestingUserId);
+                await declineFollowRequest(currentUser.uid, notification.fromUser.id);
                 toast({ title: 'Solicitud rechazada' });
             }
         } catch (error) {
-            setRequests(originalRequests);
+            setNotifications(originalNotifications);
             toast({ title: "Error", description: "No se pudo procesar la solicitud.", variant: "destructive" });
         }
     };
+    
+    const renderNotificationItem = (notification: Notification) => {
+        const timeAgo = formatDistanceToNow(new Date(notification.createdAt), { locale: es, addSuffix: true });
+        const from = notification.fromUser;
+
+        switch (notification.type) {
+            case 'follow_request':
+                return (
+                    <div className="flex items-center justify-between gap-4 p-2">
+                        <Link href={`/profile/${from.id}`} className="flex items-center gap-3 flex-grow min-w-0">
+                            <UserPlus className="h-6 w-6 text-primary flex-shrink-0" />
+                            <Avatar>
+                                <AvatarImage src={from.photoURL || undefined} />
+                                <AvatarFallback><UserCircle /></AvatarFallback>
+                            </Avatar>
+                            <div className="truncate">
+                                <p className="text-sm">
+                                    <span className="font-bold">{from.name}</span> quiere seguirte.
+                                </p>
+                                <p className="text-xs text-muted-foreground">{timeAgo}</p>
+                            </div>
+                        </Link>
+                        <div className="flex gap-2 flex-shrink-0">
+                            <Button size="sm" onClick={() => handleRequest(notification, 'accept')}>
+                                <Check className="h-4 w-4" />
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => handleRequest(notification, 'decline')}>
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
+                );
+            case 'mention_post':
+            case 'mention_comment':
+                 const postPath = notification.commentId 
+                    ? `/post/${notification.postId}?comment=${notification.commentId}` 
+                    : `/post/${notification.postId}`;
+
+                return (
+                    <Link href={postPath} className="block hover:bg-muted/50 rounded-lg p-2 transition-colors">
+                        <div className="flex items-center gap-3">
+                            <MessageSquare className="h-6 w-6 text-primary flex-shrink-0" />
+                            <Avatar>
+                                <AvatarImage src={from.photoURL || undefined} />
+                                <AvatarFallback><UserCircle /></AvatarFallback>
+                            </Avatar>
+                            <div className="flex-grow">
+                                <p className="text-sm">
+                                    <span className="font-bold">{from.name}</span> te mencionó en {notification.type === 'mention_comment' ? 'un comentario' : 'una publicación'}.
+                                </p>
+                                <p className="text-sm text-muted-foreground italic truncate">
+                                    "{notification.contentSnippet}"
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-1">{timeAgo}</p>
+                            </div>
+                        </div>
+                    </Link>
+                );
+            default:
+                return null;
+        }
+    }
 
     if (isLoading) {
         return <RequestsPageSkeleton />;
@@ -105,33 +168,30 @@ export default function RequestsPage() {
                     <Bell className="w-7 h-7" />
                     Notificaciones
                 </h1>
-                <p className="text-muted-foreground">Gestiona tus solicitudes de seguimiento pendientes.</p>
+                <p className="text-muted-foreground">Gestiona tus solicitudes de seguimiento y menciones.</p>
             </header>
             <Card>
                 <CardHeader>
-                    <CardTitle>Solicitudes de Seguimiento</CardTitle>
+                    <CardTitle>Bandeja de Entrada</CardTitle>
                     <CardDescription>
-                        {requests.length > 0
-                            ? `Tienes ${requests.length} solicitud(es) pendiente(s).`
-                            : 'No tienes solicitudes de seguimiento pendientes.'
+                        {notifications.length > 0
+                            ? `Tienes ${notifications.length} notificación(es) no leída(s).`
+                            : 'No tienes notificaciones nuevas.'
                         }
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <UserList
-                        users={requests}
-                        emptyMessage="Tu bandeja de entrada está vacía."
-                        actionSlot={(userItem) => (
-                            <div className="flex gap-2">
-                                <Button size="sm" onClick={() => handleRequest(userItem.id, 'accept')}>
-                                    <Check className="h-4 w-4" />
-                                </Button>
-                                <Button size="sm" variant="outline" onClick={() => handleRequest(userItem.id, 'decline')}>
-                                    <X className="h-4 w-4" />
-                                </Button>
+                   {notifications.length > 0 ? (
+                    <div className="space-y-2">
+                        {notifications.map(n => (
+                            <div key={n.id} className={cn('border-b last:border-b-0 py-2')}>
+                                {renderNotificationItem(n)}
                             </div>
-                        )}
-                    />
+                        ))}
+                    </div>
+                   ) : (
+                    <p className="text-center text-muted-foreground pt-10">Tu bandeja de entrada está vacía.</p>
+                   )}
                 </CardContent>
             </Card>
         </div>

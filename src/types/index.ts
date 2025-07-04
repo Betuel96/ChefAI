@@ -1,4 +1,3 @@
-
 import type { User } from 'firebase/auth';
 
 // The core recipe structure from AI (kept for when it's re-enabled)
@@ -110,11 +109,15 @@ export interface ProfileListItem {
     photoURL?: string | null;
 }
 
-export interface FollowRequest {
-  id: string; // The ID of the user who sent the request
-  name: string;
-  username?: string;
-  photoURL?: string | null;
-}
-
 export type FollowStatus = 'not-following' | 'following' | 'requested';
+
+export interface Notification {
+    id: string;
+    type: 'mention_post' | 'mention_comment' | 'follow_request';
+    fromUser: ProfileListItem;
+    postId?: string;
+    commentId?: string;
+    contentSnippet?: string;
+    read: boolean;
+    createdAt: string;
+}

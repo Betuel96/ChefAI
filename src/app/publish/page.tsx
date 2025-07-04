@@ -1,4 +1,3 @@
-
 // src/app/publish/page.tsx
 'use client';
 
@@ -105,6 +104,8 @@ export default function PublishPage() {
         if (results.length > 0) {
             setShowSuggestions(true);
         }
+      } else {
+        setShowSuggestions(false);
       }
     }, 300);
 
@@ -292,52 +293,51 @@ export default function PublishPage() {
             <CardContent>
               <Form {...textForm}>
                 <form onSubmit={textForm.handleSubmit(handleTextSubmit)} className="space-y-6">
-                   <Popover open={showSuggestions} onOpenChange={setShowSuggestions}>
-                      <PopoverTrigger asChild>
-                         <FormField
-                            control={textForm.control}
-                            name="content"
-                            render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Contenido</FormLabel>
-                                <FormControl>
-                                <Textarea 
-                                    placeholder="Ej: ¡Probando una nueva receta de pasta esta noche con @usuario!" 
-                                    {...field} 
-                                    rows={4} 
-                                    ref={textareaRef}
-                                    onChange={handleTextChange}
-                                />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                            )}
-                        />
-                      </PopoverTrigger>
-                      <PopoverContent className="w-[--radix-popover-trigger-width] p-1 mt-1" align="start">
+                  <FormField
+                    control={textForm.control}
+                    name="content"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Contenido</FormLabel>
+                        <Popover open={showSuggestions} onOpenChange={setShowSuggestions}>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Textarea
+                                placeholder="Ej: ¡Probando una nueva receta de pasta esta noche con @usuario!"
+                                {...field}
+                                ref={textareaRef}
+                                onChange={handleTextChange}
+                              />
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[--radix-popover-trigger-width] p-1 mt-1" align="start">
                             {suggestions.length > 0 ? (
-                                suggestions.map(s => (
-                                    <Button
-                                        key={s.id}
-                                        variant="ghost"
-                                        className="w-full justify-start h-auto p-2"
-                                        onClick={() => handleSelectSuggestion(s)}
-                                    >
-                                        <Avatar className="h-8 w-8 mr-2">
-                                            <AvatarImage src={s.photoURL || undefined} />
-                                            <AvatarFallback><UserCircle /></AvatarFallback>
-                                        </Avatar>
-                                        <div>
-                                            <span className="text-sm font-semibold">{s.name}</span>
-                                            <span className="text-xs text-muted-foreground ml-2">@{s.username}</span>
-                                        </div>
-                                    </Button>
-                                ))
+                              suggestions.map(s => (
+                                <Button
+                                  key={s.id}
+                                  variant="ghost"
+                                  className="w-full justify-start h-auto p-2"
+                                  onClick={() => handleSelectSuggestion(s)}
+                                >
+                                  <Avatar className="h-8 w-8 mr-2">
+                                    <AvatarImage src={s.photoURL || undefined} />
+                                    <AvatarFallback><UserCircle /></AvatarFallback>
+                                  </Avatar>
+                                  <div>
+                                    <span className="text-sm font-semibold">{s.name}</span>
+                                    <span className="text-xs text-muted-foreground ml-2">@{s.username}</span>
+                                  </div>
+                                </Button>
+                              ))
                             ) : (
-                                <div className="p-2 text-sm text-muted-foreground">No se encontraron usuarios.</div>
+                              <div className="p-2 text-sm text-muted-foreground">No se encontraron usuarios.</div>
                             )}
-                      </PopoverContent>
-                   </Popover>
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   <FormField
                     control={textForm.control}
                     name="image"
