@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { getProfileData } from '@/lib/community';
-import { resendVerificationEmail, updateProfileSettings } from '@/lib/users';
+import { resendVerificationEmail, updateProfileSettings, updateNotificationPreferences } from '@/lib/users';
 import type { ProfileData, UserAccount } from '@/types';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -18,7 +18,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { EditProfileForm } from '@/components/profile/EditProfileForm';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { ArrowLeft, CheckCircle, Gem, LogIn, Mail, VenetianMask, Terminal, Shield, ShieldQuestion } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Gem, LogIn, Mail, VenetianMask, Terminal, Shield, ShieldQuestion, BellRing } from 'lucide-react';
 
 const proFeatures = [
   'Generaciones ilimitadas de recetas',
@@ -52,6 +52,7 @@ const AccountSettings = ({ profile, onProfileUpdate }: { profile: ProfileData, o
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isPrivacySaving, setIsPrivacySaving] = useState(false);
+  const [isNotificationSaving, setIsNotificationSaving] = useState(false);
 
   if (!user) return null;
 
@@ -112,6 +113,25 @@ const AccountSettings = ({ profile, onProfileUpdate }: { profile: ProfileData, o
     }
   };
 
+  const handleNotificationChange = async (key: 'publicFeed' | 'followingFeed', value: boolean) => {
+    setIsNotificationSaving(true);
+    try {
+      await updateNotificationPreferences(user.uid, { [key]: value });
+      onProfileUpdate({
+        notificationSettings: {
+          ...profile.notificationSettings,
+          [key]: value,
+        },
+      });
+      toast({ title: 'Preferencias guardadas' });
+    } catch (error) {
+      toast({ title: 'Error', description: 'No se pudieron guardar tus preferencias.', variant: 'destructive' });
+    } finally {
+      setIsNotificationSaving(false);
+    }
+  };
+
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start pt-6">
         <div className="lg:col-span-2 space-y-8">
@@ -147,6 +167,45 @@ const AccountSettings = ({ profile, onProfileUpdate }: { profile: ProfileData, o
                 </CardContent>
             </Card>
 
+            <Card>
+                <CardHeader>
+                    <CardTitle className="font-headline">Preferencias de Notificación</CardTitle>
+                    <CardDescription>Controla qué indicadores de actividad ves.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="flex items-center space-x-4 rounded-md border p-4">
+                        <BellRing className="w-6 h-6" />
+                        <div className="flex-1 space-y-1">
+                            <Label htmlFor="public-feed-switch">Nuevas publicaciones públicas</Label>
+                            <p className="text-xs text-muted-foreground">
+                                Muestra un indicador para nuevas publicaciones en el feed "Para ti".
+                            </p>
+                        </div>
+                        <Switch
+                            id="public-feed-switch"
+                            checked={profile.notificationSettings?.publicFeed ?? true}
+                            onCheckedChange={(checked) => handleNotificationChange('publicFeed', checked)}
+                            disabled={isNotificationSaving}
+                        />
+                    </div>
+                     <div className="flex items-center space-x-4 rounded-md border p-4">
+                        <BellRing className="w-6 h-6" />
+                        <div className="flex-1 space-y-1">
+                            <Label htmlFor="following-feed-switch">Nuevas publicaciones de seguidos</Label>
+                            <p className="text-xs text-muted-foreground">
+                                Muestra un indicador para nuevas publicaciones en el feed "Siguiendo".
+                            </p>
+                        </div>
+                        <Switch
+                            id="following-feed-switch"
+                            checked={profile.notificationSettings?.followingFeed ?? true}
+                            onCheckedChange={(checked) => handleNotificationChange('followingFeed', checked)}
+                            disabled={isNotificationSaving}
+                        />
+                    </div>
+                </CardContent>
+            </Card>
+            
             <Card>
                 <CardHeader>
                     <CardTitle className="font-headline">Privacidad del Perfil</CardTitle>
@@ -257,7 +316,16 @@ export default function SettingsPage() {
     const handleProfileUpdate = (newData: Partial<UserAccount>) => {
         setProfile(prevProfile => {
             if (!prevProfile) return null;
-            return { ...prevProfile, ...newData } as ProfileData;
+            // Deep merge for nested objects like notificationSettings
+            const updatedProfile = {
+                ...prevProfile,
+                ...newData,
+                notificationSettings: {
+                    ...prevProfile.notificationSettings,
+                    ...newData.notificationSettings,
+                },
+            };
+            return updatedProfile as ProfileData;
         });
     };
 

@@ -7,6 +7,8 @@ import { AppSidebar } from '@/components/layout/app-sidebar';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/hooks/use-auth';
 import { MobileHeader } from '@/components/layout/mobile-header';
+import { NotificationProvider } from '@/hooks/use-notifications';
+import { FeedStatusProvider } from '@/hooks/use-feed-status';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -31,13 +33,17 @@ export default function RootLayout({
       </head>
       <body className={cn('font-body antialiased', inter.variable)}>
         <AuthProvider>
-          <SidebarProvider>
-            <AppSidebar />
-            <MobileHeader />
-            <SidebarInset>
-              <main className="min-h-screen p-4 sm:p-6 lg:p-8">{children}</main>
-            </SidebarInset>
-          </SidebarProvider>
+          <NotificationProvider>
+            <FeedStatusProvider>
+              <SidebarProvider>
+                <AppSidebar />
+                <MobileHeader />
+                <SidebarInset>
+                  <main className="min-h-screen p-4 sm:p-6 lg:p-8">{children}</main>
+                </SidebarInset>
+              </SidebarProvider>
+            </FeedStatusProvider>
+          </NotificationProvider>
           <Toaster />
         </AuthProvider>
       </body>

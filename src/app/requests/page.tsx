@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
-import { getNotifications, acceptFollowRequest, declineFollowRequest } from '@/lib/community';
+import { getNotifications, acceptFollowRequest, declineFollowRequest, markNotificationsAsRead } from '@/lib/community';
 import type { Notification } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
@@ -16,6 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserCircle, Bell, Check, X, MessageSquare, UserPlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useNotifications } from '@/hooks/use-notifications';
 
 const RequestsPageSkeleton = () => (
     <div className="max-w-md mx-auto space-y-6">
@@ -51,6 +52,8 @@ export default function RequestsPage() {
     const { toast } = useToast();
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const { unreadCount } = useNotifications();
+
 
     useEffect(() => {
         if (!currentUser) {
@@ -63,6 +66,10 @@ export default function RequestsPage() {
             try {
                 const notificationsData = await getNotifications(currentUser.uid);
                 setNotifications(notificationsData);
+                // Mark notifications as read after fetching them
+                if (unreadCount > 0) {
+                  await markNotificationsAsRead(currentUser.uid);
+                }
             } catch (error) {
                 console.error("Error fetching notifications:", error);
                 toast({ title: 'Error', description: 'No se pudieron cargar las notificaciones.', variant: 'destructive' });
@@ -72,7 +79,7 @@ export default function RequestsPage() {
         };
 
         fetchData();
-    }, [currentUser, toast]);
+    }, [currentUser, toast, unreadCount]);
 
     const handleRequest = async (notification: Notification, action: 'accept' | 'decline') => {
         if (!currentUser) return;
@@ -175,7 +182,7 @@ export default function RequestsPage() {
                     <CardTitle>Bandeja de Entrada</CardTitle>
                     <CardDescription>
                         {notifications.length > 0
-                            ? `Tienes ${notifications.length} notificación(es) no leída(s).`
+                            ? `Tienes ${notifications.length} notificación(es).`
                             : 'No tienes notificaciones nuevas.'
                         }
                     </CardDescription>

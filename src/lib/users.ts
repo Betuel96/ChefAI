@@ -52,6 +52,14 @@ export async function createUserDocument(userId: string, name: string, username:
     isPremium: false,
     profileType: 'public', // Default to public profile
     createdAt: serverTimestamp(),
+    notificationSettings: {
+        publicFeed: true,
+        followingFeed: true,
+    },
+    lastVisitedFeeds: {
+        public: new Date().toISOString(),
+        following: new Date().toISOString(),
+    },
   });
 
   batch.set(usernameDocRef, { userId });
@@ -236,4 +244,54 @@ export async function updateProfileSettings(userId: string, settings: { profileT
       console.error("Error updating user posts' privacy settings:", error);
       throw new Error("No se pudieron actualizar los ajustes de privacidad en todas las publicaciones. Es posible que necesites crear un índice de Firestore para esta operación.");
   }
+}
+
+/**
+ * Updates a user's notification preferences in Firestore.
+ * @param userId The user's ID.
+ * @param preferences The notification preferences to set.
+ */
+export async function updateNotificationPreferences(
+    userId: string,
+    preferences: { publicFeed?: boolean; followingFeed?: boolean }
+): Promise<void> {
+    if (!db || !auth?.currentUser || auth.currentUser.uid !== userId) {
+        throw new Error('No autorizado.');
+    }
+    const userDocRef = doc(db, 'users', userId);
+    
+    // Use dot notation for updating nested objects
+    const updateData: { [key: string]: boolean } = {};
+    if (preferences.publicFeed !== undefined) {
+        updateData['notificationSettings.publicFeed'] = preferences.publicFeed;
+    }
+    if (preferences.followingFeed !== undefined) {
+        updateData['notificationSettings.followingFeed'] = preferences.followingFeed;
+    }
+
+    if (Object.keys(updateData).length > 0) {
+        await updateDoc(userDocRef, updateData);
+    }
+}
+
+/**
+ * Updates the "last visited" timestamp for a specific feed for a user.
+ * @param userId The user's ID.
+ * @param feedType The type of feed being visited.
+ */
+export async function updateLastVisitedTimestamp(
+    userId: string,
+    feedType: 'public' | 'following'
+): Promise<void> {
+    if (!db || !auth?.currentUser || auth.currentUser.uid !== userId) {
+        return; // Fail silently, not a critical error
+    }
+    const userDocRef = doc(db, 'users', userId);
+    try {
+        await updateDoc(userDocRef, {
+            [`lastVisitedFeeds.${feedType}`]: new Date().toISOString(),
+        });
+    } catch (error) {
+        console.error("Failed to update last visited timestamp:", error);
+    }
 }

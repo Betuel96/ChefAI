@@ -405,6 +405,8 @@ export async function getProfileData(userId: string): Promise<ProfileDataType | 
         followersCount: followersSnap.size,
         followingCount: followingSnap.size,
         profileType: data.profileType || 'public',
+        notificationSettings: data.notificationSettings || { publicFeed: true, followingFeed: true },
+        lastVisitedFeeds: data.lastVisitedFeeds || null,
         createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
     } as ProfileDataType;
 }
@@ -686,4 +688,64 @@ export async function getFriendSuggestions(currentUserId: string): Promise<Profi
   
   // Return up to 5 suggestions
   return suggestions.slice(0, 5);
+}
+
+// Function to get the latest post timestamp for a given feed
+export async function getLatestPostTimestamp(
+  forFeed: 'public' | 'following',
+  userId?: string
+): Promise<Timestamp | null> {
+  if (!db) throw new Error('Firestore is not initialized.');
+  
+  const postsCollection = collection(db, 'published_recipes');
+  let q;
+
+  if (forFeed === 'public') {
+    q = query(postsCollection, where('profileType', '==', 'public'), orderBy('createdAt', 'desc'), limit(1));
+  } else {
+    if (!userId) return null;
+    const followingRef = collection(db, 'users', userId, 'following');
+    const followingSnap = await getDocs(followingRef);
+    const followingIds = followingSnap.docs.map(doc => doc.id);
+    if (followingIds.length === 0) return null;
+    
+    // Note: This won't work with more than 30 followed users due to 'in' query limitations combined with orderBy.
+    // For a production app, a different data model (e.g., a "timeline" subcollection) would be better.
+    // For this app's scale, we query the latest post from each followed user and find the most recent. This is inefficient but works for small numbers.
+    const latestPostPromises = followingIds.map(id => 
+        getDocs(query(postsCollection, where('publisherId', '==', id), orderBy('createdAt', 'desc'), limit(1)))
+    );
+    const snapshots = await Promise.all(latestPostPromises);
+    const latestTimestamps = snapshots
+        .map(snap => !snap.empty ? snap.docs[0].data().createdAt as Timestamp : null)
+        .filter(ts => ts !== null) as Timestamp[];
+
+    if (latestTimestamps.length === 0) return null;
+
+    // Find the most recent timestamp among all latest posts
+    return latestTimestamps.reduce((latest, current) => current.seconds > latest.seconds ? current : latest);
+  }
+  
+  const snapshot = await getDocs(q);
+  if (snapshot.empty) {
+    return null;
+  }
+  return snapshot.docs[0].data().createdAt as Timestamp;
+}
+
+// Function to mark all unread notifications as read
+export async function markNotificationsAsRead(userId: string): Promise<void> {
+  if (!db) throw new Error('Firestore is not initialized.');
+  const notificationsRef = collection(db, 'users', userId, 'notifications');
+  const q = query(notificationsRef, where('read', '==', false));
+  const snapshot = await getDocs(q);
+  
+  if (snapshot.empty) return;
+
+  const batch = writeBatch(db);
+  snapshot.docs.forEach(doc => {
+    batch.update(doc.ref, { read: true });
+  });
+
+  await batch.commit();
 }

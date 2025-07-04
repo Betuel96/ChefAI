@@ -139,12 +139,13 @@ interface SidebarMenuButtonProps
   extends React.ComponentProps<typeof Button> {
   isActive?: boolean;
   tooltip?: string;
+  indicator?: React.ReactNode;
 }
 
 export const SidebarMenuButton = React.forwardRef<
   HTMLButtonElement,
   SidebarMenuButtonProps
->(({ className, isActive, tooltip, children, ...props }, ref) => {
+>(({ className, isActive, tooltip, children, indicator, ...props }, ref) => {
   const { isOpen } = useSidebar();
   const [icon, label] = React.Children.toArray(children);
 
@@ -152,14 +153,19 @@ export const SidebarMenuButton = React.forwardRef<
     return (
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button
-            ref={ref}
-            variant={isActive ? 'secondary' : 'ghost'}
-            className={cn('h-12 w-12 justify-center', className)}
-            {...props}
-          >
-            {icon}
-          </Button>
+          <div className="relative">
+            <Button
+              ref={ref}
+              variant={isActive ? 'secondary' : 'ghost'}
+              className={cn('h-12 w-12 justify-center', className)}
+              {...props}
+            >
+              {icon}
+            </Button>
+            {indicator && (
+              <div className="absolute top-2.5 right-2.5">{indicator}</div>
+            )}
+          </div>
         </TooltipTrigger>
         <TooltipContent side="right" align="center">
           {tooltip}
@@ -176,7 +182,8 @@ export const SidebarMenuButton = React.forwardRef<
       {...props}
     >
       {icon}
-      {label}
+      <span className="flex-grow text-left">{label}</span>
+      {indicator}
     </Button>
   );
 });

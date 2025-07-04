@@ -1,6 +1,7 @@
 
 'use client';
 
+import React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -38,16 +39,12 @@ import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
 import { Skeleton } from '../ui/skeleton';
 import { UserCircle } from 'lucide-react';
 import { UserSearch } from './user-search';
+import { useNotifications } from '@/hooks/use-notifications';
+import { useFeedStatus } from '@/hooks/use-feed-status';
 
 const aiToolsItems = [
   { href: '/generator', label: 'Generador de Recetas', icon: Sparkles },
   { href: '/planner', label: 'Planificador Semanal', icon: CalendarDays },
-];
-
-const communityItems = [
-  { href: '/community', label: 'Comunidad', icon: Users },
-  { href: '/publish', label: 'Crear Publicación', icon: PlusSquare },
-  { href: '/requests', label: 'Notificaciones', icon: Bell },
 ];
 
 const libraryItems = [
@@ -63,6 +60,8 @@ export function AppSidebar() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+  const { unreadCount } = useNotifications();
+  const { hasNewPublicPosts, hasNewFollowingPosts } = useFeedStatus();
 
   const handleLogout = async () => {
     try {
@@ -82,6 +81,31 @@ export function AppSidebar() {
       });
     }
   };
+
+  const hasNewCommunityPost = hasNewPublicPosts || hasNewFollowingPosts;
+  
+  const CommunityIndicator = React.useMemo(() => {
+    if (!hasNewCommunityPost) return undefined;
+    return <div className="h-2 w-2 rounded-full bg-primary" />;
+  }, [hasNewCommunityPost]);
+
+  const NotificationIndicator = React.useMemo(() => {
+    if (unreadCount === 0) return undefined;
+    if (isOpen) {
+      return (
+        <span className="text-xs font-bold bg-primary text-primary-foreground rounded-full h-5 min-w-[1.25rem] px-1 flex items-center justify-center">
+          {unreadCount}
+        </span>
+      );
+    }
+    return <div className="h-2 w-2 rounded-full bg-primary" />;
+  }, [unreadCount, isOpen]);
+  
+  const communityItems = [
+    { href: '/community', label: 'Comunidad', icon: Users, indicator: CommunityIndicator },
+    { href: '/publish', label: 'Crear Publicación', icon: PlusSquare },
+    { href: '/requests', label: 'Notificaciones', icon: Bell, indicator: NotificationIndicator },
+  ];
 
   return (
     <Sidebar>
@@ -150,7 +174,11 @@ export function AppSidebar() {
            {communityItems.map((item) => (
             <SidebarMenuItem key={item.href}>
               <Link href={item.href}>
-                <SidebarMenuButton isActive={pathname.startsWith(item.href)} tooltip={item.label}>
+                <SidebarMenuButton 
+                  isActive={pathname.startsWith(item.href)} 
+                  tooltip={item.label}
+                  indicator={item.indicator}
+                >
                   <item.icon />
                   <span>{item.label}</span>
                 </SidebarMenuButton>

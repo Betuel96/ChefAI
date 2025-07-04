@@ -43,6 +43,14 @@ export interface UserAccount {
     isPremium: boolean;
     createdAt: string; 
     profileType: 'public' | 'private';
+    notificationSettings?: {
+        publicFeed: boolean;
+        followingFeed: boolean;
+    };
+    lastVisitedFeeds?: {
+        public: string;
+        following: string;
+    };
 }
 
 export type AppUser = (User & Partial<UserAccount>) | null;

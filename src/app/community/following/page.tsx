@@ -10,9 +10,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { PostCard } from '@/components/community/post-card';
 import { LogIn, Users } from 'lucide-react';
+import { useFeedStatus } from '@/hooks/use-feed-status';
+import { updateLastVisitedTimestamp } from '@/lib/users';
 
 export default function FollowingFeed() {
     const { user, loading: authLoading } = useAuth();
+    const { checkFeedStatus } = useFeedStatus();
     const [posts, setPosts] = useState<PublishedPost[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -29,6 +32,10 @@ export default function FollowingFeed() {
                 try {
                     const fetchedPosts = await getFollowingPosts(user.uid);
                     setPosts(fetchedPosts);
+                    // When the user visits this page, update their timestamp
+                    await updateLastVisitedTimestamp(user.uid, 'following');
+                    // Manually trigger a re-check to clear the indicator
+                    checkFeedStatus();
                 } catch (error) {
                     console.error("Error fetching following posts:", error);
                 } finally {
@@ -39,6 +46,8 @@ export default function FollowingFeed() {
         } else {
             setIsLoading(false);
         }
+    // We only want to run this when the user/auth state changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user, authLoading]);
 
     if (isLoading || authLoading) {
