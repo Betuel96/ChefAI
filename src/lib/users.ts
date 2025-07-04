@@ -84,16 +84,21 @@ export async function updateUserProfile(
     const updatedData: Partial<UserAccount> = { name: data.name };
 
     // Handle username change with uniqueness check
-    if (data.username !== oldUserData.username) {
+    if (data.username && data.username !== oldUserData.username) {
         const newUsernameRef = doc(db, 'usernames', data.username);
-        const oldUsernameRef = doc(db, 'usernames', oldUserData.username);
-
+        
         const newUsernameSnap = await getDoc(newUsernameRef);
         if (newUsernameSnap.exists()) {
             throw new Error('Este nombre de usuario ya está en uso. Por favor, elige otro.');
         }
 
-        batch.delete(oldUsernameRef);
+        // If there was an old username, delete its document.
+        if (oldUserData.username) {
+            const oldUsernameRef = doc(db, 'usernames', oldUserData.username);
+            batch.delete(oldUsernameRef);
+        }
+
+        // Create the new username document and update the user's profile.
         batch.set(newUsernameRef, { userId });
         batch.update(userDocRef, { username: data.username });
         updatedData.username = data.username;
