@@ -541,6 +541,58 @@ export async function getFollowersList(userId: string): Promise<ProfileListItem[
     return getProfilesFromIds(followerIds);
 }
 
+// Function to get posts from users the current user is following
+export async function getFollowingPosts(userId: string): Promise<PublishedPost[]> {
+    if (!db) throw new Error('Firestore is not initialized.');
+    
+    // 1. Get the list of users the current user is following
+    const followingRef = collection(db, 'users', userId, 'following');
+    const followingSnap = await getDocs(followingRef);
+    const followingIds = followingSnap.docs.map(doc => doc.id);
+
+    if (followingIds.length === 0) {
+        return []; // Return early if the user isn't following anyone
+    }
+
+    // 2. Fetch posts from the followed users, handling Firestore's 30-item limit for 'in' queries
+    const postsCollection = collection(db, 'published_recipes');
+    const posts: PublishedPost[] = [];
+    
+    // Split followingIds into chunks of 30
+    const chunks: string[][] = [];
+    for (let i = 0; i < followingIds.length; i += 30) {
+        chunks.push(followingIds.slice(i, i + 30));
+    }
+
+    // Execute a query for each chunk
+    const queryPromises = chunks.map(chunk => {
+        const q = query(
+            postsCollection,
+            where('publisherId', 'in', chunk)
+        );
+        return getDocs(q);
+    });
+    
+    const querySnapshots = await Promise.all(queryPromises);
+
+    querySnapshots.forEach(snapshot => {
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const createdAtTimestamp = data.createdAt as Timestamp;
+            posts.push({
+                id: doc.id,
+                ...data,
+                createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
+            } as PublishedPost);
+        });
+    });
+    
+    // 3. Sort all the collected posts by date client-side, as Firestore doesn't allow ordering on a different field than the 'in' query.
+    posts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    return posts;
+}
+
 /**
  * Gets a list of user suggestions for the current user to follow.
  * It fetches the latest registered users and filters out the current user and anyone they already follow.
