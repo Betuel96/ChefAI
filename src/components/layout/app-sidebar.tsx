@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -35,6 +36,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
 import { Skeleton } from '../ui/skeleton';
 import { UserCircle } from 'lucide-react';
+import { UserSearch } from './user-search';
 
 const aiToolsItems = [
   { href: '/generator', label: 'Generador de Recetas', icon: Sparkles },
@@ -97,19 +99,26 @@ export function AppSidebar() {
                <Skeleton className="h-3 w-40" />
             </div>
           )}
+          
           {user && isOpen && (
-             <Link href="/pro" className="block w-full">
-                <div className="flex flex-col items-start gap-2 p-2 pb-4 border-b mb-4 hover:bg-muted/50 rounded-md transition-colors">
-                  <Avatar>
-                      <AvatarImage src={user.photoURL || undefined} />
-                      <AvatarFallback>
-                        {user.displayName ? user.displayName.charAt(0).toUpperCase() : <UserCircle />}
-                      </AvatarFallback>
-                    </Avatar>
-                  <div className="text-sm font-medium">{user.displayName}</div>
-                  <div className="text-xs text-muted-foreground">{user.email}</div>
+            <>
+              <Link href="/pro" className="block w-full px-2">
+                  <div className="flex flex-col items-start gap-2 p-2 rounded-md hover:bg-muted/50 transition-colors">
+                    <Avatar>
+                        <AvatarImage src={user.photoURL || undefined} />
+                        <AvatarFallback>
+                          {user.displayName ? user.displayName.charAt(0).toUpperCase() : <UserCircle />}
+                        </AvatarFallback>
+                      </Avatar>
+                    <div className="text-sm font-medium">{user.displayName}</div>
+                    <div className="text-xs text-muted-foreground">{user.email}</div>
+                  </div>
+                </Link>
+                <div className='py-4'>
+                  <UserSearch />
                 </div>
-              </Link>
+                <Separator className="my-2" />
+            </>
           )}
 
           <SidebarMenuItem>

@@ -4,7 +4,6 @@
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { generateShoppingList } from '@/ai/flows/generate-shopping-list';
 import type { Recipe, SavedRecipe, ShoppingListCategory } from '@/types';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,7 +24,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BookHeart, LogIn, ShoppingCart, Trash2, UtensilsCrossed, Sparkles } from 'lucide-react';
+import { BookHeart, LogIn, Trash2, UtensilsCrossed, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { Separator } from '@/components/ui/separator';
@@ -39,8 +38,6 @@ export default function MyRecipesPage() {
   const [savedRecipes, setSavedRecipes] = useState<SavedRecipe[]>([]);
   const [pageLoading, setPageLoading] = useState(true);
 
-  const [, setShoppingList] = useLocalStorage<ShoppingListCategory[]>('shoppingList', []);
-  const [loadingRecipeId, setLoadingRecipeId] = useState<string | null>(null);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -65,57 +62,6 @@ export default function MyRecipesPage() {
       setPageLoading(false);
     }
   }, [user, authLoading, toast]);
-
-
-  const handleGenerateList = async (recipe: Recipe) => {
-    setLoadingRecipeId(recipe.name);
-    try {
-      const ingredientsString = [
-        recipe.additionalIngredients,
-      ]
-        .join('\n')
-        .split(/[\n,]/)
-        .map((s) => s.trim())
-        .filter((s) => s)
-        .join('\n');
-
-      if (!ingredientsString) {
-        toast({
-          title: 'No hay Ingredientes',
-          description: 'Esta receta no tiene ingredientes para generar una lista.',
-          variant: 'destructive',
-        });
-        return;
-      }
-      
-      const result = await generateShoppingList({ allIngredients: ingredientsString });
-
-      const categorizedList: ShoppingListCategory[] = result.shoppingList.map((category) => ({
-        ...category,
-        items: category.items.map((itemName) => ({
-          id: crypto.randomUUID(),
-          name: itemName,
-          checked: false,
-        })),
-      }));
-      
-      setShoppingList(categorizedList);
-
-      toast({
-        title: '¡Lista de Compras Generada!',
-        description: `Basada en "${recipe.name}". Redirigiendo...`,
-      });
-      router.push('/shopping-list');
-    } catch (error) {
-      toast({
-        title: 'Error al Generar la Lista',
-        description: 'No se pudo generar la lista de compras. Por favor, inténtalo de nuevo.',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoadingRecipeId(null);
-    }
-  };
 
   const handleDeleteRecipe = async (recipeId: string) => {
     if (!user) return;
@@ -224,14 +170,6 @@ export default function MyRecipesPage() {
                     <p className="whitespace-pre-wrap">{recipe.equipment}</p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 mt-6 pt-6 border-t">
-                    <Button 
-                    onClick={() => handleGenerateList(recipe)} 
-                    className="w-full flex-grow"
-                    disabled={loadingRecipeId === recipe.name}
-                    >
-                    <ShoppingCart className="mr-2 h-4 w-4" />
-                    {loadingRecipeId === recipe.name ? 'Generando...' : 'Crear Lista de Compras'}
-                    </Button>
                     <AlertDialog>
                     <AlertDialogTrigger asChild>
                         <Button variant="destructive" className="w-full sm:w-auto">

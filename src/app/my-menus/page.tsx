@@ -3,8 +3,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { generateShoppingList } from '@/ai/flows/generate-shopping-list';
-import type { WeeklyPlan, ShoppingListCategory, DailyMealPlan, SavedWeeklyPlan } from '@/types';
+import type { SavedWeeklyPlan, DailyMealPlan } from '@/types';
 import { Button } from '@/components/ui/button';
 import {
   Accordion,
@@ -24,14 +23,13 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { MenuSquare, ShoppingCart, Trash2, LogIn, CalendarDays } from 'lucide-react';
+import { MenuSquare, Trash2, LogIn, CalendarDays } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/use-auth';
 import { getMenus, deleteMenu } from '@/lib/menus';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
-import { useLocalStorage } from '@/hooks/use-local-storage';
 
 const MealCard = ({ meal }: { meal: DailyMealPlan['breakfast'] }) => (
   <Card className="mt-4 border-accent/20">
@@ -62,8 +60,6 @@ export default function MyMenusPage() {
   const { user, loading: authLoading } = useAuth();
   const [savedMenus, setSavedMenus] = useState<SavedWeeklyPlan[]>([]);
   const [pageLoading, setPageLoading] = useState(true);
-  const [, setShoppingList] = useLocalStorage<ShoppingListCategory[]>('shoppingList', []);
-  const [loadingMenuId, setLoadingMenuId] = useState<string | null>(null);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -88,62 +84,6 @@ export default function MyMenusPage() {
       setPageLoading(false);
     }
   }, [user, authLoading, toast]);
-
-
-  const handleGenerateList = async (menu: WeeklyPlan) => {
-    const menuId = (menu as SavedWeeklyPlan).id;
-    setLoadingMenuId(menuId);
-    try {
-      const allIngredients =
-        menu.weeklyMealPlan
-          .flatMap((day) => [
-            ...(day.breakfast?.ingredients?.split('\n') || []),
-            ...(day.lunch?.ingredients?.split('\n') || []),
-            ...(day.comida?.ingredients?.split('\n') || []),
-            ...(day.dinner?.ingredients?.split('\n') || []),
-          ])
-          .filter((ing) => ing.trim() !== '') || [];
-
-      const allIngredientsString = allIngredients.join('\n');
-
-      if (!allIngredientsString) {
-        toast({
-          title: 'No hay Ingredientes',
-          description: 'Este plan de comidas no tiene ingredientes para generar una lista.',
-          variant: 'destructive',
-        });
-        setLoadingMenuId(null);
-        return;
-      }
-
-      const result = await generateShoppingList({ allIngredients: allIngredientsString });
-
-      const categorizedList: ShoppingListCategory[] = result.shoppingList.map((category) => ({
-        ...category,
-        items: category.items.map((itemName) => ({
-          id: crypto.randomUUID(),
-          name: itemName,
-          checked: false,
-        })),
-      }));
-
-      setShoppingList(categorizedList);
-
-      toast({
-        title: '¡Lista de Compras Generada!',
-        description: `Redirigiéndote a tu nueva lista...`,
-      });
-      router.push('/shopping-list');
-    } catch (error) {
-      toast({
-        title: 'Error al Generar la Lista',
-        description: 'No se pudo generar la lista de compras. Por favor, inténtalo de nuevo.',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoadingMenuId(null);
-    }
-  };
 
   const handleDeleteMenu = async (menuIdToDelete: string) => {
     if (!user) return;
@@ -245,14 +185,6 @@ export default function MyMenusPage() {
                     </div>
                   ))}
                 <div className="flex flex-col sm:flex-row gap-2 mt-6 pt-6 border-t">
-                  <Button
-                    onClick={() => handleGenerateList(menu)}
-                    className="w-full sm:w-auto flex-grow"
-                    disabled={loadingMenuId === menu.id}
-                  >
-                    <ShoppingCart className="mr-2 h-4 w-4" />
-                    {loadingMenuId === menu.id ? 'Generando...' : 'Crear Lista de Compras'}
-                  </Button>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="destructive" className="w-full sm:w-auto">

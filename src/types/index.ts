@@ -1,15 +1,28 @@
 
-import type { GenerateRecipeOutput } from '@/ai/flows/generate-recipe';
-import type { CreateWeeklyMealPlanOutput, DailyMealPlan as DailyMealPlanType } from '@/ai/flows/create-weekly-meal-plan';
 import type { User } from 'firebase/auth';
 
-// The core recipe structure from AI
-export type Recipe = GenerateRecipeOutput;
+// The core recipe structure from AI (kept for when it's re-enabled)
+export interface Recipe {
+    name: string;
+    instructions: string;
+    additionalIngredients: string;
+    equipment: string;
+}
 // A recipe saved to a user's private collection
 export type SavedRecipe = Recipe & { id: string; imageUrl?: string | null; createdAt: string; };
 
-export type WeeklyPlan = CreateWeeklyMealPlanOutput;
-export type DailyMealPlan = DailyMealPlanType;
+export interface DailyMealPlan {
+    day: string;
+    breakfast: Recipe;
+    lunch: Recipe;
+    comida: Recipe;
+    dinner: Recipe;
+}
+
+export interface WeeklyPlan {
+    weeklyMealPlan: DailyMealPlan[];
+}
+
 export type SavedWeeklyPlan = WeeklyPlan & { id: string; createdAt: string; };
 
 export interface ShoppingListItem {

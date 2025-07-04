@@ -7,6 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import type { ShoppingListCategory } from '@/types';
 import { Trash2, ShoppingCart } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 export default function ShoppingListPage() {
   const [shoppingList, setShoppingList] = useLocalStorage<ShoppingListCategory[]>('shoppingList', []);
@@ -39,7 +40,7 @@ export default function ShoppingListPage() {
     <div className="max-w-2xl mx-auto space-y-6">
       <header>
         <h1 className="font-headline text-4xl font-bold text-primary">Lista de Compras</h1>
-        <p className="text-muted-foreground mt-2 text-lg">Tu lista de compras generada. Marca los artículos a medida que los compras.</p>
+        <p className="text-muted-foreground mt-2 text-lg">Tu lista de compras. Las listas generadas por IA están en pausa.</p>
       </header>
       
       <Card className="shadow-lg">
@@ -90,7 +91,10 @@ export default function ShoppingListPage() {
           ) : (
             <div className="text-center text-muted-foreground py-10">
               <p>Tu lista de compras está vacía.</p>
-              <p>Genera una desde el Planificador Semanal o una receta guardada.</p>
+              <p>
+                La generación de listas desde <Link href="/planner" className="underline">el Planificador</Link> o 
+                desde <Link href="/my-recipes" className="underline">tus Recetas</Link> está temporalmente desactivada.
+              </p>
             </div>
           )}
         </CardContent>

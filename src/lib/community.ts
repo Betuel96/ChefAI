@@ -35,34 +35,37 @@ export async function createPost(
 
   const postsCollection = collection(db, 'published_recipes');
   
-  const docRef = await addDoc(postsCollection, {
+  const docRef = doc(postsCollection); // Create a reference first to get the ID
+
+  let imageUrl: string | null = null;
+  if (imageDataUri) {
+    const storageRef = ref(storage, `users/${userId}/posts/${docRef.id}.png`);
+    try {
+      const snapshot = await uploadString(storageRef, imageDataUri, 'data_url');
+      imageUrl = await getDownloadURL(snapshot.ref);
+    } catch (error) {
+      console.error('Error uploading post image:', error);
+      // Throw a user-friendly error
+      throw new Error('La publicación no se pudo crear porque falló la subida de la imagen. Comprueba tus reglas de seguridad de Firebase Storage.');
+    }
+  }
+  
+  // Now set the document data, including the final imageUrl
+  await setDoc(docRef, {
     ...postData,
     publisherId: userId,
     publisherName: userName,
     publisherPhotoURL: userPhotoURL,
     createdAt: serverTimestamp(),
-    imageUrl: null,
+    imageUrl: imageUrl, // This will be null if no image was provided, or the URL if it succeeded
     likesCount: 0,
     commentsCount: 0,
   });
 
-  if (imageDataUri) {
-    const storageRef = ref(storage, `users/${userId}/posts/${docRef.id}.png`);
-    try {
-      const snapshot = await uploadString(storageRef, imageDataUri, 'data_url');
-      const downloadURL = await getDownloadURL(snapshot.ref);
-      await updateDoc(docRef, { imageUrl: downloadURL });
-    } catch (error) {
-      console.error('Error uploading post image:', error);
-      // Clean up the created post document since the image upload failed
-      await deleteDoc(docRef);
-      // Throw a user-friendly error
-      throw new Error('La publicación no se pudo crear porque falló la subida de la imagen. Comprueba tus reglas de seguridad de Firebase Storage.');
-    }
-  }
 
   return docRef.id;
 }
+
 
 // Function to update a post
 export async function updatePost(
@@ -97,10 +100,11 @@ export async function updatePost(
         } catch (e: any) {
           if (e.code !== 'storage/object-not-found') {
             console.error('Could not delete old image:', e);
+            // Don't throw, just log. The main goal is to update the post.
           }
         }
       }
-      updateData.imageUrl = null;
+      updateData.imageUrl = null; // Set to null in Firestore
     } else {
       try {
         // It's a data URI, so upload it. This will overwrite any existing file at the same path.
@@ -109,7 +113,7 @@ export async function updatePost(
         updateData.imageUrl = downloadURL;
       } catch (error) {
         console.error("Error al subir la imagen:", error);
-        throw new Error("No se pudo subir la imagen. Comprueba tus reglas de seguridad de Firebase Storage.");
+        throw new Error("No se pudo subir la imagen. Comprueba tu conexión o los permisos de almacenamiento.");
       }
     }
   }
@@ -211,8 +215,8 @@ export async function deletePost(postId: string): Promise<void> {
             // Delete image from storage if it exists
             if (postData.imageUrl && postData.publisherId) {
                 try {
-                    const imagePath = `users/${postData.publisherId}/posts/${postId}.png`;
-                    const imageRef = ref(storage, imagePath);
+                    // This creates a reference from the full URL.
+                    const imageRef = ref(storage, postData.imageUrl);
                     await deleteObject(imageRef);
                 } catch (storageError: any) {
                     // It's okay if the object doesn't exist, log other errors.
@@ -468,4 +472,41 @@ export async function getFollowersList(userId: string): Promise<ProfileListItem[
     const followerIds = followersSnap.docs.map(doc => doc.id);
 
     return getProfilesFromIds(followerIds);
+}
+
+/**
+ * Gets a list of user suggestions for the current user to follow.
+ * It fetches the latest registered users and filters out the current user and anyone they already follow.
+ * @param currentUserId The ID of the user for whom to generate suggestions.
+ * @returns A promise that resolves to an array of user profile suggestions.
+ */
+export async function getFriendSuggestions(currentUserId: string): Promise<ProfileListItem[]> {
+  if (!db) throw new Error("Firestore not initialized.");
+
+  // Get the list of users the current user is already following
+  const followingRef = collection(db, 'users', currentUserId, 'following');
+  const followingSnap = await getDocs(followingRef);
+  const followingIds = new Set(followingSnap.docs.map(doc => doc.id));
+  followingIds.add(currentUserId); // Also exclude the user themselves
+
+  // Fetch the 10 most recently created users
+  const usersCollection = collection(db, 'users');
+  const q = query(usersCollection, orderBy('createdAt', 'desc'), limit(10));
+  const snapshot = await getDocs(q);
+
+  const suggestions: ProfileListItem[] = [];
+  snapshot.forEach(doc => {
+    // If the user is not already followed and is not the current user, add to suggestions
+    if (!followingIds.has(doc.id)) {
+      const data = doc.data();
+      suggestions.push({
+        id: doc.id,
+        name: data.name,
+        photoURL: data.photoURL || null,
+      });
+    }
+  });
+  
+  // Return up to 5 suggestions
+  return suggestions.slice(0, 5);
 }

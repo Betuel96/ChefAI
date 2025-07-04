@@ -28,6 +28,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useRouter } from 'next/navigation';
+import { FriendSuggestions } from '@/components/community/friend-suggestions';
 
 const PostCard = ({ post, onPostDeleted }: { post: PublishedPost, onPostDeleted: (postId: string) => void }) => {
     const { user } = useAuth();
@@ -222,45 +223,50 @@ export default function CommunityPage() {
     }, []);
 
     return (
-        <div className="max-w-2xl mx-auto space-y-8">
-            <header>
-                <h1 className="font-headline text-4xl font-bold text-primary">Comunidad ChefAI</h1>
-                <p className="text-muted-foreground mt-2 text-lg">Descubre qué están cocinando otros usuarios.</p>
-            </header>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+            <main className="lg:col-span-2 space-y-8">
+                <header>
+                    <h1 className="font-headline text-4xl font-bold text-primary">Comunidad ChefAI</h1>
+                    <p className="text-muted-foreground mt-2 text-lg">Descubre qué están cocinando otros usuarios.</p>
+                </header>
 
-            {isLoading ? (
-                <div className="space-y-8">
-                    {[...Array(3)].map((_, i) => (
-                        <Card key={i}>
-                            <CardHeader className="flex flex-row items-center gap-3">
-                                <Skeleton className="h-10 w-10 rounded-full" />
-                                <div className="space-y-2">
-                                    <Skeleton className="h-4 w-32" />
-                                    <Skeleton className="h-3 w-24" />
-                                </div>
-                            </CardHeader>
-                             <CardContent>
-                                <Skeleton className="h-7 w-3/4 mb-4" />
-                                <Skeleton className="aspect-video w-full" />
-                            </CardContent>
-                             <CardFooter className='border-t pt-4'>
-                                <Skeleton className="h-8 w-24" />
-                            </CardFooter>
-                        </Card>
-                    ))}
-                </div>
-            ) : (
-                <div className="space-y-8">
-                    {posts.length > 0 ? (
-                        posts.map(post => <PostCard key={post.id} post={post} onPostDeleted={handlePostDeleted} />)
-                    ) : (
-                        <div className="text-center text-muted-foreground py-10">
-                            <p className="font-semibold">¡La comunidad está tranquila!</p>
-                            <p>Sé el primero en publicar una receta desde el Generador.</p>
-                        </div>
-                    )}
-                </div>
-            )}
+                {isLoading ? (
+                    <div className="space-y-8">
+                        {[...Array(3)].map((_, i) => (
+                            <Card key={i}>
+                                <CardHeader className="flex flex-row items-center gap-3">
+                                    <Skeleton className="h-10 w-10 rounded-full" />
+                                    <div className="space-y-2">
+                                        <Skeleton className="h-4 w-32" />
+                                        <Skeleton className="h-3 w-24" />
+                                    </div>
+                                </CardHeader>
+                                <CardContent>
+                                    <Skeleton className="h-7 w-3/4 mb-4" />
+                                    <Skeleton className="aspect-video w-full" />
+                                </CardContent>
+                                <CardFooter className='border-t pt-4'>
+                                    <Skeleton className="h-8 w-24" />
+                                </CardFooter>
+                            </Card>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="space-y-8">
+                        {posts.length > 0 ? (
+                            posts.map(post => <PostCard key={post.id} post={post} onPostDeleted={handlePostDeleted} />)
+                        ) : (
+                            <div className="text-center text-muted-foreground py-10">
+                                <p className="font-semibold">¡La comunidad está tranquila!</p>
+                                <p>Sé el primero en publicar una receta desde el Generador.</p>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </main>
+            <aside className="lg:col-span-1 space-y-8 sticky top-24 hidden lg:block">
+                <FriendSuggestions />
+            </aside>
         </div>
     );
 }
