@@ -65,7 +65,11 @@ export async function createPost(
         // If image upload fails after the document was potentially created (or vice versa), clean up.
         // This is a "best effort" cleanup. A more robust solution might use Cloud Functions.
         if (docRef.id) {
-            await deleteDoc(docRef).catch(delErr => console.error("Cleanup failed: could not delete post doc.", delErr));
+            try {
+                await deleteDoc(docRef);
+            } catch (delErr) {
+                console.error("Cleanup failed: could not delete post doc.", delErr)
+            }
         }
         
         // Throw a user-friendly error
@@ -466,25 +470,22 @@ export async function searchUsers(searchQuery: string): Promise<ProfileListItem[
 // Helper function to get multiple user profiles from a list of IDs
 async function getProfilesFromIds(userIds: string[]): Promise<ProfileListItem[]> {
     if (!db || userIds.length === 0) return [];
-    
-    const userDocs: ProfileListItem[] = [];
-    // Firestore 'in' query can take up to 30 elements at once. Chunking the requests.
-    for (let i = 0; i < userIds.length; i += 30) {
-        const batchIds = userIds.slice(i, i + 30);
-        if (batchIds.length === 0) continue;
-        const q = query(collection(db, 'users'), where('__name__', 'in', batchIds));
-        const snapshot = await getDocs(q);
-        snapshot.forEach(docSnap => {
-            const data = docSnap.data();
-            userDocs.push({
-                id: docSnap.id,
+
+    // Fetch each user document individually. This is more robust against certain query limitations than a `where-in` clause.
+    const profilePromises = userIds.map(id => getDoc(doc(db, 'users', id)));
+    const profileSnapshots = await Promise.all(profilePromises);
+
+    return profileSnapshots
+        .filter(snap => snap.exists())
+        .map(snap => {
+            const data = snap.data();
+            return {
+                id: snap.id,
                 name: data.name,
                 username: data.username,
                 photoURL: data.photoURL || null,
-            });
+            };
         });
-    }
-    return userDocs;
 }
 
 // Function to get the list of users a specific user is following
