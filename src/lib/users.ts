@@ -203,6 +203,7 @@ export async function resendVerificationEmail(): Promise<{ success: boolean; mes
 
 /**
  * Updates a user's profile settings, e.g., public/private status.
+ * This also updates all of the user's existing posts to reflect the new privacy setting.
  * @param userId The ID of the user.
  * @param settings The settings to update.
  */
@@ -210,6 +211,29 @@ export async function updateProfileSettings(userId: string, settings: { profileT
   if (!db || !auth?.currentUser || auth.currentUser.uid !== userId) {
     throw new Error('No autorizado para realizar esta acción.');
   }
+
+  const batch = writeBatch(db);
+
+  // 1. Update the user's main profile document
   const userDocRef = doc(db, 'users', userId);
-  await updateDoc(userDocRef, settings);
+  batch.update(userDocRef, settings);
+
+  // 2. Find all posts by this user and update their profileType to match
+  const postsCollection = collection(db, 'published_recipes');
+  const userPostsQuery = query(postsCollection, where('publisherId', '==', userId));
+  
+  try {
+    const userPostsSnapshot = await getDocs(userPostsQuery);
+    userPostsSnapshot.forEach(postDoc => {
+        const postRef = doc(db, 'published_recipes', postDoc.id);
+        batch.update(postRef, { profileType: settings.profileType });
+    });
+
+    // 3. Commit all updates to the user profile and all their posts at once
+    await batch.commit();
+
+  } catch (error) {
+      console.error("Error updating user posts' privacy settings:", error);
+      throw new Error("No se pudieron actualizar los ajustes de privacidad en todas las publicaciones. Es posible que necesites crear un índice de Firestore para esta operación.");
+  }
 }

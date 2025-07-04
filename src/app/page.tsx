@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -37,9 +38,19 @@ export default function Dashboard() {
           const weeklyPlanArray = lastMenu.weeklyMealPlan;
 
           if (Array.isArray(weeklyPlanArray) && weeklyPlanArray.length > 0) {
-            // For simplicity and robustness, display the first day of the latest plan.
-            const planForToday = weeklyPlanArray[0];
-            setTodaysPlan(planForToday);
+            // Determine the correct index for today's plan
+            const dayOfWeek = new Date().getDay(); // 0 for Sunday, 1 for Monday, etc.
+            // Assuming "Día 1" is Monday, and the array is 0-indexed.
+            // Mon (1) -> index 0 | Tue (2) -> index 1 | ... | Sat (6) -> index 5 | Sun (0) -> index 6
+            const planIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+
+            if (weeklyPlanArray.length > planIndex) {
+              const planForToday = weeklyPlanArray[planIndex];
+              setTodaysPlan(planForToday);
+            } else {
+              // The saved plan is shorter than the current day of the week, so no plan for today.
+              setTodaysPlan(null);
+            }
           }
         } else {
           setTodaysPlan(null);
@@ -98,7 +109,7 @@ export default function Dashboard() {
       );
     }
 
-    const title = user ? "No Hay Comidas Planificadas" : "¡Bienvenido/a a ChefAI!";
+    const title = user ? "No Hay Comidas Planificadas Para Hoy" : "¡Bienvenido/a a ChefAI!";
     const description = user
       ? "¿Listo/a para cocinar? Crea un nuevo plan de comidas semanal para empezar."
       : "Inicia sesión para guardar tus planes y recetas, o crea tu primer plan de comidas semanal para empezar.";
@@ -127,7 +138,7 @@ export default function Dashboard() {
       
       <Card className="shadow-lg border-2 border-primary/20">
         <CardHeader>
-          <CardTitle className="font-headline text-2xl">{todaysPlan ? `Menú para ${todaysPlan.day}` : 'Comidas de Hoy'}</CardTitle>
+          <CardTitle className="font-headline text-2xl">{todaysPlan ? `Menú para Hoy (${todaysPlan.day})` : 'Comidas de Hoy'}</CardTitle>
           <CardDescription>
             {user ? 'Esto es lo que hay en el menú de hoy de tu último plan.' : 'Crea un plan para ver tus comidas aquí.'}
           </CardDescription>
