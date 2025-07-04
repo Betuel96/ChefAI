@@ -1,9 +1,8 @@
-
 'use client';
 
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, Timestamp } from 'firebase/firestore';
 import { auth, db, isFirebaseConfigured } from '@/lib/firebase';
 import type { AppUser, UserAccount } from '@/types';
 
@@ -48,9 +47,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             // This listener handles profile data changes (e.g., becoming premium)
             const unsubscribeSnapshot = onSnapshot(userDocRef, (docSnapshot) => {
               if (docSnapshot.exists()) {
-                // Combine auth user data with Firestore profile data
-                const userAccountData = docSnapshot.data() as UserAccount;
-                setUser({ ...freshUser, ...userAccountData });
+                const docData = docSnapshot.data();
+                
+                // Manually convert Firestore Timestamp to a serializable ISO string
+                const createdAtTimestamp = docData.createdAt as Timestamp;
+                const serializableAccountData = {
+                    ...docData,
+                    createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
+                } as UserAccount;
+
+                setUser({ ...freshUser, ...serializableAccountData });
               } else {
                 // This can happen if the user document hasn't been created yet during signup.
                 // We'll treat them as logged in, but without extra profile data for now.
