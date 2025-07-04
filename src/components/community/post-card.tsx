@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
-import { toggleLikePost, isPostLiked, deletePost } from '@/lib/community';
+import { toggleLikePost, isPostLiked, deletePost, savePost, unsavePost, isPostSaved } from '@/lib/community';
 import type { PublishedPost } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -26,7 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { UtensilsCrossed, UserCircle, MessageCircle, ChefHat, MoreVertical, Trash2, Pencil, Share2 } from 'lucide-react';
+import { UtensilsCrossed, UserCircle, MessageCircle, ChefHat, MoreVertical, Trash2, Pencil, Share2, MenuSquare, Bookmark } from 'lucide-react';
 import { PostMedia } from './post-media';
 
 export const PostCard = ({ post, onPostDeleted }: { post: PublishedPost, onPostDeleted: (postId: string) => void }) => {
@@ -35,6 +35,7 @@ export const PostCard = ({ post, onPostDeleted }: { post: PublishedPost, onPostD
     const { toast } = useToast();
     const [isLiked, setIsLiked] = useState(false);
     const [likesCount, setLikesCount] = useState(post.likesCount || 0);
+    const [isSaved, setIsSaved] = useState(false);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
 
@@ -46,6 +47,7 @@ export const PostCard = ({ post, onPostDeleted }: { post: PublishedPost, onPostD
     useEffect(() => {
         if (user?.uid) {
             isPostLiked(post.id, user.uid).then(setIsLiked);
+            isPostSaved(user.uid, post.id).then(setIsSaved);
         }
     }, [user, post.id]);
 
@@ -109,6 +111,30 @@ export const PostCard = ({ post, onPostDeleted }: { post: PublishedPost, onPostD
             });
         }
     };
+    
+    const handleSaveClick = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!user) {
+            toast({ title: 'Debes iniciar sesión para guardar.', variant: 'destructive'});
+            return;
+        }
+        
+        const previouslySaved = isSaved;
+        setIsSaved(!previouslySaved);
+        
+        try {
+            if (previouslySaved) {
+                await unsavePost(user.uid, post.id);
+                 toast({ title: 'Publicación eliminada de tus guardados.' });
+            } else {
+                await savePost(user.uid, post.id);
+                 toast({ title: '¡Publicación Guardada!' });
+            }
+        } catch (error) {
+            setIsSaved(previouslySaved);
+            toast({ title: 'Error al guardar.', variant: 'destructive'});
+        }
+    };
 
     const handleDelete = async () => {
         setIsDeleting(true);
@@ -170,8 +196,15 @@ export const PostCard = ({ post, onPostDeleted }: { post: PublishedPost, onPostD
             </CardHeader>
             <Link href={`/post/${post.id}`} className="flex-grow">
                 <div className="px-6 pb-4 flex-grow">
-                    {post.type === 'recipe' ? (
+                     {post.type === 'recipe' ? (
                         <CardTitle className="font-headline text-2xl">{post.content}</CardTitle>
+                    ) : post.type === 'menu' ? (
+                        <div>
+                            <CardTitle className="font-headline text-2xl flex items-center gap-2">
+                                <MenuSquare className="h-6 w-6" /> Plan de Comidas
+                            </CardTitle>
+                            <p className="text-foreground whitespace-pre-wrap pt-2">{post.content}</p>
+                        </div>
                     ) : (
                         <p className="text-foreground whitespace-pre-wrap">{post.content}</p>
                     )}
@@ -186,12 +219,10 @@ export const PostCard = ({ post, onPostDeleted }: { post: PublishedPost, onPostD
                             className="object-cover"
                         />
                     </div>
-                ) : (
-                    post.type === 'recipe' && (
-                        <div className="aspect-video bg-muted flex items-center justify-center text-muted-foreground">
-                            <UtensilsCrossed className="w-12 h-12" />
-                        </div>
-                    )
+                ) : (post.type === 'recipe' || post.type === 'menu') && (
+                    <div className="aspect-video bg-muted flex items-center justify-center text-muted-foreground">
+                        {post.type === 'recipe' ? <UtensilsCrossed className="w-12 h-12" /> : <MenuSquare className="w-12 h-12" />}
+                    </div>
                 )}
             </Link>
             <CardFooter className="flex items-center gap-4 pt-4 border-t">
@@ -205,6 +236,9 @@ export const PostCard = ({ post, onPostDeleted }: { post: PublishedPost, onPostD
                         <span>{post.commentsCount || 0}</span>
                     </Button>
                 </Link>
+                <Button variant="ghost" size="sm" onClick={handleSaveClick} className="flex items-center gap-2 text-muted-foreground">
+                    <Bookmark className={cn("w-5 h-5 transition-colors", isSaved && "fill-primary text-primary")} />
+                </Button>
                 <Button variant="ghost" size="sm" onClick={handleShare} className="flex items-center gap-2 text-muted-foreground ml-auto">
                     <Share2 className="w-5 h-5" />
                 </Button>

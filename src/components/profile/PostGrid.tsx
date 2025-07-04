@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import type { PublishedPost } from '@/types';
 import { Card, CardContent } from '@/components/ui/card';
-import { UtensilsCrossed, PlayCircle } from 'lucide-react';
+import { UtensilsCrossed, PlayCircle, MenuSquare } from 'lucide-react';
 import { PostMedia } from '../community/post-media';
 
 export const PostGrid = ({ posts }: { posts: PublishedPost[] }) => {
@@ -35,7 +35,13 @@ export const PostGrid = ({ posts }: { posts: PublishedPost[] }) => {
                                 </>
                             ) : (
                                 <div className="h-full flex items-center justify-center text-muted-foreground">
-                                    <UtensilsCrossed className="w-10 h-10" />
+                                    {post.type === 'recipe' && <UtensilsCrossed className="w-10 h-10" />}
+                                    {post.type === 'menu' && <MenuSquare className="w-10 h-10" />}
+                                </div>
+                            )}
+                             {post.type === 'menu' && (
+                                <div className="absolute top-2 right-2 bg-primary/80 text-primary-foreground p-1.5 rounded-md">
+                                    <MenuSquare className="w-4 h-4" />
                                 </div>
                             )}
                         </div>

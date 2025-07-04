@@ -21,7 +21,7 @@ import {
   setDoc,
 } from 'firebase/firestore';
 import { db, storage } from './firebase';
-import type { PublishedPost, ProfileData as ProfileDataType, Comment, Mention, ProfileListItem, Notification, UserAccount, Story, StoryGroup } from '@/types';
+import type { PublishedPost, ProfileData as ProfileDataType, Comment, Mention, ProfileListItem, Notification, UserAccount, Story, StoryGroup, SavedWeeklyPlan } from '@/types';
 import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
 
 // Function to create a new post (recipe or text)
@@ -176,6 +176,7 @@ export async function getPublishedPosts(): Promise<PublishedPost[]> {
             instructions: data.instructions,
             additionalIngredients: data.additionalIngredients,
             equipment: data.equipment,
+            weeklyMealPlan: data.weeklyMealPlan || null,
             likesCount: data.likesCount || 0,
             commentsCount: data.commentsCount || 0,
             mentions: data.mentions || [],
@@ -207,6 +208,7 @@ export async function getUserPublishedPosts(userId: string): Promise<PublishedPo
             instructions: data.instructions,
             additionalIngredients: data.additionalIngredients,
             equipment: data.equipment,
+            weeklyMealPlan: data.weeklyMealPlan || null,
             likesCount: data.likesCount || 0,
             commentsCount: data.commentsCount || 0,
             mentions: data.mentions || [],
@@ -240,6 +242,7 @@ export async function getPost(postId: string): Promise<PublishedPost | null> {
         instructions: data.instructions,
         additionalIngredients: data.additionalIngredients,
         equipment: data.equipment,
+        weeklyMealPlan: data.weeklyMealPlan || null,
         likesCount: data.likesCount || 0,
         commentsCount: data.commentsCount || 0,
         mentions: data.mentions || [],
@@ -670,6 +673,7 @@ export async function getFollowingPosts(userId: string): Promise<PublishedPost[]
                 instructions: data.instructions,
                 additionalIngredients: data.additionalIngredients,
                 equipment: data.equipment,
+                weeklyMealPlan: data.weeklyMealPlan || null,
                 likesCount: data.likesCount || 0,
                 commentsCount: data.commentsCount || 0,
                 mentions: data.mentions || [],
@@ -883,4 +887,60 @@ export async function getStoriesForFeed(currentUserId: string): Promise<StoryGro
     });
 
     return groupedStories;
+}
+
+// --- SAVED POSTS ---
+export async function savePost(userId: string, postId: string): Promise<void> {
+  if (!db) throw new Error("Firestore not initialized.");
+  const saveRef = doc(db, 'users', userId, 'savedPosts', postId);
+  await setDoc(saveRef, { savedAt: serverTimestamp() });
+}
+
+export async function unsavePost(userId: string, postId: string): Promise<void> {
+  if (!db) throw new Error("Firestore not initialized.");
+  const saveRef = doc(db, 'users', userId, 'savedPosts', postId);
+  await deleteDoc(saveRef);
+}
+
+export async function isPostSaved(userId: string, postId: string): Promise<boolean> {
+  if (!db || !userId) return false;
+  const saveRef = doc(db, 'users', userId, 'savedPosts', postId);
+  const docSnap = await getDoc(saveRef);
+  return docSnap.exists();
+}
+
+export async function getSavedPosts(userId: string): Promise<PublishedPost[]> {
+  if (!db) throw new Error("Firestore not initialized.");
+  const savedPostsRef = collection(db, 'users', userId, 'savedPosts');
+  const q = query(savedPostsRef, orderBy('savedAt', 'desc'));
+  const snapshot = await getDocs(q);
+
+  if (snapshot.empty) {
+    return [];
+  }
+
+  const postIds = snapshot.docs.map(doc => doc.id);
+  
+  // Firestore 'in' query can take up to 30 items
+  const postPromises = [];
+  for (let i = 0; i < postIds.length; i += 30) {
+      const chunk = postIds.slice(i, i + 30);
+      const postsQuery = query(collection(db, 'published_recipes'), where('__name__', 'in', chunk));
+      postPromises.push(getDocs(postsQuery));
+  }
+  
+  const postSnapshots = await Promise.all(postPromises);
+  const posts: PublishedPost[] = [];
+  postSnapshots.forEach(snap => {
+      snap.forEach(doc => {
+          posts.push(getPost(doc.id).then(p => p!));
+      });
+  });
+
+  const resolvedPosts = await Promise.all(posts);
+  
+  const postsMap = new Map(resolvedPosts.map(p => [p.id, p]));
+  const sortedPosts = postIds.map(id => postsMap.get(id)).filter(p => p) as PublishedPost[];
+
+  return sortedPosts;
 }

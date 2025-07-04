@@ -18,6 +18,7 @@ import {
   Users,
   PlusSquare,
   Bell,
+  Bookmark
 } from 'lucide-react';
 import {
   Sidebar,
@@ -51,6 +52,7 @@ const libraryItems = [
   { href: '/my-recipes', label: 'Mis Recetas', icon: BookHeart },
   { href: '/my-menus', label: 'Mis Menús', icon: MenuSquare },
   { href: '/shopping-list', label: 'Lista de Compras', icon: ShoppingCart },
+  { href: '/saved', label: 'Publicaciones Guardadas', icon: Bookmark },
 ];
 
 

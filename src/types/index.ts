@@ -90,17 +90,20 @@ export interface PublishedPost {
     mediaUrl?: string | null;
     mediaType?: 'image' | 'video' | null;
     
-    type: 'recipe' | 'text'; // To distinguish between post types
+    type: 'recipe' | 'text' | 'menu'; // To distinguish between post types
     profileType: 'public' | 'private';
     
     // For text posts, this is the status content.
-    // For recipe posts, this is the recipe name.
+    // For recipe/menu posts, this is the title/caption.
     content: string; 
     
     // These are only present if type is 'recipe'
     instructions?: string;
     additionalIngredients?: string;
     equipment?: string;
+    
+    // This is only present if type is 'menu'
+    weeklyMealPlan?: DailyMealPlan[];
 
     // Social counts
     likesCount?: number;
@@ -108,6 +111,11 @@ export interface PublishedPost {
 
     // Mentions
     mentions?: Mention[];
+}
+
+export interface SavedPostReference {
+    postId: string;
+    savedAt: string;
 }
 
 export interface ProfileData extends Omit<UserAccount, 'createdAt' | 'email'> {

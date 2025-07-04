@@ -20,16 +20,17 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { MenuSquare, Trash2, LogIn, CalendarDays } from 'lucide-react';
+import { MenuSquare, Trash2, LogIn, CalendarDays, Share2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/use-auth';
-import { getMenus, deleteMenu } from '@/lib/menus';
+import { getMenus, deleteMenu, publishMenuAsPost } from '@/lib/menus';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 const MealCard = ({ meal }: { meal: DailyMealPlan['breakfast'] }) => (
   <Card className="mt-4 border-accent/20">
@@ -63,6 +64,10 @@ export default function MyMenusPage() {
   const router = useRouter();
   const { toast } = useToast();
 
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [selectedMenu, setSelectedMenu] = useState<SavedWeeklyPlan | null>(null);
+  const [caption, setCaption] = useState('');
+
   useEffect(() => {
     if (authLoading) {
       return;
@@ -84,6 +89,33 @@ export default function MyMenusPage() {
       setPageLoading(false);
     }
   }, [user, authLoading, toast]);
+  
+  const handlePublishClick = (menu: SavedWeeklyPlan) => {
+    setSelectedMenu(menu);
+    setCaption(`¡Mira mi plan de comidas para ${menu.weeklyMealPlan.length} días! Hecho con ChefAI.`);
+  };
+
+  const handlePublishConfirm = async () => {
+    if (!user || !selectedMenu) return;
+    setIsPublishing(true);
+    try {
+      await publishMenuAsPost(user.uid, user.displayName || 'Anónimo', user.photoURL, caption, selectedMenu);
+      toast({
+        title: "¡Menú Publicado!",
+        description: "Tu plan de comidas ahora está visible en la comunidad."
+      });
+      setSelectedMenu(null);
+    } catch (error) {
+      toast({
+        title: "Error al Publicar",
+        description: "No se pudo publicar tu menú.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsPublishing(false);
+    }
+  }
+
 
   const handleDeleteMenu = async (menuIdToDelete: string) => {
     if (!user) return;
@@ -185,6 +217,10 @@ export default function MyMenusPage() {
                     </div>
                   ))}
                 <div className="flex flex-col sm:flex-row gap-2 mt-6 pt-6 border-t">
+                  <Button variant="outline" size="sm" onClick={() => handlePublishClick(menu)}>
+                    <Share2 className="mr-2 h-4 w-4" />
+                    Compartir en la Comunidad
+                  </Button>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="destructive" className="w-full sm:w-auto">
@@ -235,6 +271,29 @@ export default function MyMenusPage() {
           {renderContent()}
         </CardContent>
       </Card>
+      
+      <AlertDialog open={!!selectedMenu} onOpenChange={(isOpen) => !isOpen && setSelectedMenu(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Compartir tu Plan de Comidas</AlertDialogTitle>
+            <AlertDialogDescription>
+              Añade un título o descripción para tu publicación. Será visible para otros en la comunidad.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="caption">Título/Descripción</Label>
+              <Textarea id="caption" value={caption} onChange={(e) => setCaption(e.target.value)} />
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handlePublishConfirm} disabled={isPublishing}>
+              {isPublishing ? 'Publicando...' : 'Publicar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

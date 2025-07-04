@@ -11,9 +11,11 @@ import {
   query,
   orderBy,
   Timestamp,
+  setDoc,
+  getDoc,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import type { WeeklyPlan, SavedWeeklyPlan } from '@/types';
+import type { WeeklyPlan, SavedWeeklyPlan, PublishedPost, UserAccount } from '@/types';
 
 /**
  * Adds a new weekly menu to a user's collection in Firestore.
@@ -74,4 +76,52 @@ export async function deleteMenu(userId: string, menuId: string): Promise<void> 
   }
   const menuDoc = doc(db, 'users', userId, 'menus', menuId);
   await deleteDoc(menuDoc);
+}
+
+/**
+ * Publishes a saved weekly menu as a new post in the community feed.
+ * @param userId The ID of the user publishing the menu.
+ * @param userName The display name of the user.
+ * @param userPhotoURL The photo URL of the user.
+ * @param caption A caption or title for the post.
+ * @param menu The saved weekly plan to publish.
+ * @returns The ID of the newly created post document.
+ */
+export async function publishMenuAsPost(
+  userId: string,
+  userName: string,
+  userPhotoURL: string | null,
+  caption: string,
+  menu: SavedWeeklyPlan
+): Promise<string> {
+  if (!db) throw new Error('Firestore is not initialized.');
+
+  const userRef = doc(db, 'users', userId);
+  const userSnap = await getDoc(userRef);
+  if (!userSnap.exists()) {
+    throw new Error('User profile not found.');
+  }
+  const userData = userSnap.data() as UserAccount;
+
+  const postsCollection = collection(db, 'published_recipes');
+  
+  const newPost: Omit<PublishedPost, 'id' | 'createdAt'> = {
+    publisherId: userId,
+    publisherName: userName,
+    publisherPhotoURL: userPhotoURL,
+    type: 'menu',
+    profileType: userData.profileType || 'public',
+    content: caption,
+    weeklyMealPlan: menu.weeklyMealPlan,
+    likesCount: 0,
+    commentsCount: 0,
+    mentions: [],
+  };
+
+  const docRef = await addDoc(postsCollection, {
+    ...newPost,
+    createdAt: serverTimestamp(),
+  });
+
+  return docRef.id;
 }

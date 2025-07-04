@@ -16,7 +16,10 @@ import {
     toggleLikePost, 
     deletePost,
     toggleCommentLike,
-    isCommentLiked
+    isCommentLiked,
+    isPostSaved,
+    savePost,
+    unsavePost
 } from '@/lib/community';
 import type { PublishedPost, Comment, Mention } from '@/types';
 import { useToast } from '@/hooks/use-toast';
@@ -26,7 +29,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
-import { UserCircle, MessageCircle, Send, ArrowLeft, ChefHat, MoreVertical, Trash2, Pencil, Reply, Share2 } from 'lucide-react';
+import { UserCircle, MessageCircle, Send, ArrowLeft, ChefHat, MoreVertical, Trash2, Pencil, Reply, Share2, Bookmark } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
@@ -41,6 +44,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { CommentInput } from '@/components/community/comment-input';
 import { PostMedia } from '@/components/community/post-media';
+import { PostContentViewer } from '@/components/community/post-content-viewer';
 
 type CommentWithReplies = Comment & { replies: CommentWithReplies[] };
 
@@ -234,6 +238,7 @@ export default function PostDetailPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isLiked, setIsLiked] = useState(false);
     const [likesCount, setLikesCount] = useState(0);
+    const [isSaved, setIsSaved] = useState(false);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
 
@@ -253,6 +258,7 @@ export default function PostDetailPage() {
                 setLikesCount(postData.likesCount || 0);
                 if (user) {
                     isPostLiked(postData.id, user.uid).then(setIsLiked);
+                    isPostSaved(user.uid, postData.id).then(setIsSaved);
                 }
             } else {
                  toast({
@@ -342,6 +348,29 @@ export default function PostDetailPage() {
             setIsLiked(previouslyLiked);
             setLikesCount(prev => previouslyLiked ? prev + 1 : prev - 1);
             toast({ title: 'Error al reaccionar.', variant: 'destructive'});
+        }
+    };
+    
+     const handleSaveClick = async () => {
+        if (!user || !post) {
+            toast({ title: 'Debes iniciar sesión para guardar.', variant: 'destructive'});
+            return;
+        }
+        
+        const previouslySaved = isSaved;
+        setIsSaved(!previouslySaved);
+        
+        try {
+            if (previouslySaved) {
+                await unsavePost(user.uid, post.id);
+                 toast({ title: 'Publicación eliminada de tus guardados.' });
+            } else {
+                await savePost(user.uid, post.id);
+                 toast({ title: '¡Publicación Guardada!' });
+            }
+        } catch (error) {
+            setIsSaved(previouslySaved);
+            toast({ title: 'Error al guardar.', variant: 'destructive'});
         }
     };
 
@@ -437,16 +466,14 @@ export default function PostDetailPage() {
                             </DropdownMenu>
                         )}
                     </div>
+                     {post.type !== 'text' && (
+                        <div className="pt-4">
+                            <h1 className="font-headline text-3xl font-bold text-primary">{post.content}</h1>
+                        </div>
+                    )}
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    <div>
-                        {post.type === 'recipe' ? (
-                            <h1 className="font-headline text-3xl font-bold text-primary">{post.content}</h1>
-                        ) : (
-                            <PostContentRenderer content={post.content} mentions={post.mentions} />
-                        )}
-                    </div>
-                     {post.mediaUrl && post.mediaType && (
+                    {post.mediaUrl && post.mediaType && (
                         <div className="aspect-video relative overflow-hidden rounded-lg">
                             <PostMedia 
                                 mediaUrl={post.mediaUrl}
@@ -457,24 +484,10 @@ export default function PostDetailPage() {
                             />
                         </div>
                     )}
-                    {post.type === 'recipe' && (
-                        <div className="space-y-6 pt-4">
-                            <Separator />
-                            <div>
-                                <h3 className="font-headline text-2xl font-semibold text-accent">Ingredientes</h3>
-                                <p className="whitespace-pre-wrap mt-2">{post.additionalIngredients}</p>
-                            </div>
-                            <Separator/>
-                            <div>
-                                <h3 className="font-headline text-2xl font-semibold text-accent">Instrucciones</h3>
-                                <p className="whitespace-pre-wrap mt-2">{post.instructions}</p>
-                            </div>
-                            <Separator/>
-                            <div>
-                                <h3 className="font-headline text-2xl font-semibold text-accent">Equipo Necesario</h3>
-                                <p className="whitespace-pre-wrap mt-2">{post.equipment}</p>
-                            </div>
-                        </div>
+                    {post.type === 'text' ? (
+                        <PostContentRenderer content={post.content} mentions={post.mentions} />
+                    ) : (
+                        <PostContentViewer post={post} />
                     )}
                 </CardContent>
                 <CardFooter className="flex items-center gap-4 pt-4 border-t">
@@ -486,6 +499,9 @@ export default function PostDetailPage() {
                         <MessageCircle className="w-6 h-6" />
                         <span className="font-semibold">{post.commentsCount || 0}</span>
                     </div>
+                     <Button variant="ghost" onClick={handleSaveClick} className="flex items-center gap-2 text-muted-foreground">
+                        <Bookmark className={cn("w-6 h-6 transition-colors", isSaved && "fill-primary text-primary")} />
+                    </Button>
                     <Button variant="ghost" onClick={handleShare} className="flex items-center gap-2 text-muted-foreground ml-auto">
                         <Share2 className="w-6 h-6" />
                     </Button>
