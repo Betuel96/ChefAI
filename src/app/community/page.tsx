@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -8,13 +7,11 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton';
 import { PostCard } from '@/components/community/post-card';
 import { useAuth } from '@/hooks/use-auth';
-import { useFeedStatus } from '@/hooks/use-feed-status';
 import { updateLastVisitedTimestamp } from '@/lib/users';
 
 
 export default function CommunityPage() {
     const { user } = useAuth();
-    const { checkFeedStatus } = useFeedStatus();
     const [posts, setPosts] = useState<PublishedPost[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -28,11 +25,10 @@ export default function CommunityPage() {
             try {
                 const fetchedPosts = await getPublishedPosts();
                 setPosts(fetchedPosts);
-                // When the user visits this page, update their timestamp
+                // When the user visits this page, update their timestamp.
+                // The useFeedStatus hook will automatically re-check when the user object is updated.
                 if (user?.uid) {
                     await updateLastVisitedTimestamp(user.uid, 'public');
-                    // Manually trigger a re-check to clear the indicator
-                    checkFeedStatus();
                 }
             } catch (error) {
                 console.error("Error fetching published posts:", error);
@@ -41,9 +37,10 @@ export default function CommunityPage() {
             }
         };
         fetchPosts();
-    // We only want to run this on mount, and when the user changes
+    // Re-fetch only when the user's ID changes (login/logout), not on every profile update.
+    // This prevents a re-render loop.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user]);
+    }, [user?.uid]);
 
     return (
         <>
