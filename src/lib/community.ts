@@ -439,10 +439,16 @@ export async function getFollowRequests(userId: string): Promise<FollowRequest[]
     const requestsRef = collection(db, 'users', userId, 'followRequests');
     const q = query(requestsRef, orderBy('timestamp', 'desc'));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-    } as FollowRequest));
+    return snapshot.docs.map(doc => {
+        const data = doc.data();
+        // Manually construct the object to avoid passing a non-serializable Timestamp.
+        return {
+            id: doc.id,
+            name: data.name,
+            username: data.username,
+            photoURL: data.photoURL || null,
+        } as FollowRequest;
+    });
 }
 
 export async function removeFollower(currentUserId: string, followerId: string): Promise<void> {
