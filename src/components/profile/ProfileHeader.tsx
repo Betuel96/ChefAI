@@ -3,14 +3,16 @@
 
 import type { ProfileData } from '@/types';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { UserCircle, CalendarIcon, UserPlus, UserCheck } from 'lucide-react';
+import { UserCircle, CalendarIcon, UserPlus, UserCheck, Settings } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 export const ProfileHeader = ({ profile, isFollowing, onFollowToggle, isCurrentUser }: { profile: ProfileData, isFollowing: boolean, onFollowToggle: () => void, isCurrentUser: boolean }) => {
     const joinedDate = profile.createdAt ? new Date(profile.createdAt) : null;
+    const router = useRouter();
       
     return (
         <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
@@ -40,12 +42,19 @@ export const ProfileHeader = ({ profile, isFollowing, onFollowToggle, isCurrentU
                     </div>
                 )}
             </div>
-            {!isCurrentUser && (
-                 <Button onClick={onFollowToggle} variant={isFollowing ? 'secondary' : 'default'} size="lg" className="w-full sm:w-auto">
-                    {isFollowing ? <UserCheck className="mr-2 h-4 w-4" /> : <UserPlus className="mr-2 h-4 w-4" />}
-                    {isFollowing ? 'Siguiendo' : 'Seguir'}
-                </Button>
-            )}
+            <div className="w-full sm:w-auto flex flex-col gap-2">
+                {isCurrentUser ? (
+                    <Button onClick={() => router.push('/settings')} variant="outline" size="lg" className="w-full sm:w-auto">
+                        <Settings className="mr-2 h-4 w-4" />
+                        Editar Perfil
+                    </Button>
+                ) : (
+                    <Button onClick={onFollowToggle} variant={isFollowing ? 'secondary' : 'default'} size="lg" className="w-full sm:w-auto">
+                        {isFollowing ? <UserCheck className="mr-2 h-4 w-4" /> : <UserPlus className="mr-2 h-4 w-4" />}
+                        {isFollowing ? 'Siguiendo' : 'Seguir'}
+                    </Button>
+                )}
+            </div>
         </div>
     );
 };
