@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
@@ -51,10 +52,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 
                 // Manually convert Firestore Timestamp to a serializable ISO string
                 const createdAtTimestamp = docData.createdAt as Timestamp;
-                const serializableAccountData = {
-                    ...docData,
+                const serializableAccountData: UserAccount = {
+                    name: docData.name,
+                    username: docData.username,
+                    email: docData.email,
+                    photoURL: docData.photoURL,
+                    isPremium: docData.isPremium,
+                    profileType: docData.profileType || 'public',
+                    notificationSettings: docData.notificationSettings || { publicFeed: true, followingFeed: true },
+                    lastVisitedFeeds: docData.lastVisitedFeeds || null,
                     createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
-                } as UserAccount;
+                };
 
                 setUser({ ...freshUser, ...serializableAccountData });
               } else {

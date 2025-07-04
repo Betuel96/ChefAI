@@ -1,3 +1,4 @@
+
 'use server';
 
 import {
@@ -169,9 +170,20 @@ export async function getPublishedPosts(): Promise<PublishedPost[]> {
         const createdAtTimestamp = data.createdAt as Timestamp;
         return {
             id: doc.id,
-            ...data,
-            createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
+            publisherId: data.publisherId,
+            publisherName: data.publisherName,
+            publisherPhotoURL: data.publisherPhotoURL || null,
+            imageUrl: data.imageUrl || null,
+            type: data.type,
+            profileType: data.profileType,
+            content: data.content,
+            instructions: data.instructions,
+            additionalIngredients: data.additionalIngredients,
+            equipment: data.equipment,
+            likesCount: data.likesCount || 0,
+            commentsCount: data.commentsCount || 0,
             mentions: data.mentions || [],
+            createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
         } as PublishedPost;
     });
 }
@@ -188,9 +200,20 @@ export async function getUserPublishedPosts(userId: string): Promise<PublishedPo
         const createdAtTimestamp = data.createdAt as Timestamp;
         return {
             id: doc.id,
-            ...data,
-            createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
+            publisherId: data.publisherId,
+            publisherName: data.publisherName,
+            publisherPhotoURL: data.publisherPhotoURL || null,
+            imageUrl: data.imageUrl || null,
+            type: data.type,
+            profileType: data.profileType,
+            content: data.content,
+            instructions: data.instructions,
+            additionalIngredients: data.additionalIngredients,
+            equipment: data.equipment,
+            likesCount: data.likesCount || 0,
+            commentsCount: data.commentsCount || 0,
             mentions: data.mentions || [],
+            createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
         } as PublishedPost;
     });
 }
@@ -209,11 +232,20 @@ export async function getPost(postId: string): Promise<PublishedPost | null> {
     const createdAtTimestamp = data.createdAt as Timestamp;
     return {
         id: docSnap.id,
-        ...data,
-        createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
+        publisherId: data.publisherId,
+        publisherName: data.publisherName,
+        publisherPhotoURL: data.publisherPhotoURL || null,
+        imageUrl: data.imageUrl || null,
+        type: data.type,
+        profileType: data.profileType,
+        content: data.content,
+        instructions: data.instructions,
+        additionalIngredients: data.additionalIngredients,
+        equipment: data.equipment,
         likesCount: data.likesCount || 0,
         commentsCount: data.commentsCount || 0,
         mentions: data.mentions || [],
+        createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
     } as PublishedPost;
 }
 
@@ -257,11 +289,14 @@ export async function getComments(postId: string): Promise<Comment[]> {
         const createdAtTimestamp = data.createdAt as Timestamp;
         return {
             id: doc.id,
-            ...data,
-            createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
+            userId: data.userId,
+            userName: data.userName,
+            userPhotoURL: data.userPhotoURL || null,
+            text: data.text,
             parentId: data.parentId || null,
             likesCount: data.likesCount || 0,
             mentions: data.mentions || [],
+            createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
         } as Comment;
     });
 }
@@ -401,12 +436,15 @@ export async function getProfileData(userId: string): Promise<ProfileDataType | 
 
     return {
         id: userDoc.id,
-        ...data,
-        followersCount: followersSnap.size,
-        followingCount: followingSnap.size,
+        name: data.name,
+        username: data.username,
+        photoURL: data.photoURL,
+        isPremium: data.isPremium,
         profileType: data.profileType || 'public',
         notificationSettings: data.notificationSettings || { publicFeed: true, followingFeed: true },
         lastVisitedFeeds: data.lastVisitedFeeds || null,
+        followersCount: followersSnap.size,
+        followingCount: followingSnap.size,
         createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
     } as ProfileDataType;
 }
@@ -497,7 +535,12 @@ export async function getNotifications(userId: string): Promise<Notification[]> 
         const createdAtTimestamp = data.createdAt as Timestamp;
         return {
             id: doc.id,
-            ...data,
+            type: data.type,
+            fromUser: data.fromUser,
+            postId: data.postId,
+            commentId: data.commentId,
+            contentSnippet: data.contentSnippet,
+            read: data.read,
             createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
         } as Notification;
     });
@@ -639,9 +682,20 @@ export async function getFollowingPosts(userId: string): Promise<PublishedPost[]
             const createdAtTimestamp = data.createdAt as Timestamp;
             posts.push({
                 id: doc.id,
-                ...data,
-                createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
+                publisherId: data.publisherId,
+                publisherName: data.publisherName,
+                publisherPhotoURL: data.publisherPhotoURL || null,
+                imageUrl: data.imageUrl || null,
+                type: data.type,
+                profileType: data.profileType,
+                content: data.content,
+                instructions: data.instructions,
+                additionalIngredients: data.additionalIngredients,
+                equipment: data.equipment,
+                likesCount: data.likesCount || 0,
+                commentsCount: data.commentsCount || 0,
                 mentions: data.mentions || [],
+                createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
             } as PublishedPost);
         });
     });
