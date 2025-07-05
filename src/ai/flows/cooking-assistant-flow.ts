@@ -48,7 +48,8 @@ export type CookingAssistantInput = z.infer<typeof CookingAssistantInputSchema>;
 const prompt = ai.definePrompt({
   name: 'cookingAssistantPrompt',
   input: { schema: CookingAssistantInputSchema },
-  output: { schema: z.string() },
+  // Allow the AI to return null if its safety filters are triggered.
+  output: { schema: z.string().nullable() },
   prompt: `Eres ChefAI, un asistente de cocina amigable y experto. Estás guiando a un usuario a través de una receta, paso a paso, por voz.
 
 Tu personalidad: Alentador, claro y conciso. Eres un profesor paciente.
@@ -118,8 +119,10 @@ const getCookingResponseFlow = ai.defineFlow(
   async (input) => {
     // Generate the text response based on the conversation.
     const { output: responseText } = await prompt(input);
+    
+    // If the model returns null (e.g., due to safety filters), provide a safe fallback response.
     if (!responseText) {
-        throw new Error('La IA no pudo generar una respuesta.');
+      return 'Lo siento, no he podido procesar esa pregunta. ¿Podrías intentarlo de nuevo de otra manera?';
     }
     return responseText;
   }
