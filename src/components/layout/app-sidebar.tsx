@@ -27,7 +27,6 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarFooter,
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
@@ -204,10 +203,8 @@ export function AppSidebar() {
             </SidebarMenuItem>
           ))}
           
-        </SidebarMenu>
-      </SidebarContent>
-      <SidebarFooter>
-         <SidebarMenuItem>
+           <Separator className="my-2" />
+           <SidebarMenuItem>
               <Link href="/settings">
                 <SidebarMenuButton isActive={pathname.startsWith('/settings')} tooltip="Ajustes">
                   <Settings />
@@ -215,7 +212,6 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
-            <Separator className="my-2" />
          {user ? (
              <SidebarMenuItem>
                 <SidebarMenuButton onClick={handleLogout} tooltip="Cerrar Sesión">
@@ -236,7 +232,8 @@ export function AppSidebar() {
               </Link>
             </SidebarMenuItem>
           ) : null }
-      </SidebarFooter>
+        </SidebarMenu>
+      </SidebarContent>
     </Sidebar>
   );
 }
