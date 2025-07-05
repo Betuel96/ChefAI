@@ -164,6 +164,7 @@ export async function publishMenuAsPost(
     publisherPhotoURL: userPhotoURL,
     type: 'menu',
     profileType: userData.profileType || 'public',
+    canMonetize: userData.canMonetize || false,
     content: caption,
     weeklyMealPlan: menu.weeklyMealPlan,
     likesCount: 0,

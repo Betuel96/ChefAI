@@ -81,6 +81,7 @@ const normalizePostData = (doc: any): PublishedPost => {
         likesCount: data.likesCount || 0,
         commentsCount: data.commentsCount || 0,
         mentions: data.mentions || [],
+        canMonetize: data.canMonetize || false,
         createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
     } as PublishedPost;
 };
@@ -113,6 +114,7 @@ export async function createPost(
         publisherName: userName,
         publisherPhotoURL: userPhotoURL,
         profileType: userData.profileType || 'public', // Save the user's privacy setting at time of post
+        canMonetize: userData.canMonetize || false, // Save monetization status at time of post
         createdAt: serverTimestamp(),
         likesCount: 0,
         commentsCount: 0,
@@ -189,6 +191,7 @@ export async function publishRecipeAsPost(
         publisherPhotoURL,
         type: 'recipe' as const,
         profileType: userData.profileType || 'public',
+        canMonetize: userData.canMonetize || false,
         content: recipe.name,
         instructions: recipe.instructions,
         ingredients: recipe.ingredients,
@@ -484,6 +487,8 @@ export async function getProfileData(userId: string): Promise<ProfileDataType | 
         profileType: data.profileType || 'public',
         notificationSettings: data.notificationSettings || { publicFeed: true, followingFeed: true },
         lastVisitedFeeds: data.lastVisitedFeeds || null,
+        canMonetize: data.canMonetize || false,
+        stripeConnectAccountId: data.stripeConnectAccountId || null,
         followersCount: followersSnap.size,
         followingCount: followingSnap.size,
         createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),

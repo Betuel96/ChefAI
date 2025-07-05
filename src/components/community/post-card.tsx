@@ -26,7 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { UtensilsCrossed, UserCircle, MessageCircle, ChefHat, MoreVertical, Trash2, Pencil, Share2, MenuSquare, Bookmark } from 'lucide-react';
+import { UtensilsCrossed, UserCircle, MessageCircle, ChefHat, MoreVertical, Trash2, Pencil, Share2, MenuSquare, Bookmark, HeartHandshake, Loader2 } from 'lucide-react';
 import { PostMedia } from './post-media';
 
 export const PostCard = ({ post, onPostDeleted }: { post: PublishedPost, onPostDeleted: (postId: string) => void }) => {
@@ -38,6 +38,7 @@ export const PostCard = ({ post, onPostDeleted }: { post: PublishedPost, onPostD
     const [isSaved, setIsSaved] = useState(false);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isTipping, setIsTipping] = useState(false);
 
     const isOwner = user?.uid === post.publisherId;
 
@@ -81,6 +82,37 @@ export const PostCard = ({ post, onPostDeleted }: { post: PublishedPost, onPostD
                     variant: 'destructive'
                 });
             }
+        }
+    };
+    
+    const handleTip = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!user) {
+            toast({ title: 'Debes iniciar sesión para dar una propina.', variant: 'destructive' });
+            return;
+        }
+        setIsTipping(true);
+        try {
+             const response = await fetch('/api/create-tip-session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    tipperId: user.uid,
+                    creatorId: post.publisherId,
+                    postId: post.id,
+                    postContent: post.content,
+                }),
+            });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'No se pudo iniciar el proceso de pago.');
+            }
+            const { url } = await response.json();
+            if (url) window.location.href = url;
+        } catch (error: any) {
+            toast({ title: "Error", description: error.message, variant: "destructive" });
+        } finally {
+            setIsTipping(false);
         }
     };
 
@@ -239,6 +271,12 @@ export const PostCard = ({ post, onPostDeleted }: { post: PublishedPost, onPostD
                 <Button variant="ghost" size="sm" onClick={handleSaveClick} className="flex items-center gap-2 text-muted-foreground">
                     <Bookmark className={cn("w-5 h-5 transition-colors", isSaved && "fill-primary text-primary")} />
                 </Button>
+                {post.canMonetize && !isOwner && (
+                    <Button variant="ghost" size="sm" onClick={handleTip} disabled={isTipping} className="flex items-center gap-2 text-muted-foreground hover:text-green-500">
+                        {isTipping ? <Loader2 className="w-5 h-5 animate-spin" /> : <HeartHandshake className="w-5 h-5" />}
+                        <span>Apoyar</span>
+                    </Button>
+                )}
                 <Button variant="ghost" size="sm" onClick={handleShare} className="flex items-center gap-2 text-muted-foreground ml-auto">
                     <Share2 className="w-5 h-5" />
                 </Button>

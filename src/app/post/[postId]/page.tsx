@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -29,7 +29,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
-import { UserCircle, MessageCircle, Send, ArrowLeft, ChefHat, MoreVertical, Trash2, Pencil, Reply, Share2, Bookmark } from 'lucide-react';
+import { UserCircle, MessageCircle, Send, ArrowLeft, ChefHat, MoreVertical, Trash2, Pencil, Reply, Share2, Bookmark, HeartHandshake, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
@@ -231,6 +231,7 @@ export default function PostDetailPage() {
     const { user } = useAuth();
     const router = useRouter();
     const params = useParams<{ postId: string }>();
+    const searchParams = useSearchParams();
     const { toast } = useToast();
 
     const [post, setPost] = useState<PublishedPost | null>(null);
@@ -241,6 +242,7 @@ export default function PostDetailPage() {
     const [isSaved, setIsSaved] = useState(false);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isTipping, setIsTipping] = useState(false);
 
     const isOwner = user?.uid === post?.publisherId;
 
@@ -285,6 +287,17 @@ export default function PostDetailPage() {
         fetchPostData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [params.postId, user]);
+
+    useEffect(() => {
+        if (searchParams.get('tip_success')) {
+            toast({
+                title: "¡Gracias por tu apoyo!",
+                description: "Tu propina ha sido enviada al creador.",
+            });
+            // Clean up the URL
+            router.replace(`/post/${params.postId}`, undefined);
+        }
+    }, [searchParams, toast, router, params.postId]);
 
     const handleAddComment = async (text: string, mentions: Mention[]) => {
         if (!user || !post) return;
@@ -332,6 +345,36 @@ export default function PostDetailPage() {
         }
     };
     
+    const handleTip = async () => {
+        if (!user || !post) {
+            toast({ title: 'Debes iniciar sesión para dar una propina.', variant: 'destructive' });
+            return;
+        }
+        setIsTipping(true);
+        try {
+             const response = await fetch('/api/create-tip-session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    tipperId: user.uid,
+                    creatorId: post.publisherId,
+                    postId: post.id,
+                    postContent: post.content,
+                }),
+            });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'No se pudo iniciar el proceso de pago.');
+            }
+            const { url } = await response.json();
+            if (url) window.location.href = url;
+        } catch (error: any) {
+            toast({ title: "Error", description: error.message, variant: "destructive" });
+        } finally {
+            setIsTipping(false);
+        }
+    };
+
     const handleLikeClick = async () => {
         if (!user || !post) {
             toast({ title: 'Debes iniciar sesión para reaccionar.', variant: 'destructive'});
@@ -502,6 +545,12 @@ export default function PostDetailPage() {
                      <Button variant="ghost" onClick={handleSaveClick} className="flex items-center gap-2 text-muted-foreground">
                         <Bookmark className={cn("w-6 h-6 transition-colors", isSaved && "fill-primary text-primary")} />
                     </Button>
+                    {post.canMonetize && !isOwner && (
+                        <Button variant="ghost" onClick={handleTip} disabled={isTipping} className="flex items-center gap-2 text-muted-foreground hover:text-green-500">
+                             {isTipping ? <Loader2 className="w-6 h-6 animate-spin" /> : <HeartHandshake className="w-6 h-6" />}
+                            <span className="font-semibold">Apoyar</span>
+                        </Button>
+                    )}
                     <Button variant="ghost" onClick={handleShare} className="flex items-center gap-2 text-muted-foreground ml-auto">
                         <Share2 className="w-6 h-6" />
                     </Button>

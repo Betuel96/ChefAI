@@ -130,6 +130,9 @@ export interface PublishedPost {
 
     // Mentions
     mentions?: Mention[];
+
+    // Monetization
+    canMonetize?: boolean;
 }
 
 export interface SavedPostReference {
