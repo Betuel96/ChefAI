@@ -28,22 +28,36 @@ export async function POST(req: Request) {
     const session = event.data.object as Stripe.Checkout.Session;
     
     const userId = session.metadata?.userId;
+    const priceId = session.metadata?.priceId;
 
-    if (!userId) {
-      console.error('❌ Error: No se encontró el userId en los metadatos de la sesión de Stripe.');
-      return new NextResponse('Webhook Error: Faltan metadatos del usuario.', { status: 400 });
+    if (!userId || !priceId) {
+      console.error('❌ Error: Faltan metadatos de usuario o del plan en la sesión de Stripe.');
+      return new NextResponse('Webhook Error: Faltan metadatos de usuario o del plan.', { status: 400 });
     }
     
-    console.log(`⏳ Procesando suscripción para el usuario: ${userId}`);
+    console.log(`⏳ Procesando suscripción para el usuario: ${userId} con el plan ${priceId}`);
 
     try {
       if (!db) throw new Error('Firestore no está inicializado.');
       
       const userDocRef = doc(db, 'users', userId);
-      await updateDoc(userDocRef, {
-        isPremium: true,
-      });
-      console.log(`✅ Usuario ${userId} actualizado a Pro.`);
+      
+      let subscriptionTier: 'pro' | 'voice+' | null = null;
+      if (priceId === process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID) {
+          subscriptionTier = 'pro';
+      } else if (priceId === process.env.NEXT_PUBLIC_STRIPE_VOICE_PLUS_PRICE_ID) {
+          subscriptionTier = 'voice+';
+      }
+
+      if (subscriptionTier) {
+        await updateDoc(userDocRef, {
+            isPremium: true,
+            subscriptionTier: subscriptionTier,
+        });
+        console.log(`✅ Usuario ${userId} actualizado a ${subscriptionTier}.`);
+      } else {
+        console.error(`❌ Error: priceId ${priceId} no reconocido.`);
+      }
 
     } catch (error) {
       console.error('❌ Error al actualizar el documento del usuario en Firestore:', error);

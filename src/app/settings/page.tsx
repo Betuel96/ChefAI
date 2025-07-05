@@ -12,23 +12,27 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { EditProfileForm } from '@/components/profile/EditProfileForm';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { ArrowLeft, CheckCircle, Gem, LogIn, Mail, VenetianMask, Terminal, Shield, ShieldQuestion, BellRing } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Gem, LogIn, Mail, VenetianMask, Terminal, ShieldQuestion, BellRing, Sparkles } from 'lucide-react';
 
 const proFeatures = [
   'Generaciones ilimitadas de recetas',
   'Generaciones ilimitadas de planes de comidas',
   'Guardado ilimitado en la nube',
   'Acceso anticipado a nuevas funciones',
-  'Soporte prioritario',
-  'Sin anuncios',
 ];
 
+const voicePlusFeatures = [
+    'Todo lo incluido en el plan Pro',
+    'Asistente de cocina por voz con IA',
+    'Generación de imágenes de recetas',
+    'Soporte prioritario',
+];
 
 const SettingsPageSkeleton = () => (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -56,13 +60,13 @@ const AccountSettings = ({ profile, onProfileUpdate }: { profile: ProfileData, o
 
   if (!user) return null;
 
-  const handleUpgrade = async () => {
+  const handleUpgrade = async (priceId: string) => {
     setIsRedirecting(true);
     try {
       const response = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.uid }),
+        body: JSON.stringify({ userId: user.uid, priceId }),
       });
       if (!response.ok) {
         const errorData = await response.json();
@@ -77,7 +81,8 @@ const AccountSettings = ({ profile, onProfileUpdate }: { profile: ProfileData, o
         description: error.message || 'No se pudo redirigir a la página de pago. Inténtalo de nuevo.',
         variant: 'destructive',
       });
-      setIsRedirecting(false);
+    } finally {
+        setIsRedirecting(false);
     }
   };
 
@@ -234,49 +239,80 @@ const AccountSettings = ({ profile, onProfileUpdate }: { profile: ProfileData, o
 
         </div>
         <div className="lg:col-span-3">
-             <Card className="shadow-lg border-2 border-primary/50">
+             <Card className="shadow-lg">
                 <CardHeader className="text-center">
                     <div className="mx-auto bg-primary/10 p-3 rounded-full w-fit mb-4">
                         <Gem className="w-10 h-10 text-primary" />
                     </div>
-                    <CardTitle className="font-headline text-3xl text-primary">ChefAI Pro</CardTitle>
+                    <CardTitle className="font-headline text-3xl text-primary">Planes ChefAI</CardTitle>
                     <CardDescription className="text-base">
                         Desbloquea todo el potencial de tu asistente de cocina.
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                    <div className="flex items-center justify-between rounded-lg bg-muted/50 p-4">
-                        <div>
-                            <p className="font-bold">{user.isPremium ? 'Suscripción a Pro Activa' : 'Activar ChefAI Pro'}</p>
-                            <p className="text-xs text-muted-foreground">{user.isPremium ? '¡Gracias por tu apoyo!' : 'Desbloquea funciones ilimitadas.'}</p>
-                        </div>
-                        <Switch
-                            checked={!!user.isPremium}
-                            onCheckedChange={(checked) => {
-                                if (checked && !user.isPremium) handleUpgrade();
-                            }}
-                            disabled={!!user.isPremium || isRedirecting}
-                            aria-readonly
-                        />
-                    </div>
-                    <ul className="space-y-3 text-sm">
-                        {proFeatures.map((feature) => (
-                        <li key={feature} className="flex items-center gap-3">
-                            <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                            <span className="text-muted-foreground">{feature}</span>
-                        </li>
-                        ))}
-                    </ul>
-                    {!user.isPremium && (
-                        <>
-                            <Button onClick={handleUpgrade} className="w-full text-lg py-6" disabled={isRedirecting}>
-                                {isRedirecting ? 'Redirigiendo a pago...' : 'Obtener ChefAI Pro'}
-                            </Button>
-                            <p className="text-xs text-muted-foreground text-center mt-2">
-                                La suscripción se renueva automáticamente. Cancela en cualquier momento.
-                            </p>
-                        </>
-                    )}
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Pro Plan */}
+                    <Card className={user?.subscriptionTier === 'pro' ? 'border-2 border-primary' : ''}>
+                        <CardHeader>
+                            <CardTitle className="font-headline text-2xl">Pro</CardTitle>
+                            <CardDescription>$5 / mes</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <ul className="space-y-3 text-sm">
+                                {proFeatures.map((feature) => (
+                                <li key={feature} className="flex items-center gap-3">
+                                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                                    <span className="text-muted-foreground">{feature}</span>
+                                </li>
+                                ))}
+                            </ul>
+                        </CardContent>
+                        <CardFooter>
+                            {user?.subscriptionTier === 'pro' ? (
+                                <Button className="w-full" disabled>Suscripción Activa</Button>
+                            ) : (
+                                <Button 
+                                    onClick={() => handleUpgrade(process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID!)} 
+                                    className="w-full"
+                                    disabled={isRedirecting || !!user?.subscriptionTier}
+                                >
+                                    Obtener Pro
+                                </Button>
+                            )}
+                        </CardFooter>
+                    </Card>
+
+                    {/* Voice+ Plan */}
+                    <Card className={user?.subscriptionTier === 'voice+' ? 'border-2 border-primary' : ''}>
+                        <CardHeader>
+                            <CardTitle className="font-headline text-2xl flex items-center gap-2">
+                                Voice+ <Sparkles className="w-5 h-5 text-primary" />
+                            </CardTitle>
+                            <CardDescription>$15 / mes</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                             <ul className="space-y-3 text-sm">
+                                {voicePlusFeatures.map((feature) => (
+                                <li key={feature} className="flex items-center gap-3">
+                                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                                    <span className="text-muted-foreground">{feature}</span>
+                                </li>
+                                ))}
+                            </ul>
+                        </CardContent>
+                        <CardFooter>
+                            {user?.subscriptionTier === 'voice+' ? (
+                                <Button className="w-full" disabled>Suscripción Activa</Button>
+                            ) : (
+                                <Button 
+                                    onClick={() => handleUpgrade(process.env.NEXT_PUBLIC_STRIPE_VOICE_PLUS_PRICE_ID!)}
+                                    className="w-full"
+                                    disabled={isRedirecting || user?.subscriptionTier === 'pro'}
+                                >
+                                    Obtener Voice+
+                                </Button>
+                            )}
+                        </CardFooter>
+                    </Card>
                 </CardContent>
             </Card>
         </div>
@@ -364,7 +400,7 @@ export default function SettingsPage() {
 
     return (
          <div className="max-w-4xl mx-auto space-y-8">
-            <Button variant="ghost" onClick={() => router.push('/pro')}>
+            <Button variant="ghost" onClick={() => router.push(`/profile/${user.uid}`)}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Volver a mi perfil
             </Button>

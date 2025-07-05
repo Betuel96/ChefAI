@@ -59,6 +59,7 @@ export interface UserAccount {
     email: string | null;
     photoURL: string | null;
     isPremium: boolean;
+    subscriptionTier?: 'pro' | 'voice+';
     createdAt: string; 
     profileType: 'public' | 'private';
     notificationSettings?: {

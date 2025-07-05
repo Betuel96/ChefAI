@@ -9,14 +9,10 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
 export async function POST(req: Request) {
   const origin = headers().get('origin') || 'http://localhost:9002';
   
-  // This is a simplified check. In a real app, you'd use a more robust
-  // way to get the current user, perhaps from a session cookie or token.
-  // For this example, we assume if the request is made, the user is logged in
-  // on the client-side, which should be protected.
-  const { userId } = await req.json();
+  const { userId, priceId } = await req.json();
 
-  if (!userId) {
-    return NextResponse.json({ error: 'Usuario no autenticado.' }, { status: 401 });
+  if (!userId || !priceId) {
+    return NextResponse.json({ error: 'Usuario o plan no especificado.' }, { status: 400 });
   }
 
   try {
@@ -24,15 +20,16 @@ export async function POST(req: Request) {
       payment_method_types: ['card'],
       line_items: [
         {
-          price: process.env.STRIPE_PRICE_ID, // Add your Stripe Price ID to .env
+          price: priceId,
           quantity: 1,
         },
       ],
       mode: 'subscription',
-      success_url: `${origin}/pro?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/pro`,
+      success_url: `${origin}/settings?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/settings`,
       metadata: {
         userId: userId,
+        priceId: priceId,
       },
     });
 

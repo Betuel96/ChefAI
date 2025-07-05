@@ -58,6 +58,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     email: docData.email,
                     photoURL: docData.photoURL,
                     isPremium: docData.isPremium,
+                    subscriptionTier: docData.subscriptionTier,
                     profileType: docData.profileType || 'public',
                     notificationSettings: docData.notificationSettings || { publicFeed: true, followingFeed: true },
                     lastVisitedFeeds: docData.lastVisitedFeeds || null,
