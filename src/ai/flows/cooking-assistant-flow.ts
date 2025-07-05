@@ -75,30 +75,39 @@ Equipo:
     // The last message from the user is the main prompt
     const currentPromptContent = historyForModel.pop()?.content || [];
 
-    // The key change is REMOVING the `output` schema from the ai.generate call
-    // to default to simple text generation. This should avoid the schema validation error.
-    const { output } = await ai.generate({
-      model: 'googleai/gemini-1.5-flash-latest',
-      system: systemPrompt,
-      history: historyForModel,
-      prompt: currentPromptContent,
-      config: {
-        temperature: 0.7,
-        safetySettings: [
-          { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
-          { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
-          { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
-          { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
-        ],
-      },
-    });
+    try {
+        const { output } = await ai.generate({
+            model: 'googleai/gemini-1.5-flash-latest',
+            system: systemPrompt,
+            history: historyForModel,
+            prompt: currentPromptContent,
+            config: {
+            temperature: 0.7,
+            safetySettings: [
+                { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+                { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
+                { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+                { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+            ],
+            },
+        });
 
-    if (!output) {
-      // This fallback is now even more important, in case the model legitimately returns nothing.
-      return 'Lo siento, no he podido procesar esa pregunta. ¿Podrías intentarlo de nuevo de otra manera?';
+        if (!output) {
+            return 'Lo siento, no he podido procesar esa pregunta. ¿Podrías intentarlo de nuevo de otra manera?';
+        }
+        return output;
+    } catch (error: any) {
+        console.error("[Cooking Assistant Error]", error);
+
+        if (error.message && (error.message.includes('API key not valid') || error.message.includes('permission denied') || error.message.includes('PERMISSION_DENIED'))) {
+             throw new Error("ERROR DE CONFIGURACIÓN DE IA: Tu clave de API no es válida o la API necesaria no está habilitada. Por favor, ve a la Consola de Google Cloud de tu proyecto, busca y habilita la 'Generative Language API' o la 'Vertex AI API'.");
+        }
+        if (error.message && error.message.includes('billing')) {
+            throw new Error("ERROR DE FACTURACIÓN DE IA: Has excedido la cuota gratuita. Por favor, asegúrate de que la facturación esté habilitada para tu proyecto de Google Cloud para continuar.");
+        }
+        
+        throw new Error('El asistente de IA no pudo responder. Revisa la consola del servidor para ver el error detallado.');
     }
-
-    return output;
   }
 );
 
