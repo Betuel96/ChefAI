@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { UserCircle } from 'lucide-react';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
-import { cookingAssistant, CookingAssistantInput } from '@/ai/flows/cooking-assistant-flow';
+import { getCookingResponse, CookingAssistantInput } from '@/ai/flows/cooking-assistant-flow';
 import { generateSpokenInstructions } from '@/ai/flows/text-to-speech';
 
 interface CookingAssistantProps {
@@ -36,24 +36,37 @@ export function CookingAssistant({ isOpen, onOpenChange, recipe }: CookingAssist
   const handleSpeechResult = async (userQuery: string) => {
     if (!userQuery.trim()) return;
 
-    setIsProcessing(true);
+    // Immediately update the conversation with the user's query
     const updatedConversation = [...conversation, { role: 'user' as const, content: userQuery }];
     setConversation(updatedConversation);
+    setIsProcessing(true);
 
     try {
       const input: CookingAssistantInput = {
         recipe,
-        history: updatedConversation,
+        history: updatedConversation, // Pass the fresh conversation history
         userQuery,
       };
-      const result = await cookingAssistant(input);
-      setConversation(prev => [...prev, { role: 'model', content: result.responseText }]);
-      setAudioUrl(result.audioDataUri);
+
+      // 1. Get the text response first for faster UI update
+      const responseText = await getCookingResponse(input);
+      setConversation(prev => [...prev, { role: 'model', content: responseText }]);
+
+      // 2. Now generate the audio for the response we just received
+      const audioResult = await generateSpokenInstructions(responseText);
+      setAudioUrl(audioResult.audioDataUri);
+
     } catch (error) {
       console.error("Error with cooking assistant:", error);
       const errorMessage = "Lo siento, he tenido un problema. ¿Podrías repetirlo?";
       setConversation(prev => [...prev, { role: 'model', content: errorMessage }]);
-      // You could optionally generate TTS for the error message as well
+      // Optionally generate TTS for the error message
+      try {
+        const errorAudio = await generateSpokenInstructions(errorMessage);
+        setAudioUrl(errorAudio.audioDataUri);
+      } catch (ttsError) {
+        console.error("Failed to generate TTS for error message:", ttsError);
+      }
     } finally {
       setIsProcessing(false);
     }
