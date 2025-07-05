@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A conversational cooking assistant AI agent.
@@ -100,7 +101,7 @@ Equipo:
         console.error("[Cooking Assistant Error]", error);
 
         if (error.message && (error.message.includes('API key not valid') || error.message.includes('permission denied') || error.message.includes('PERMISSION_DENIED'))) {
-             throw new Error("ERROR DE CONFIGURACIÓN DE IA: Tu clave de API no es válida o la API necesaria no está habilitada. Por favor, ve a la Consola de Google Cloud de tu proyecto, busca y habilita la 'Generative Language API' o la 'Vertex AI API'.");
+             throw new Error("ERROR DE CONFIGURACIÓN DE IA: Tu clave de API no es válida o la API necesaria no está habilitada. Por favor, ve a la Consola de Google Cloud de tu proyecto, busca y habilita la 'Vertex AI API'.");
         }
         if (error.message && error.message.includes('billing')) {
             throw new Error("ERROR DE FACTURACIÓN DE IA: Has excedido la cuota gratuita. Por favor, asegúrate de que la facturación esté habilitada para tu proyecto de Google Cloud para continuar.");
