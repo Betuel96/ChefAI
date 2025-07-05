@@ -34,7 +34,15 @@ export const useSpeechRecognition = ({ onResult }: UseSpeechRecognitionProps) =>
     };
 
     const handleError = (event: SpeechRecognitionErrorEvent) => {
-      console.error('Speech recognition error', event.error);
+      // The 'aborted' error is thrown when the user agent stops the recognition.
+      // This can happen if the user stops talking, or if the recognition is
+      // programmatically stopped. It's not a critical error, so we can ignore it
+      // to avoid cluttering the console.
+      if (event.error === 'aborted' || event.error === 'no-speech') {
+        // Do nothing, this is expected behavior.
+      } else {
+        console.error('Speech recognition error', event.error);
+      }
       setIsListening(false);
     };
 
