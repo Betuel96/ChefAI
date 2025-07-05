@@ -19,11 +19,15 @@ const MealDetail = ({ title, meal }: { title: string, meal: Recipe | undefined }
       <div className="mt-2 space-y-3">
         <div>
           <h5 className="font-semibold">Ingredientes:</h5>
-          <p className="whitespace-pre-wrap text-muted-foreground text-sm">{meal.ingredients}</p>
+          <ul className="whitespace-pre-wrap text-muted-foreground text-sm list-disc list-inside">
+            {meal.ingredients.map((ing, i) => <li key={i}>{ing}</li>)}
+          </ul>
         </div>
         <div>
           <h5 className="font-semibold">Instrucciones:</h5>
-          <p className="whitespace-pre-wrap text-muted-foreground text-sm">{meal.instructions}</p>
+          <ol className="whitespace-pre-wrap text-muted-foreground text-sm list-decimal list-inside">
+            {meal.instructions.map((step, i) => <li key={i}>{step}</li>)}
+          </ol>
         </div>
       </div>
     </div>
@@ -38,17 +42,23 @@ export const PostContentViewer = ({ post }: { post: PublishedPost }) => {
           <Separator />
           <div>
               <h3 className="font-headline text-2xl font-semibold text-accent">Ingredientes</h3>
-              <p className="whitespace-pre-wrap mt-2">{post.additionalIngredients}</p>
+              <ul className="list-disc list-inside mt-2">
+                  {post.ingredients?.map((item, i) => <li key={i}>{item}</li>)}
+              </ul>
           </div>
           <Separator/>
           <div>
               <h3 className="font-headline text-2xl font-semibold text-accent">Instrucciones</h3>
-              <p className="whitespace-pre-wrap mt-2">{post.instructions}</p>
+              <ol className="list-decimal list-inside mt-2">
+                   {post.instructions?.map((item, i) => <li key={i}>{item}</li>)}
+              </ol>
           </div>
           <Separator/>
           <div>
               <h3 className="font-headline text-2xl font-semibold text-accent">Equipo Necesario</h3>
-              <p className="whitespace-pre-wrap mt-2">{post.equipment}</p>
+              <ul className="list-disc list-inside mt-2">
+                  {post.equipment?.map((item, i) => <li key={i}>{item}</li>)}
+              </ul>
           </div>
       </div>
     )

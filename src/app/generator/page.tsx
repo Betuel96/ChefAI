@@ -185,16 +185,22 @@ export default function RecipeGeneratorPage() {
                     />
                  </div>
               <div>
-                <h3 className="font-headline text-lg font-semibold text-accent">Ingredientes Adicionales</h3>
-                <p className="whitespace-pre-wrap text-sm text-muted-foreground">{generatedRecipe.additionalIngredients}</p>
+                <h3 className="font-headline text-lg font-semibold text-accent">Ingredientes</h3>
+                <ul className="list-disc list-inside mt-2 text-muted-foreground">
+                    {generatedRecipe.ingredients.map((ing, i) => <li key={i}>{ing}</li>)}
+                </ul>
               </div>
               <div>
                 <h3 className="font-headline text-lg font-semibold text-accent">Instrucciones</h3>
-                <p className="whitespace-pre-wrap text-sm text-muted-foreground">{generatedRecipe.instructions}</p>
+                <ol className="list-decimal list-inside mt-2 text-muted-foreground">
+                    {generatedRecipe.instructions.map((step, i) => <li key={i}>{step}</li>)}
+                </ol>
               </div>
                <div>
                 <h3 className="font-headline text-lg font-semibold text-accent">Equipo Necesario</h3>
-                <p className="whitespace-pre-wrap text-sm text-muted-foreground">{generatedRecipe.equipment}</p>
+                <ul className="list-disc list-inside mt-2 text-muted-foreground">
+                    {generatedRecipe.equipment.map((item, i) => <li key={i}>{item}</li>)}
+                </ul>
               </div>
             </CardContent>
             <CardFooter>

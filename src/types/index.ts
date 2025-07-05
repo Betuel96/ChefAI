@@ -1,11 +1,11 @@
 import type { User } from 'firebase/auth';
 
-// The core recipe structure from AI (kept for when it's re-enabled)
+// The core recipe structure from AI
 export interface Recipe {
     name: string;
-    instructions: string;
-    additionalIngredients: string;
-    equipment: string;
+    instructions: string[];
+    ingredients: string[];
+    equipment: string[];
 }
 // A recipe saved to a user's private collection
 export type SavedRecipe = Recipe & { 
@@ -98,9 +98,9 @@ export interface PublishedPost {
     content: string; 
     
     // These are only present if type is 'recipe'
-    instructions?: string;
-    additionalIngredients?: string;
-    equipment?: string;
+    instructions?: string[];
+    ingredients?: string[];
+    equipment?: string[];
     
     // This is only present if type is 'menu'
     weeklyMealPlan?: DailyMealPlan[];

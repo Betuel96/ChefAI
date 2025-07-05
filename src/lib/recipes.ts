@@ -9,6 +9,7 @@ import {
   query,
   orderBy,
   Timestamp,
+  getDoc,
 } from 'firebase/firestore';
 import { db, storage } from './firebase';
 import type { Recipe, SavedRecipe } from '@/types';
@@ -78,9 +79,9 @@ export async function getRecipes(userId: string): Promise<SavedRecipe[]> {
       return {
         id: doc.id,
         name: data.name,
-        instructions: data.instructions,
-        additionalIngredients: data.additionalIngredients,
-        equipment: data.equipment,
+        instructions: data.instructions || [],
+        ingredients: data.ingredients || [],
+        equipment: data.equipment || [],
         mediaUrl: data.mediaUrl || null,
         mediaType: data.mediaType || null,
         createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),

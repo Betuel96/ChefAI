@@ -41,13 +41,12 @@ export type CreateWeeklyMealPlanInput = z.infer<typeof CreateWeeklyMealPlanInput
 const MealSchema = z.object({
   name: z.string().describe('El nombre de la comida.'),
   ingredients: z
-    .string()
-
-    .describe('Una lista de ingredientes para la receta, separados por saltos de línea.'),
+    .array(z.string())
+    .describe('Un array de strings, donde cada string es un ingrediente con su cantidad (ej: "200g de harina").'),
   instructions: z
-    .string()
+    .array(z.string())
     .describe(
-      'Las instrucciones paso a paso para la receta, numeradas y separadas por saltos de línea.'
+      'Un array de strings, donde cada string es un paso de la preparación, numerado (ej: "1. Mezclar los ingredientes secos.").'
     ),
 });
 
@@ -74,9 +73,9 @@ const prompt = ai.definePrompt({
   name: 'createWeeklyMealPlanPrompt',
   input: {schema: CreateWeeklyMealPlanInputSchema},
   output: {schema: CreateWeeklyMealPlanOutputSchema},
-  prompt: `Eres un planificador de comidas experto y un genio culinario. Tu tarea es diseñar un plan de comidas semanal que sea emocionante, variado y delicioso, basándote en las preferencias del usuario.
+  prompt: `Eres un planificador de comidas experto y un genio culinario. Tu tarea es diseñar un plan de comidas semanal que sea emocionante, variado, delicioso y DETALLADO, basándote en las preferencias del usuario.
 
-**Instrucción CRÍTICA:** ¡La variedad es la clave absoluta! Cada vez que generes un plan, DEBE ser significativamente diferente a cualquier plan anterior, incluso con las mismas preferencias. Nunca repitas recetas entre los días de un mismo plan, y evita repetir platos principales en planes consecutivos. Varía constantemente los tipos de platos, las cocinas del mundo (italiana, mexicana, asiática, mediterránea, etc.), y los métodos de cocción para crear un menú emocionante y que no sea monótono.
+**Instrucción CRÍTICA:** ¡La variedad y el detalle son la clave absoluta! Cada vez que generes un plan, DEBE ser significativamente diferente a cualquier plan anterior. Varía constantemente los tipos de platos, las cocinas del mundo (italiana, mexicana, asiática, etc.), y los métodos de cocción.
 
 **Preferencias del Usuario:**
 - **Ingredientes disponibles:** {{{ingredients}}}
@@ -84,18 +83,17 @@ const prompt = ai.definePrompt({
 - **Número de días:** {{{numberOfDays}}}
 - **Personas a servir:** {{{numberOfPeople}}}
 
-**Instrucciones:**
+**Instrucciones de Formato DETALLADO:**
 1.  Crea un plan que cubra desayuno, almuerzo (comida ligera), comida (plato principal) y cena para cada uno de los \`{{{numberOfDays}}}\` días.
-2.  La respuesta DEBE ser un objeto JSON válido. La clave de nivel superior debe ser \`weeklyMealPlan\`.
-3.  El valor de \`weeklyMealPlan\` DEBE ser un ARRAY de objetos.
-4.  Cada objeto en el array representa un día y debe contener las siguientes claves: \`day\`, \`breakfast\`, \`lunch\`, \`comida\`, y \`dinner\`.
+2.  La respuesta DEBE ser un objeto JSON válido.
+3.  El objeto JSON debe contener una clave de nivel superior llamada \`weeklyMealPlan\`, que es un ARRAY de objetos de día.
+4.  Cada objeto de día debe tener las claves: \`day\`, \`breakfast\`, \`lunch\`, \`comida\`, y \`dinner\`.
 5.  Para cada comida (\`breakfast\`, \`lunch\`, \`comida\`, \`dinner\`), proporciona un objeto con las siguientes claves:
-    - \`name\`: El nombre de la receta.
-    - \`ingredients\`: Una lista de ingredientes necesarios, cada uno en una nueva línea (separados por \\n).
-    - \`instructions\`: Los pasos de la preparación, **numerados**, y cada paso en una nueva línea (separados por \\n).
-6.  Utiliza los ingredientes disponibles como base principal para las recetas.
+    - \`name\`: El nombre de la receta (ej: "Salmón al horno con espárragos").
+    - \`ingredients\`: Un **ARRAY de strings**. Cada string debe ser un ingrediente individual con su cantidad (ej: ["1 filete de salmón de 150g", "1 manojo de espárragos", "1 cucharada de aceite de oliva", "Sal y pimienta al gusto"]).
+    - \`instructions\`: Un **ARRAY de strings**. Cada string debe ser un paso de preparación claro y **numerado** (ej: ["1. Precalentar el horno a 200°C.", "2. Colocar el salmón y los espárragos en una bandeja.", "3. Rociar con aceite, sal y pimienta."]).
+6.  Utiliza los ingredientes disponibles como base, pero añade otros ingredientes comunes si es necesario para crear recetas completas.
 7.  Respeta estrictamente las preferencias dietéticas.
-8.  Asegúrate de que el plan sea variado y minimice el desperdicio de alimentos.
 `,
   config: {
     temperature: 1.0,

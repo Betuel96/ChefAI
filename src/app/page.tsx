@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import type { DailyMealPlan } from '@/types';
+import type { DailyMealPlan, Recipe } from '@/types';
 import { UtensilsCrossed } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { getMenus } from '@/lib/menus';
@@ -13,17 +13,21 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { EmailVerificationBanner } from '@/components/layout/email-verification-banner';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
-const MealDetailCard = ({ meal }: { meal: DailyMealPlan['breakfast'] | undefined }) => {
+const MealDetailCard = ({ meal }: { meal: Recipe | undefined }) => {
   if (!meal || !meal.name) return <p className="text-muted-foreground px-4 pb-4">No hay receta planificada para esta comida.</p>;
   return (
     <div className="px-4 pb-4 space-y-3">
         <div>
             <h4 className="font-semibold text-accent">Ingredientes:</h4>
-            <p className="whitespace-pre-wrap text-sm text-muted-foreground">{meal.ingredients}</p>
+            <ul className="list-disc list-inside mt-2 text-sm text-muted-foreground">
+                {meal.ingredients.map((ing, i) => <li key={i}>{ing}</li>)}
+            </ul>
         </div>
         <div>
             <h4 className="font-semibold text-accent">Instrucciones:</h4>
-            <p className="whitespace-pre-wrap text-sm text-muted-foreground">{meal.instructions}</p>
+            <ol className="list-decimal list-inside mt-2 text-sm text-muted-foreground">
+                {meal.instructions.map((step, i) => <li key={i}>{step}</li>)}
+            </ol>
         </div>
     </div>
   )

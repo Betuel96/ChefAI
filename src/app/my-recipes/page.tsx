@@ -155,18 +155,24 @@ export default function MyRecipesPage() {
                 )}
 
                 <div>
-                    <h3 className="font-headline text-xl font-semibold text-accent">Instrucciones</h3>
-                    <p className="whitespace-pre-wrap">{recipe.instructions}</p>
+                    <h3 className="font-headline text-xl font-semibold text-accent">Ingredientes</h3>
+                    <ul className="list-disc list-inside mt-2">
+                        {recipe.ingredients.map((item, i) => <li key={i}>{item}</li>)}
+                    </ul>
                 </div>
                 <Separator/>
                 <div>
-                    <h3 className="font-headline text-xl font-semibold text-accent">Ingredientes Adicionales</h3>
-                    <p className="whitespace-pre-wrap">{recipe.additionalIngredients}</p>
+                    <h3 className="font-headline text-xl font-semibold text-accent">Instrucciones</h3>
+                    <ol className="list-decimal list-inside mt-2">
+                        {recipe.instructions.map((item, i) => <li key={i}>{item}</li>)}
+                    </ol>
                 </div>
                 <Separator/>
                 <div>
                     <h3 className="font-headline text-xl font-semibold text-accent">Equipo Necesario</h3>
-                    <p className="whitespace-pre-wrap">{recipe.equipment}</p>
+                    <ul className="list-disc list-inside mt-2">
+                        {recipe.equipment.map((item, i) => <li key={i}>{item}</li>)}
+                    </ul>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 mt-6 pt-6 border-t">
                     <AlertDialog>

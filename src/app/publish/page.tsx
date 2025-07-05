@@ -34,7 +34,7 @@ const textPostSchema = z.object({
 const recipeFormSchema = z.object({
   content: z.string().min(5, 'El nombre debe tener al menos 5 caracteres.'),
   instructions: z.string().min(20, 'Las instrucciones deben tener al menos 20 caracteres.'),
-  additionalIngredients: z.string().min(10, 'Por favor, enumera algunos ingredientes.'),
+  ingredients: z.string().min(10, 'Por favor, enumera algunos ingredientes.'),
   equipment: z.string().min(3, 'Enumera al menos un equipo.'),
 });
 
@@ -85,7 +85,7 @@ export default function PublishPage() {
 
   const recipeForm = useForm<z.infer<typeof recipeFormSchema>>({
     resolver: zodResolver(recipeFormSchema),
-    defaultValues: { content: '', instructions: '', additionalIngredients: '', equipment: '' },
+    defaultValues: { content: '', instructions: '', ingredients: '', equipment: '' },
   });
   
   useEffect(() => {
@@ -174,12 +174,15 @@ export default function PublishPage() {
   }
 
   async function handleRecipeSubmit(values: z.infer<typeof recipeFormSchema>) {
+    // Convert textarea strings to arrays of strings
+    const toArray = (str: string) => str.split('\n').filter(line => line.trim() !== '');
+    
     await submitPost({
       type: 'recipe',
       content: values.content,
-      instructions: values.instructions,
-      additionalIngredients: values.additionalIngredients,
-      equipment: values.equipment,
+      instructions: toArray(values.instructions),
+      ingredients: toArray(values.ingredients),
+      equipment: toArray(values.equipment),
       mediaType: mediaType,
     });
   }
@@ -375,7 +378,7 @@ export default function PublishPage() {
                   )}
                   <FormField
                     control={recipeForm.control}
-                    name="additionalIngredients"
+                    name="ingredients"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Ingredientes</FormLabel>

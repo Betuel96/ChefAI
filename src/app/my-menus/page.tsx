@@ -3,7 +3,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import type { SavedWeeklyPlan, DailyMealPlan } from '@/types';
+import type { SavedWeeklyPlan, DailyMealPlan, Recipe } from '@/types';
 import { Button } from '@/components/ui/button';
 import {
   Accordion,
@@ -33,7 +33,7 @@ import Link from 'next/link';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 
-const MealCard = ({ meal }: { meal: DailyMealPlan['breakfast'] }) => (
+const MealCard = ({ meal }: { meal: Recipe }) => (
   <Card className="mt-4 border-accent/20">
     <CardHeader>
       <CardTitle className="font-headline text-xl">{meal.name}</CardTitle>
@@ -42,17 +42,18 @@ const MealCard = ({ meal }: { meal: DailyMealPlan['breakfast'] }) => (
       <div>
         <h5 className="font-headline font-semibold text-accent">Ingredientes</h5>
         <ul className="list-disc list-inside mt-2 text-muted-foreground">
-          {meal.ingredients
-            .split('\n')
-            .filter((ing) => ing.trim() !== '')
-            .map((ing, i) => (
-              <li key={i}>{ing}</li>
-            ))}
+          {meal.ingredients.map((ing, i) => (
+            <li key={i}>{ing}</li>
+          ))}
         </ul>
       </div>
       <div>
         <h5 className="font-headline font-semibold text-accent">Instrucciones</h5>
-        <p className="whitespace-pre-wrap mt-2 text-muted-foreground">{meal.instructions}</p>
+        <ol className="list-decimal list-inside mt-2 text-muted-foreground">
+          {meal.instructions.map((step, i) => (
+            <li key={i}>{step}</li>
+          ))}
+        </ol>
       </div>
     </CardContent>
   </Card>

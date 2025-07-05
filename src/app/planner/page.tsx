@@ -15,7 +15,7 @@ import { CalendarDays, Sparkles, Loader2, Save, ShoppingCart, Utensils, Share2 }
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import type { DailyMealPlan, ShoppingListCategory, WeeklyPlan } from '@/types';
+import type { DailyMealPlan, ShoppingListCategory, WeeklyPlan, Recipe } from '@/types';
 import { createWeeklyMealPlan } from '@/ai/flows/create-weekly-meal-plan';
 import { addMenu, publishMenuAsPost } from '@/lib/menus';
 import { generateShoppingList } from '@/ai/flows/generate-shopping-list';
@@ -31,7 +31,7 @@ const formSchema = z.object({
   numberOfPeople: z.coerce.number().int().min(1, 'Debe servir para al menos 1 persona.').max(20, 'No puede servir para más de 20 personas.'),
 });
 
-const MealCard = ({ meal }: { meal: DailyMealPlan['breakfast'] }) => (
+const MealCard = ({ meal }: { meal: Recipe }) => (
     <Card className="mt-4 border-accent/20">
       <CardHeader className="py-4">
         <CardTitle className="font-headline text-lg">{meal.name}</CardTitle>
@@ -39,11 +39,15 @@ const MealCard = ({ meal }: { meal: DailyMealPlan['breakfast'] }) => (
       <CardContent className="space-y-2 py-4">
         <div>
           <h4 className="font-semibold text-accent text-sm">Ingredientes</h4>
-          <p className="whitespace-pre-wrap mt-1 text-xs text-muted-foreground">{meal.ingredients}</p>
+          <ul className="list-disc list-inside mt-1 text-xs text-muted-foreground">
+            {meal.ingredients.map((ing, i) => <li key={i}>{ing}</li>)}
+          </ul>
         </div>
         <div>
           <h4 className="font-semibold text-accent text-sm">Instrucciones</h4>
-          <p className="whitespace-pre-wrap mt-1 text-xs text-muted-foreground">{meal.instructions}</p>
+          <ol className="list-decimal list-inside mt-1 text-xs text-muted-foreground">
+            {meal.instructions.map((step, i) => <li key={i}>{step}</li>)}
+          </ol>
         </div>
       </CardContent>
     </Card>
@@ -157,7 +161,7 @@ export default function MealPlannerPage() {
     try {
         const allIngredients = mealPlan.weeklyMealPlan.flatMap(day => 
             [day.breakfast.ingredients, day.lunch.ingredients, day.comida.ingredients, day.dinner.ingredients]
-        ).join('\n');
+        ).flat().join('\n');
         
         const result = await generateShoppingList({ allIngredients });
 

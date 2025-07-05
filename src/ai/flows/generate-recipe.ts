@@ -25,11 +25,11 @@ export type GenerateRecipeInput = z.infer<typeof GenerateRecipeInputSchema>;
 
 const GenerateRecipeOutputSchema = z.object({
   name: z.string().describe('El nombre de la receta.'),
-  instructions: z.string().describe('Instrucciones paso a paso para preparar la receta.'),
-  additionalIngredients: z
-    .string()
-    .describe('Una lista de ingredientes adicionales necesarios, con cantidades.'),
-  equipment: z.string().describe('Una lista de utensilios de cocina necesarios.'),
+  instructions: z.array(z.string()).describe('Un array de strings, donde cada string es un paso numerado de la preparación.'),
+  ingredients: z
+    .array(z.string())
+    .describe('Un array de strings, donde cada string es un ingrediente adicional necesario, con cantidades.'),
+  equipment: z.array(z.string()).describe('Un array de strings, donde cada string es un utensilio de cocina necesario.'),
 });
 export type GenerateRecipeOutput = z.infer<typeof GenerateRecipeOutputSchema>;
 
@@ -41,18 +41,20 @@ const prompt = ai.definePrompt({
   name: 'generateRecipePrompt',
   input: {schema: GenerateRecipeInputSchema},
   output: {schema: GenerateRecipeOutputSchema},
-  prompt: `Eres un chef de talla mundial con una imaginación sin límites. Tu misión es sorprender al usuario con una receta creativa y deliciosa, usando los ingredientes que te dan.
+  prompt: `Eres un chef de talla mundial con una imaginación sin límites. Tu misión es sorprender al usuario con una receta creativa, deliciosa y MUY DETALLADA, usando los ingredientes que te dan.
 
-**Instrucción CRÍTICA:** ¡La creatividad y la variedad son tu sello! Bajo ninguna circunstancia debes repetir una receta que hayas generado antes. Cada vez que recibas esta petición, incluso con los mismos ingredientes, DEBES generar una idea completamente nueva. Explora diferentes cocinas del mundo (italiana, mexicana, tailandesa, india, francesa), métodos de cocción (al horno, salteado, a la parrilla, al vapor, estofado) y tipos de plato (guiso, ensalada, plato principal, sopa, tarta salada). Sorprende al usuario con combinaciones inesperadas y emocionantes.
+**Instrucción CRÍTICA:** ¡La creatividad y la variedad son tu sello! Cada vez que recibas esta petición, incluso con los mismos ingredientes, DEBES generar una idea completamente nueva y con mucho detalle. Explora diferentes cocinas, métodos de cocción y tipos de plato.
 
-Ingredientes Base: {{{ingredients}}}
-Porciones: {{{servings}}}
+**Ingredientes Base:** {{{ingredients}}}
+**Porciones:** {{{servings}}}
 
 ---
-Nombre de la Receta:
-Instrucciones:
-Ingredientes Adicionales (con cantidades):
-Equipo:
+**Instrucciones de Formato DETALLADO:**
+La respuesta DEBE ser un objeto JSON válido con las siguientes claves:
+- \`name\`: El nombre de la receta.
+- \`ingredients\`: Un **ARRAY de strings**. Cada string debe ser un ingrediente necesario con su cantidad (ej: ["2 pechugas de pollo", "1 taza de arroz", "2 cucharadas de aceite de oliva"]).
+- \`instructions\`: Un **ARRAY de strings**. Cada string debe ser un paso de preparación claro y **numerado** (ej: ["1. Sazonar el pollo con sal y pimienta.", "2. Calentar el aceite en una sartén a fuego medio.", "3. Cocinar el pollo por 6-8 minutos por cada lado."]).
+- \`equipment\`: Un **ARRAY de strings**. Cada string es un utensilio necesario (ej: ["sartén", "tabla de cortar", "cuchillo de chef"]).
 `,
   config: {
     temperature: 1.0,
