@@ -19,7 +19,13 @@ let storage: FirebaseStorage | null = null;
 let googleProvider: GoogleAuthProvider | null = null;
 
 // Check if all necessary environment variables are set
-export const isFirebaseConfigured = !!firebaseConfig.apiKey && !!firebaseConfig.projectId;
+export const isFirebaseConfigured =
+  !!firebaseConfig.apiKey &&
+  !!firebaseConfig.authDomain &&
+  !!firebaseConfig.projectId &&
+  !!firebaseConfig.storageBucket &&
+  !!firebaseConfig.messagingSenderId &&
+  !!firebaseConfig.appId;
 
 if (isFirebaseConfigured) {
   try {
