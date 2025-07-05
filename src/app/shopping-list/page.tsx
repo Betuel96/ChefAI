@@ -10,7 +10,7 @@ import { Trash2, ShoppingCart, CalendarDays } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
-export default function ShoppingListPage() {
+export function ShoppingListView() {
   const [shoppingList, setShoppingList] = useLocalStorage<ShoppingListCategory[]>('shoppingList', []);
 
   // Filtra cualquier categoría o artículo no válido para evitar errores de ejecución
@@ -38,76 +38,83 @@ export default function ShoppingListPage() {
   );
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <header>
-        <h1 className="font-headline text-4xl font-bold text-primary">Lista de Compras</h1>
-        <p className="text-muted-foreground mt-2 text-lg">Tu lista de compras inteligente, generada a partir de tu plan de comidas.</p>
-      </header>
-      
-      <Card className="shadow-lg">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle className="font-headline flex items-center gap-2"><ShoppingCart /> Tu Lista</CardTitle>
-            {totalItems > 0 && 
-                <CardDescription>
-                {checkedItemsCount} de {totalItems} artículos comprados.
-                </CardDescription>
-            }
-          </div>
-          {validShoppingList.length > 0 && (
-            <Button variant="destructive" size="sm" onClick={handleClearList}>
-              <Trash2 className="mr-2 h-4 w-4" /> Limpiar Lista
-            </Button>
-          )}
-        </CardHeader>
-        <CardContent>
-          {validShoppingList.length > 0 ? (
-            <div className="space-y-6">
-              {validShoppingList.map(category => (
-                <div key={category.category}>
-                  <h3 className="font-headline text-xl font-semibold text-accent mb-3 border-b pb-2">
-                    {category.category}
-                  </h3>
-                  <div className="space-y-2">
-                    {category.items.map(item => (
-                      <div key={item.id} className="flex items-center space-x-3 bg-background p-3 rounded-md transition-colors hover:bg-muted/50">
-                        <Checkbox
-                          id={item.id}
-                          checked={item.checked}
-                          onCheckedChange={() => handleToggleItem(item.id)}
-                        />
-                        <label
-                          htmlFor={item.id}
-                          className={cn(
-                            "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
-                            item.checked && "line-through text-muted-foreground"
-                          )}
-                        >
-                          {item.name}
-                        </label>
-                      </div>
-                    ))}
-                  </div>
+    <Card className="shadow-lg">
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle className="font-headline flex items-center gap-2"><ShoppingCart /> Tu Lista</CardTitle>
+          {totalItems > 0 && 
+              <CardDescription>
+              {checkedItemsCount} de {totalItems} artículos comprados.
+              </CardDescription>
+          }
+        </div>
+        {validShoppingList.length > 0 && (
+          <Button variant="destructive" size="sm" onClick={handleClearList}>
+            <Trash2 className="mr-2 h-4 w-4" /> Limpiar Lista
+          </Button>
+        )}
+      </CardHeader>
+      <CardContent>
+        {validShoppingList.length > 0 ? (
+          <div className="space-y-6">
+            {validShoppingList.map(category => (
+              <div key={category.category}>
+                <h3 className="font-headline text-xl font-semibold text-accent mb-3 border-b pb-2">
+                  {category.category}
+                </h3>
+                <div className="space-y-2">
+                  {category.items.map(item => (
+                    <div key={item.id} className="flex items-center space-x-3 bg-background p-3 rounded-md transition-colors hover:bg-muted/50">
+                      <Checkbox
+                        id={item.id}
+                        checked={item.checked}
+                        onCheckedChange={() => handleToggleItem(item.id)}
+                      />
+                      <label
+                        htmlFor={item.id}
+                        className={cn(
+                          "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
+                          item.checked && "line-through text-muted-foreground"
+                        )}
+                      >
+                        {item.name}
+                      </label>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          ) : (
-             <div className="text-center text-muted-foreground py-10 flex flex-col items-center">
-              <ShoppingCart className="w-16 h-16 mb-4" />
-              <h3 className="font-headline text-2xl font-semibold mb-2 text-foreground">Tu Lista de Compras está Vacía</h3>
-              <p className="mb-6 max-w-sm">
-                Genera un plan de comidas y luego crea una lista de compras para que aparezca aquí.
-              </p>
-              <Button asChild>
-                <Link href="/planner">
-                    <CalendarDays className="mr-2 h-4 w-4" />
-                    Ir al Planificador
-                </Link>
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+           <div className="text-center text-muted-foreground py-10 flex flex-col items-center">
+            <ShoppingCart className="w-16 h-16 mb-4" />
+            <h3 className="font-headline text-2xl font-semibold mb-2 text-foreground">Tu Lista de Compras está Vacía</h3>
+            <p className="mb-6 max-w-sm">
+              Genera un plan de comidas y luego crea una lista de compras para que aparezca aquí.
+            </p>
+            <Button asChild>
+              <Link href="/planner">
+                  <CalendarDays className="mr-2 h-4 w-4" />
+                  Ir al Planificador
+              </Link>
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
+}
+
+
+// Default export for Next.js page compatibility
+export default function ShoppingListPage() {
+    return (
+        <div className="max-w-2xl mx-auto space-y-6">
+            <header>
+                <h1 className="font-headline text-4xl font-bold text-primary">Lista de Compras</h1>
+                <p className="text-muted-foreground mt-2 text-lg">Tu lista de compras inteligente, generada a partir de tu plan de comidas.</p>
+            </header>
+            <ShoppingListView />
+        </div>
+    )
 }

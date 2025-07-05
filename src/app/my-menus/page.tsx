@@ -94,7 +94,7 @@ const MealCard = ({ meal, onChangeClick }: { meal: Recipe; onChangeClick: () => 
   </Card>
 );
 
-export default function MyMenusPage() {
+export function MyMenusView() {
   const { user, loading: authLoading } = useAuth();
   const [savedMenus, setSavedMenus] = useState<SavedWeeklyPlan[]>([]);
   const [savedRecipes, setSavedRecipes] = useState<SavedRecipe[]>([]);
@@ -412,20 +412,7 @@ export default function MyMenusPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <header>
-        <h1 className="font-headline text-4xl font-bold text-primary">Mis Menús Guardados</h1>
-        <p className="text-muted-foreground mt-2 text-lg">Tu colección de planes de comidas semanales.</p>
-      </header>
-      
-      <Alert>
-        <Info className="h-4 w-4" />
-        <AlertTitle>¡Personaliza tu Menú!</AlertTitle>
-        <AlertDescription>
-          La IA está en pruebas y algunas recetas pueden ser mejorables. Usa el botón 'Cambiar' en cualquier comida para **sustituirla por una de tus recetas guardadas** o para **generar una nueva versión detallada** con la IA.
-        </AlertDescription>
-      </Alert>
-
+    <>
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle className="font-headline flex items-center gap-2">
@@ -434,7 +421,16 @@ export default function MyMenusPage() {
           {!authLoading && !pageLoading && user && <CardDescription>{savedMenus.length} menú(s) guardado(s) en tu cuenta.</CardDescription>}
         </CardHeader>
         <CardContent>
-          {renderContent()}
+          <div className="space-y-4">
+             <Alert>
+                <Info className="h-4 w-4" />
+                <AlertTitle>¡Personaliza tu Menú!</AlertTitle>
+                <AlertDescription>
+                La IA está en pruebas y algunas recetas pueden ser mejorables. Usa el botón 'Cambiar' en cualquier comida para **sustituirla por una de tus recetas guardadas** o para **generar una nueva versión detallada** con la IA.
+                </AlertDescription>
+            </Alert>
+            {renderContent()}
+          </div>
         </CardContent>
       </Card>
       
@@ -515,6 +511,19 @@ export default function MyMenusPage() {
           </ScrollArea>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
+}
+
+// Default export for Next.js page compatibility
+export default function MyMenusPage() {
+    return (
+        <div className="max-w-4xl mx-auto space-y-6">
+            <header>
+                <h1 className="font-headline text-4xl font-bold text-primary">Mis Menús Guardados</h1>
+                <p className="text-muted-foreground mt-2 text-lg">Tu colección de planes de comidas semanales.</p>
+            </header>
+            <MyMenusView />
+        </div>
+    )
 }

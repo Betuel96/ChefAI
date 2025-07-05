@@ -9,7 +9,6 @@ import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ProfileHeader } from '@/components/profile/ProfileHeader';
 import { PostGrid } from '@/components/profile/PostGrid';
 import { LogIn, Bookmark } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -22,7 +21,7 @@ const SavedPostsSkeleton = () => (
     </div>
 );
 
-export default function SavedPostsPage() {
+export function SavedPostsView() {
   const { user, loading: authLoading } = useAuth();
   
   const [posts, setPosts] = useState<PublishedPost[]>([]);
@@ -70,21 +69,36 @@ export default function SavedPostsPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-       <header>
-        <h1 className="font-headline text-4xl font-bold text-primary flex items-center gap-3">
+    <Card>
+      <CardHeader>
+        <CardTitle className="font-headline flex items-center gap-3">
             <Bookmark /> Publicaciones Guardadas
-        </h1>
-        <p className="text-muted-foreground mt-2 text-lg">Tu colección personal de recetas y menús favoritos.</p>
-      </header>
-      
-      {posts.length > 0 ? (
-        <PostGrid posts={posts} />
-      ) : (
-        <p className="text-center text-muted-foreground pt-10">
-            Aún no has guardado ninguna publicación. ¡Explora la comunidad y guarda lo que te inspire!
-        </p>
-      )}
-    </div>
+        </CardTitle>
+        <CardDescription>Tu colección personal de recetas y menús favoritos.</CardDescription>
+      </CardHeader>
+      <CardContent>
+         {posts.length > 0 ? (
+            <PostGrid posts={posts} />
+        ) : (
+            <p className="text-center text-muted-foreground pt-10">
+                Aún no has guardado ninguna publicación. ¡Explora la comunidad y guarda lo que te inspire!
+            </p>
+        )}
+      </CardContent>
+    </Card>
   );
+}
+
+
+// Default export for Next.js page compatibility
+export default function SavedPostsPage() {
+    return (
+        <div className="max-w-4xl mx-auto space-y-6">
+            <header>
+                <h1 className="font-headline text-4xl font-bold text-primary">Guardados</h1>
+                <p className="text-muted-foreground mt-2 text-lg">Tu colección personal de recetas y menús favoritos.</p>
+            </header>
+            <SavedPostsView />
+        </div>
+    )
 }

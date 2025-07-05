@@ -7,9 +7,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   ChefHat,
   Home,
-  MenuSquare,
-  BookHeart,
-  ShoppingCart,
   CalendarDays,
   Sparkles,
   LogIn,
@@ -17,7 +14,6 @@ import {
   Users,
   PlusSquare,
   Bell,
-  Bookmark,
   Settings,
 } from 'lucide-react';
 import {
@@ -46,14 +42,6 @@ const aiToolsItems = [
   { href: '/generator', label: 'Generador de Recetas', icon: Sparkles },
   { href: '/planner', label: 'Planificador Semanal', icon: CalendarDays },
 ];
-
-const libraryItems = [
-  { href: '/my-recipes', label: 'Mis Recetas', icon: BookHeart },
-  { href: '/my-menus', label: 'Mis Menús', icon: MenuSquare },
-  { href: '/shopping-list', label: 'Lista de Compras', icon: ShoppingCart },
-  { href: '/saved', label: 'Guardado', icon: Bookmark },
-];
-
 
 export function AppSidebar() {
   const pathname = usePathname();
@@ -129,7 +117,7 @@ export function AppSidebar() {
           
           {user && isOpen && (
             <>
-              <Link href="/pro" className="block w-full px-2">
+              <Link href={`/profile/${user.uid}`} className="block w-full px-2">
                   <div className="flex flex-col items-start gap-2 p-2 rounded-md hover:bg-muted/50 transition-colors">
                     <Avatar>
                         <AvatarImage src={user.photoURL || undefined} />
@@ -182,20 +170,6 @@ export function AppSidebar() {
                   tooltip={item.label}
                   indicator={item.indicator}
                 >
-                  <item.icon />
-                  <span>{item.label}</span>
-                </SidebarMenuButton>
-              </Link>
-            </SidebarMenuItem>
-          ))}
-
-          <Separator className="my-2" />
-
-          {isOpen && <h3 className="px-4 pt-2 pb-1 text-xs uppercase text-muted-foreground font-semibold tracking-wider">Librería</h3>}
-          {libraryItems.map((item) => (
-            <SidebarMenuItem key={item.href}>
-              <Link href={item.href}>
-                <SidebarMenuButton isActive={pathname.startsWith(item.href)} tooltip={item.label}>
                   <item.icon />
                   <span>{item.label}</span>
                 </SidebarMenuButton>

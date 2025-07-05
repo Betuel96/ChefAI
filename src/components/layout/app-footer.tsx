@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 export function AppFooter() {
     return (
-        <footer className="mt-12 py-6 border-t bg-background">
+        <footer className="mt-12 py-6 border-t bg-background hidden sm:block">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm text-muted-foreground">
                 <p>&copy; {new Date().getFullYear()} ChefAI. Todos los derechos reservados.</p>
                 <nav className="mt-2 space-x-4">

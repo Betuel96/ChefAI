@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -46,7 +45,7 @@ const NutritionalTable = ({ table }: { table: NutritionalInfo }) => (
 );
 
 
-export default function MyRecipesPage() {
+export function MyRecipesView() {
   const { user, loading: authLoading } = useAuth();
   const [savedRecipes, setSavedRecipes] = useState<SavedRecipe[]>([]);
   const [pageLoading, setPageLoading] = useState(true);
@@ -261,12 +260,6 @@ export default function MyRecipesPage() {
 
   return (
     <>
-    <div className="max-w-4xl mx-auto space-y-6">
-      <header>
-        <h1 className="font-headline text-4xl font-bold text-primary">Mis Recetas Guardadas</h1>
-        <p className="text-muted-foreground mt-2 text-lg">Todas tus recetas favoritas en un solo lugar.</p>
-      </header>
-
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle className="font-headline flex items-center gap-2"><BookHeart /> Tu Libro de Recetas</CardTitle>
@@ -276,7 +269,6 @@ export default function MyRecipesPage() {
           {renderContent()}
         </CardContent>
       </Card>
-    </div>
     
     <AlertDialog open={!!selectedRecipeToPublish} onOpenChange={(isOpen) => !isOpen && setSelectedRecipeToPublish(null)}>
         <AlertDialogContent>
@@ -296,4 +288,17 @@ export default function MyRecipesPage() {
       </AlertDialog>
     </>
   );
+}
+
+// Default export for Next.js page compatibility
+export default function MyRecipesPage() {
+    return (
+        <div className="max-w-4xl mx-auto space-y-6">
+             <header>
+                <h1 className="font-headline text-4xl font-bold text-primary">Mis Recetas Guardadas</h1>
+                <p className="text-muted-foreground mt-2 text-lg">Todas tus recetas favoritas en un solo lugar.</p>
+            </header>
+            <MyRecipesView />
+        </div>
+    )
 }

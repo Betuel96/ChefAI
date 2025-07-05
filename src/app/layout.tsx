@@ -10,6 +10,7 @@ import { MobileHeader } from '@/components/layout/mobile-header';
 import { NotificationProvider } from '@/hooks/use-notifications';
 import { FeedStatusProvider } from '@/hooks/use-feed-status';
 import { AppFooter } from '@/components/layout/app-footer';
+import { BottomNavBar } from '@/components/layout/bottom-nav-bar';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -41,10 +42,11 @@ export default function RootLayout({
                 <MobileHeader />
                 <SidebarInset>
                   <div className="flex flex-col min-h-screen">
-                    <main className="flex-grow p-4 sm:p-6 lg:p-8">{children}</main>
+                    <main className="flex-grow p-4 sm:p-6 lg:p-8 pb-24 sm:pb-6">{children}</main>
                     <AppFooter />
                   </div>
                 </SidebarInset>
+                <BottomNavBar />
               </SidebarProvider>
             </FeedStatusProvider>
           </NotificationProvider>
