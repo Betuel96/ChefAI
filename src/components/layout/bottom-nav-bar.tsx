@@ -2,9 +2,18 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Users, PlusSquare, BookHeart, UserCircle } from 'lucide-react';
+import { Home, Users, PlusSquare, BookHeart, UserCircle, PenSquare, Sparkles, CalendarDays } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetClose,
+} from '@/components/ui/sheet';
+import { buttonVariants } from '@/components/ui/button';
 
 export function BottomNavBar() {
   const pathname = usePathname();
@@ -41,12 +50,38 @@ export function BottomNavBar() {
           
           if (item.isCentral) {
             return (
-              <Link href={item.href} key={item.href} className="flex justify-center items-center">
-                <div className="flex items-center justify-center w-14 h-14 -mt-6 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors">
-                  <item.icon className="h-7 w-7" />
-                  <span className="sr-only">{item.label}</span>
-                </div>
-              </Link>
+              <Sheet key="create-sheet">
+                <SheetTrigger asChild>
+                  <div className="flex justify-center items-center cursor-pointer">
+                    <div className="flex items-center justify-center w-14 h-14 -mt-6 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors">
+                      <item.icon className="h-7 w-7" />
+                      <span className="sr-only">{item.label}</span>
+                    </div>
+                  </div>
+                </SheetTrigger>
+                <SheetContent side="bottom" className="rounded-t-lg">
+                  <SheetHeader>
+                    <SheetTitle className="font-headline text-center text-2xl">Crear</SheetTitle>
+                  </SheetHeader>
+                  <div className="grid grid-cols-1 gap-4 py-4">
+                    <SheetClose asChild>
+                      <Link href="/publish" className={cn(buttonVariants({ variant: "outline" }), "justify-start h-16 text-base")}>
+                        <PenSquare className="mr-4 h-6 w-6 text-primary" /> Crear Publicación
+                      </Link>
+                    </SheetClose>
+                    <SheetClose asChild>
+                       <Link href="/generator" className={cn(buttonVariants({ variant: "outline" }), "justify-start h-16 text-base")}>
+                        <Sparkles className="mr-4 h-6 w-6 text-primary" /> Generar Receta con IA
+                      </Link>
+                    </SheetClose>
+                    <SheetClose asChild>
+                       <Link href="/planner" className={cn(buttonVariants({ variant: "outline" }), "justify-start h-16 text-base")}>
+                        <CalendarDays className="mr-4 h-6 w-6 text-primary" /> Planificador Semanal con IA
+                      </Link>
+                    </SheetClose>
+                  </div>
+                </SheetContent>
+              </Sheet>
             );
           }
           
