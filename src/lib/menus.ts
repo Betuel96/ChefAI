@@ -15,7 +15,7 @@ import {
   getDoc,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import type { WeeklyPlan, SavedWeeklyPlan, PublishedPost, UserAccount } from '@/types';
+import type { WeeklyPlan, SavedWeeklyPlan, PublishedPost, UserAccount, Recipe, DailyMealPlan } from '@/types';
 
 /**
  * Adds a new weekly menu to a user's collection in Firestore.
@@ -51,11 +51,40 @@ export async function getMenus(userId: string): Promise<SavedWeeklyPlan[]> {
 
     return snapshot.docs.map(doc => {
       const data = doc.data();
-      // The weeklyMealPlan is stored directly in the document
       const createdAtTimestamp = data.createdAt as Timestamp;
+
+      const normalizeRecipe = (recipe: any): Recipe => {
+        if (!recipe) return { name: '', instructions: [], ingredients: [], equipment: [] };
+        
+        const normalizeField = (field: any): string[] => {
+            if (Array.isArray(field)) return field;
+            if (typeof field === 'string') return field.split('\n').filter(line => line.trim() !== '');
+            return [];
+        };
+
+        return {
+          name: recipe.name || '',
+          instructions: normalizeField(recipe.instructions),
+          ingredients: normalizeField(recipe.ingredients),
+          equipment: normalizeField(recipe.equipment || []),
+        };
+      };
+      
+      const processedPlan = (Array.isArray(data.weeklyMealPlan) ? data.weeklyMealPlan : []).map((day: any) => {
+        if (!day) return null;
+        return {
+          day: day.day || '',
+          breakfast: normalizeRecipe(day.breakfast),
+          lunch: normalizeRecipe(day.lunch),
+          comida: normalizeRecipe(day.comida),
+          dinner: normalizeRecipe(day.dinner),
+        };
+      }).filter((day): day is DailyMealPlan => day !== null);
+
+
       return {
         id: doc.id,
-        weeklyMealPlan: data.weeklyMealPlan,
+        weeklyMealPlan: processedPlan,
         createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
       } as SavedWeeklyPlan;
     });

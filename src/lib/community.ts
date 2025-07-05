@@ -21,8 +21,66 @@ import {
   setDoc,
 } from 'firebase/firestore';
 import { db, storage } from './firebase';
-import type { PublishedPost, ProfileData as ProfileDataType, Comment, Mention, ProfileListItem, Notification, UserAccount, Story, StoryGroup, SavedWeeklyPlan } from '@/types';
+import type { PublishedPost, ProfileData as ProfileDataType, Comment, Mention, ProfileListItem, Notification, UserAccount, Story, StoryGroup, SavedWeeklyPlan, Recipe, DailyMealPlan } from '@/types';
 import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
+
+// Helper function to normalize recipe-like data within a post
+const normalizePostData = (doc: any): PublishedPost => {
+    const data = doc.data();
+    if (!data) return null as any; 
+    const createdAtTimestamp = data.createdAt as Timestamp;
+
+    const normalizeField = (field: any): string[] => {
+        if (Array.isArray(field)) return field;
+        if (typeof field === 'string') return field.split('\n').filter(line => line.trim() !== '');
+        return [];
+    };
+
+    const normalizeRecipe = (recipe: any): Recipe => {
+        if (!recipe) return { name: '', instructions: [], ingredients: [], equipment: [] };
+        return {
+            name: recipe.name || '',
+            instructions: normalizeField(recipe.instructions),
+            ingredients: normalizeField(recipe.ingredients),
+            equipment: normalizeField(recipe.equipment),
+        };
+    };
+
+    let processedPlan: DailyMealPlan[] | null = null;
+    if (data.type === 'menu' && Array.isArray(data.weeklyMealPlan)) {
+        processedPlan = data.weeklyMealPlan.map((day: any) => {
+            if (!day) return null;
+            return {
+                day: day.day || '',
+                breakfast: normalizeRecipe(day.breakfast),
+                lunch: normalizeRecipe(day.lunch),
+                comida: normalizeRecipe(day.comida),
+                dinner: normalizeRecipe(day.dinner),
+            };
+        }).filter((day): day is DailyMealPlan => day !== null);
+    }
+
+    return {
+        id: doc.id,
+        publisherId: data.publisherId,
+        publisherName: data.publisherName,
+        publisherPhotoURL: data.publisherPhotoURL || null,
+        mediaUrl: data.mediaUrl || null,
+        mediaType: data.mediaType || null,
+        type: data.type,
+        profileType: data.profileType,
+        content: data.content,
+        instructions: data.type === 'recipe' ? normalizeField(data.instructions) : undefined,
+        ingredients: data.type === 'recipe' ? normalizeField(data.ingredients) : undefined,
+        equipment: data.type === 'recipe' ? normalizeField(data.equipment) : undefined,
+        weeklyMealPlan: processedPlan ?? undefined,
+        likesCount: data.likesCount || 0,
+        commentsCount: data.commentsCount || 0,
+        mentions: data.mentions || [],
+        createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
+    } as PublishedPost;
+};
+
 
 // Function to create a new post (recipe or text)
 export async function createPost(
@@ -160,29 +218,7 @@ export async function getPublishedPosts(): Promise<PublishedPost[]> {
     const recipesCollection = collection(db, 'published_recipes');
     const q = query(recipesCollection, where('profileType', '==', 'public'), orderBy('createdAt', 'desc'));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => {
-        const data = doc.data();
-        const createdAtTimestamp = data.createdAt as Timestamp;
-        return {
-            id: doc.id,
-            publisherId: data.publisherId,
-            publisherName: data.publisherName,
-            publisherPhotoURL: data.publisherPhotoURL || null,
-            mediaUrl: data.mediaUrl || null,
-            mediaType: data.mediaType || null,
-            type: data.type,
-            profileType: data.profileType,
-            content: data.content,
-            instructions: data.instructions || [],
-            ingredients: data.ingredients || [],
-            equipment: data.equipment || [],
-            weeklyMealPlan: data.weeklyMealPlan || null,
-            likesCount: data.likesCount || 0,
-            commentsCount: data.commentsCount || 0,
-            mentions: data.mentions || [],
-            createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
-        } as PublishedPost;
-    });
+    return snapshot.docs.map(normalizePostData);
 }
 
 // Function to get posts published by a specific user
@@ -191,30 +227,7 @@ export async function getUserPublishedPosts(userId: string): Promise<PublishedPo
     const recipesCollection = collection(db, 'published_recipes');
     const q = query(recipesCollection, where('publisherId', '==', userId), orderBy('createdAt', 'desc'));
     const snapshot = await getDocs(q);
-    
-    return snapshot.docs.map(doc => {
-        const data = doc.data();
-        const createdAtTimestamp = data.createdAt as Timestamp;
-        return {
-            id: doc.id,
-            publisherId: data.publisherId,
-            publisherName: data.publisherName,
-            publisherPhotoURL: data.publisherPhotoURL || null,
-            mediaUrl: data.mediaUrl || null,
-            mediaType: data.mediaType || null,
-            type: data.type,
-            profileType: data.profileType,
-            content: data.content,
-            instructions: data.instructions || [],
-            ingredients: data.ingredients || [],
-            equipment: data.equipment || [],
-            weeklyMealPlan: data.weeklyMealPlan || null,
-            likesCount: data.likesCount || 0,
-            commentsCount: data.commentsCount || 0,
-            mentions: data.mentions || [],
-            createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
-        } as PublishedPost;
-    });
+    return snapshot.docs.map(normalizePostData);
 }
 
 // Function to get a single post by its ID
@@ -227,27 +240,7 @@ export async function getPost(postId: string): Promise<PublishedPost | null> {
         console.error(`Post with ID ${postId} not found.`);
         return null;
     }
-    const data = docSnap.data();
-    const createdAtTimestamp = data.createdAt as Timestamp;
-    return {
-        id: docSnap.id,
-        publisherId: data.publisherId,
-        publisherName: data.publisherName,
-        publisherPhotoURL: data.publisherPhotoURL || null,
-        mediaUrl: data.mediaUrl || null,
-        mediaType: data.mediaType || null,
-        type: data.type,
-        profileType: data.profileType,
-        content: data.content,
-        instructions: data.instructions || [],
-        ingredients: data.ingredients || [],
-        equipment: data.equipment || [],
-        weeklyMealPlan: data.weeklyMealPlan || null,
-        likesCount: data.likesCount || 0,
-        commentsCount: data.commentsCount || 0,
-        mentions: data.mentions || [],
-        createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
-    } as PublishedPost;
+    return normalizePostData(docSnap);
 }
 
 // Function to delete a post and its associated media
@@ -658,27 +651,7 @@ export async function getFollowingPosts(userId: string): Promise<PublishedPost[]
 
     querySnapshots.forEach(snapshot => {
         snapshot.forEach(doc => {
-            const data = doc.data();
-            const createdAtTimestamp = data.createdAt as Timestamp;
-            posts.push({
-                id: doc.id,
-                publisherId: data.publisherId,
-                publisherName: data.publisherName,
-                publisherPhotoURL: data.publisherPhotoURL || null,
-                mediaUrl: data.mediaUrl || null,
-                mediaType: data.mediaType || null,
-                type: data.type,
-                profileType: data.profileType,
-                content: data.content,
-                instructions: data.instructions || [],
-                ingredients: data.ingredients || [],
-                equipment: data.equipment || [],
-                weeklyMealPlan: data.weeklyMealPlan || null,
-                likesCount: data.likesCount || 0,
-                commentsCount: data.commentsCount || 0,
-                mentions: data.mentions || [],
-                createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
-            } as PublishedPost);
+            posts.push(normalizePostData(doc));
         });
     });
     
@@ -731,7 +704,7 @@ export async function getLatestPostTimestamp(
       return null;
     }
     const timestamp = snapshot.docs[0].data().createdAt as Timestamp;
-    return timestamp.toDate().toISOString();
+    return timestamp ? timestamp.toDate().toISOString() : null;
   } else {
     if (!userId) return null;
     const followingRef = collection(db, 'users', userId, 'following');
@@ -930,14 +903,14 @@ export async function getSavedPosts(userId: string): Promise<PublishedPost[]> {
   }
   
   const postSnapshots = await Promise.all(postPromises);
-  const posts: PublishedPost[] = [];
+  const postDocs: any[] = [];
   postSnapshots.forEach(snap => {
       snap.forEach(doc => {
-          posts.push(getPost(doc.id).then(p => p!));
+          postDocs.push(doc);
       });
   });
 
-  const resolvedPosts = await Promise.all(posts);
+  const resolvedPosts = postDocs.map(normalizePostData);
   
   const postsMap = new Map(resolvedPosts.map(p => [p.id, p]));
   const sortedPosts = postIds.map(id => postsMap.get(id)).filter(p => p) as PublishedPost[];

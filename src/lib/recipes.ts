@@ -73,15 +73,21 @@ export async function getRecipes(userId: string): Promise<SavedRecipe[]> {
     const q = query(recipesCollection, orderBy('createdAt', 'desc'));
     const snapshot = await getDocs(q);
 
+    const normalizeField = (field: any): string[] => {
+        if (Array.isArray(field)) return field;
+        if (typeof field === 'string') return field.split('\n').filter(line => line.trim() !== '');
+        return [];
+    };
+
     return snapshot.docs.map((doc) => {
       const data = doc.data();
       const createdAtTimestamp = data.createdAt as Timestamp;
       return {
         id: doc.id,
         name: data.name,
-        instructions: data.instructions || [],
-        ingredients: data.ingredients || [],
-        equipment: data.equipment || [],
+        instructions: normalizeField(data.instructions),
+        ingredients: normalizeField(data.ingredients),
+        equipment: normalizeField(data.equipment),
         mediaUrl: data.mediaUrl || null,
         mediaType: data.mediaType || null,
         createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
