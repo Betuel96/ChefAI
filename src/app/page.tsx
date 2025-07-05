@@ -15,6 +15,7 @@ import { Separator } from '@/components/ui/separator';
 import { collection, query, orderBy, onSnapshot, Timestamp } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '@/lib/firebase';
 import { CookingAssistant } from '@/components/cooking/cooking-assistant';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 
 const TodayMealCard = ({ meal, mealType, onStartCooking }: { meal: Recipe; mealType: string; onStartCooking: (recipe: Recipe) => void; }) => {
@@ -75,35 +76,38 @@ const FirebaseSetupGuide = () => (
                     <Terminal /> Acción Requerida: Configura tu Backend
                 </CardTitle>
                 <CardDescription>
-                    La aplicación no puede conectar con Firebase. Por favor, sigue estos pasos para habilitar las funciones principales.
+                     La aplicación no puede conectar con Firebase. Por favor, revisa la configuración de tu archivo <code>.env</code>.
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-                <p>
-                    Para que el inicio de sesión, el guardado de datos y las funciones de IA funcionen, necesitas proporcionar tus propias claves de API de Firebase y Stripe.
-                </p>
-                <div className="space-y-2">
-                    <h3 className="font-semibold">1. Crea un archivo <code>.env</code></h3>
-                    <p className="text-sm text-muted-foreground">
-                        En la raíz de tu proyecto (en el mismo nivel que <code>package.json</code>), crea un nuevo archivo llamado <code>.env</code>.
-                    </p>
-                </div>
-                <div className="space-y-2">
-                    <h3 className="font-semibold">2. Añade tus claves</h3>
-                    <p className="text-sm text-muted-foreground">
-                        Copia el siguiente texto, pégalo en tu archivo <code>.env</code> y reemplaza los valores <code>...</code> con tus claves reales.
-                    </p>
-                    <pre className="mt-2 p-4 bg-muted rounded-md text-xs overflow-x-auto">
+                 <Alert variant="destructive">
+                    <AlertTitle>¡Error de Configuración Detectado!</AlertTitle>
+                    <AlertDescription>
+                       <p>Esta pantalla aparece porque una o más claves de Firebase no están configuradas en tu archivo <code>.env</code>.</p>
+                       <p className="mt-2">Recientemente, me proporcionaste tus claves. Es posible que haya cometido un error al guardarlas. Por favor, verifica que tu archivo <code>.env</code> en la raíz del proyecto contenga **TODAS** las siguientes claves con los valores correctos:</p>
+                        <pre className="mt-2 p-4 bg-muted rounded-md text-xs overflow-x-auto">
                         <code>
-                            {`# Firebase Configuration (Encuentra esto en tu Consola de Firebase > Configuración del Proyecto > General)
+                            {`# Asegúrate de que TODAS estas líneas estén en tu .env
 NEXT_PUBLIC_FIREBASE_API_KEY="..."
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="..."
 NEXT_PUBLIC_FIREBASE_PROJECT_ID="..."
 NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET="..."
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID="..."
 NEXT_PUBLIC_FIREBASE_APP_ID="..."
-
-# Stripe Configuration (Encuentra esto en tu Dashboard de Stripe > Desarrolladores > Claves API)
+`}
+                        </code>
+                    </pre>
+                    <p className="mt-2">Si alguna clave falta, por favor, añádela desde tu <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="underline">Consola de Firebase</a> y reinicia la aplicación.</p>
+                    </AlertDescription>
+                </Alert>
+                 <div className="space-y-2">
+                    <h3 className="font-semibold">Claves de Stripe (Aún necesarias)</h3>
+                    <p className="text-sm text-muted-foreground">
+                        Una vez que Firebase funcione, también necesitarás añadir tus claves de Stripe para habilitar las suscripciones.
+                    </p>
+                    <pre className="mt-2 p-4 bg-muted rounded-md text-xs overflow-x-auto">
+                        <code>
+                            {`# Encuentra esto en tu Dashboard de Stripe
 STRIPE_SECRET_KEY="..."
 STRIPE_WEBHOOK_SECRET="..."
 NEXT_PUBLIC_STRIPE_PRO_PRICE_ID="..."
@@ -111,12 +115,6 @@ NEXT_PUBLIC_STRIPE_VOICE_PLUS_PRICE_ID="..."
 `}
                         </code>
                     </pre>
-                </div>
-                <div className="space-y-2">
-                    <h3 className="font-semibold">3. Reinicia la aplicación</h3>
-                    <p className="text-sm text-muted-foreground">
-                        Detén y vuelve a iniciar el servidor de desarrollo para que los nuevos cambios surtan efecto.
-                    </p>
                 </div>
             </CardContent>
         </Card>
