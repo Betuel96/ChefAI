@@ -13,6 +13,7 @@ import {
   Timestamp,
   setDoc,
   getDoc,
+  updateDoc,
 } from 'firebase/firestore';
 import { db } from './firebase';
 import type { WeeklyPlan, SavedWeeklyPlan, PublishedPost, UserAccount, Recipe, DailyMealPlan } from '@/types';
@@ -106,6 +107,24 @@ export async function deleteMenu(userId: string, menuId: string): Promise<void> 
   const menuDoc = doc(db, 'users', userId, 'menus', menuId);
   await deleteDoc(menuDoc);
 }
+
+/**
+ * Updates a specific menu in a user's collection.
+ * @param userId The ID of the user.
+ * @param menuId The ID of the menu to update.
+ * @param weeklyMealPlan The updated weekly meal plan array.
+ */
+export async function updateMenu(userId: string, menuId: string, weeklyMealPlan: DailyMealPlan[]): Promise<void> {
+  if (!db) {
+    throw new Error('Firestore is not initialized.');
+  }
+  const menuDoc = doc(db, 'users', userId, 'menus', menuId);
+  // Just update the field that changed.
+  await updateDoc(menuDoc, {
+    weeklyMealPlan,
+  });
+}
+
 
 /**
  * Publishes a saved weekly menu as a new post in the community feed.
