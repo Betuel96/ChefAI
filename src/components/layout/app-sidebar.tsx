@@ -14,11 +14,11 @@ import {
   Sparkles,
   LogIn,
   LogOut,
-  User as UserIcon,
   Users,
   PlusSquare,
   Bell,
-  Bookmark
+  Bookmark,
+  Settings,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -52,7 +52,7 @@ const libraryItems = [
   { href: '/my-recipes', label: 'Mis Recetas', icon: BookHeart },
   { href: '/my-menus', label: 'Mis Menús', icon: MenuSquare },
   { href: '/shopping-list', label: 'Lista de Compras', icon: ShoppingCart },
-  { href: '/saved', label: 'Publicaciones Guardadas', icon: Bookmark },
+  { href: '/saved', label: 'Guardado', icon: Bookmark },
 ];
 
 
@@ -159,11 +159,12 @@ export function AppSidebar() {
           </SidebarMenuItem>
 
           <Separator className="my-2" />
-
+          
+          {isOpen && <h3 className="px-4 pt-2 pb-1 text-xs uppercase text-muted-foreground font-semibold tracking-wider">Herramientas AI</h3>}
           {aiToolsItems.map((item) => (
             <SidebarMenuItem key={item.href}>
               <Link href={item.href}>
-                <SidebarMenuButton isActive={pathname === item.href} tooltip={item.label}>
+                <SidebarMenuButton isActive={pathname.startsWith(item.href)} tooltip={item.label}>
                   <item.icon />
                   <span>{item.label}</span>
                 </SidebarMenuButton>
@@ -173,6 +174,7 @@ export function AppSidebar() {
 
           <Separator className="my-2" />
 
+          {isOpen && <h3 className="px-4 pt-2 pb-1 text-xs uppercase text-muted-foreground font-semibold tracking-wider">Comunidad</h3>}
            {communityItems.map((item) => (
             <SidebarMenuItem key={item.href}>
               <Link href={item.href}>
@@ -190,10 +192,11 @@ export function AppSidebar() {
 
           <Separator className="my-2" />
 
+          {isOpen && <h3 className="px-4 pt-2 pb-1 text-xs uppercase text-muted-foreground font-semibold tracking-wider">Librería</h3>}
           {libraryItems.map((item) => (
             <SidebarMenuItem key={item.href}>
               <Link href={item.href}>
-                <SidebarMenuButton isActive={pathname === item.href} tooltip={item.label}>
+                <SidebarMenuButton isActive={pathname.startsWith(item.href)} tooltip={item.label}>
                   <item.icon />
                   <span>{item.label}</span>
                 </SidebarMenuButton>
@@ -201,19 +204,18 @@ export function AppSidebar() {
             </SidebarMenuItem>
           ))}
           
-          <Separator className="my-2" />
-          
-           <SidebarMenuItem>
-              <Link href="/pro">
-                <SidebarMenuButton isActive={pathname === '/pro'} tooltip="Mi Perfil">
-                  <UserIcon />
-                  <span>Mi Perfil</span>
-                </SidebarMenuButton>
-              </Link>
-            </SidebarMenuItem>
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
+         <SidebarMenuItem>
+              <Link href="/settings">
+                <SidebarMenuButton isActive={pathname.startsWith('/settings')} tooltip="Ajustes">
+                  <Settings />
+                  <span>Ajustes</span>
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
+            <Separator className="my-2" />
          {user ? (
              <SidebarMenuItem>
                 <SidebarMenuButton onClick={handleLogout} tooltip="Cerrar Sesión">

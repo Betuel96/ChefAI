@@ -1,22 +1,12 @@
 // src/app/pro/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
-import { getProfileData, getUserPublishedPosts } from '@/lib/community';
-import type { ProfileData, PublishedPost } from '@/types';
-import Link from 'next/link';
-
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Separator } from '@/components/ui/separator';
-import { ProfileHeader } from '@/components/profile/ProfileHeader';
-import { PostGrid } from '@/components/profile/PostGrid';
-import { LogIn } from 'lucide-react';
 
-
-const MyProfilePageSkeleton = () => (
+const LoadingSkeleton = () => (
      <div className="max-w-4xl mx-auto space-y-8">
         <div className="flex flex-col sm:flex-row items-center gap-6">
             <Skeleton className="h-24 w-24 rounded-full sm:h-32 sm:w-32" />
@@ -35,80 +25,24 @@ const MyProfilePageSkeleton = () => (
     </div>
 );
 
-export default function MyProfilePage() {
-  const { user, loading: authLoading } = useAuth();
-  
-  const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [posts, setPosts] = useState<PublishedPost[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+export default function MyProfileRedirectPage() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
-    if (authLoading) return;
-    if (!user) {
-      setIsLoading(false);
+    if (loading) {
+      // Esperar hasta que se resuelva el estado de autenticación
       return;
     }
 
-    const fetchData = async () => {
-        setIsLoading(true);
-        try {
-             const [profileData, publishedPosts] = await Promise.all([
-                getProfileData(user.uid),
-                getUserPublishedPosts(user.uid),
-            ]);
-            setProfile(profileData);
-            setPosts(publishedPosts);
-        } catch (error) {
-             console.error("Error fetching my profile data:", error);
-        } finally {
-             setIsLoading(false);
-        }
-    };
+    if (user?.uid) {
+      router.replace(`/profile/${user.uid}`);
+    } else {
+      // Si no se ha iniciado sesión después de comprobar, redirigir al inicio de sesión
+      router.replace('/login');
+    }
+  }, [user, loading, router]);
 
-    fetchData();
-  }, [user, authLoading]);
-
-
-  if (authLoading || isLoading) {
-    return <MyProfilePageSkeleton />;
-  }
-
-  if (!user) {
-    return (
-      <div className="flex justify-center items-center min-h-[calc(100vh-8rem)]">
-        <Card className="max-w-md w-full shadow-lg p-8 text-center">
-            <LogIn className="w-12 h-12 text-primary mx-auto mb-4" />
-            <CardTitle className='font-headline text-2xl'>Inicia sesión para ver tu perfil</CardTitle>
-            <CardDescription className='mt-2 mb-6'>No has iniciado sesión. Accede a tu cuenta para ver tu perfil y gestionar tu cuenta.</CardDescription>
-            <Button asChild>
-                <Link href="/login">Acceder / Registrarse</Link>
-            </Button>
-        </Card>
-      </div>
-    );
-  }
-  
-  if (!profile) {
-    return (
-        <div className="flex justify-center items-center min-h-[calc(100vh-8rem)]">
-            Cargando perfil...
-        </div>
-    )
-  }
-
-  return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      <ProfileHeader 
-        profile={profile} 
-        isFollowing={false} // Not applicable for own profile
-        onFollowToggle={() => {}} 
-        isCurrentUser={true} 
-      />
-
-      <Separator />
-
-      <h2 className="font-headline text-2xl font-bold text-center">Mis Publicaciones</h2>
-      <PostGrid posts={posts} />
-    </div>
-  );
+  // Mostrar un esqueleto de carga mientras se redirige para proporcionar una transición suave
+  return <LoadingSkeleton />;
 }
