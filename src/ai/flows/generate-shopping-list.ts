@@ -55,6 +55,7 @@ const prompt = ai.definePrompt({
 7.  Cada objeto en el array representa una categoría y debe contener las siguientes claves:
     - \`category\`: El nombre de la categoría (p. ej., "Frutas y Verduras").
     - \`items\`: Un ARRAY de strings, donde cada string es un ingrediente individual de esa categoría.
+8.  **Instrucción de Idioma:** Toda la respuesta y el contenido debe estar en español.
 `,
   config: {
     safetySettings: [

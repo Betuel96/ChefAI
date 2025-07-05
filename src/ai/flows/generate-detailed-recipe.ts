@@ -58,6 +58,7 @@ The response MUST be a valid JSON object with the following keys:
 - \`equipment\`: An **ARRAY of strings**. Each string is a necessary piece of equipment (e.g., ["frying pan", "cutting board", "chef's knife"]).
 - \`benefits\`: A **string** with a brief description of the nutritional or health benefits (e.g., "High in protein, great for post-workout muscle recovery.").
 - \`nutritionalTable\`: An **OBJECT** with estimated nutritional information per serving. It MUST contain the keys: \`calories\`, \`protein\`, \`carbs\`, and \`fats\`. (e.g., { "calories": "450kcal", "protein": "40g", "carbs": "30g", "fats": "15g" }).
+**Language Instruction:** All text content MUST be in Spanish.
 `,
   config: {
     temperature: 0.8,

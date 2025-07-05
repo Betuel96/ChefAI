@@ -66,6 +66,7 @@ La respuesta DEBE ser un objeto JSON válido con las siguientes claves:
 - \`equipment\`: Un **ARRAY de strings**. Cada string es un utensilio necesario (ej: ["sartén", "tabla de cortar", "cuchillo de chef"]).
 - \`benefits\`: Un **string** con una breve descripción de los beneficios nutricionales o de salud de la receta (ej: "Alto en proteínas, ideal para la recuperación muscular después del ejercicio.").
 - \`nutritionalTable\`: Un **OBJETO** con información nutricional estimada por porción. Debe contener las claves: \`calories\`, \`protein\`, \`carbs\`, y \`fats\`. (ej: { "calories": "450kcal", "protein": "40g", "carbs": "30g", "fats": "15g" }).
+**Instrucción de Idioma:** Toda la respuesta y el contenido DEBE estar en español.
 `,
   config: {
     temperature: 1.0,

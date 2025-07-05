@@ -105,6 +105,7 @@ const prompt = ai.definePrompt({
     - \`nutritionalTable\`: (Opcional) Un **OBJETO** con información nutricional estimada por porción. Debe contener las claves: \`calories\`, \`protein\`, \`carbs\`, y \`fats\`. (ej: { "calories": "450kcal", "protein": "40g", "carbs": "30g", "fats": "15g" }).
 6.  Utiliza los ingredientes disponibles como base, pero añade otros ingredientes comunes si es necesario para crear recetas completas.
 7.  Respeta estrictamente las preferencias dietéticas.
+8.  **Instrucción de Idioma:** Toda la respuesta y el contenido DEBE estar en español.
 `,
   config: {
     temperature: 1.0,
