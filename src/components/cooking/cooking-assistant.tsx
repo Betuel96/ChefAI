@@ -48,7 +48,6 @@ export function CookingAssistant({ isOpen, onOpenChange, recipe }: CookingAssist
       const input: CookingAssistantInput = {
         recipe,
         history: updatedConversation,
-        userQuery,
       };
       responseText = await getCookingResponse(input);
       setConversation(prev => [...prev, { role: 'model', content: responseText }]);
