@@ -484,6 +484,7 @@ export async function getProfileData(userId: string): Promise<ProfileDataType | 
         username: data.username,
         photoURL: data.photoURL,
         isPremium: data.isPremium,
+        subscriptionTier: data.subscriptionTier,
         profileType: data.profileType || 'public',
         notificationSettings: data.notificationSettings || { publicFeed: true, followingFeed: true },
         lastVisitedFeeds: data.lastVisitedFeeds || null,

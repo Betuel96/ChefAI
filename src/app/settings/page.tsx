@@ -172,7 +172,7 @@ const AccountSettings = ({ profile, onProfileUpdate }: { profile: ProfileData, o
              <Card>
                 <CardHeader>
                     <CardTitle className="font-headline">Monetización</CardTitle>
-                    <CardDescription>Recibe pagos por tu contenido.</CardDescription>
+                    <CardDescription>Recibe propinas por tu contenido.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {profile.stripeConnectAccountId ? (
@@ -185,17 +185,21 @@ const AccountSettings = ({ profile, onProfileUpdate }: { profile: ProfileData, o
                                 </AlertDescription>
                             </Alert>
                         ) : (
-                            <Alert variant="destructive">
+                             <Alert>
                                 <Loader2 className="h-4 w-4 animate-spin" />
                                 <AlertTitle>Configuración Pendiente</AlertTitle>
                                 <AlertDescription>
                                     Tu cuenta de Stripe está conectada pero necesita más información. Completa el proceso en Stripe para empezar a monetizar.
                                 </AlertDescription>
+                                 <Button size="sm" className="w-full mt-4" onClick={handleCreateConnectAccount} disabled={isConnectingStripe}>
+                                    {isConnectingStripe ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Banknote className="mr-2 h-4 w-4" />}
+                                    Continuar en Stripe
+                                </Button>
                             </Alert>
                         )
                     ) : (
                         <div className="space-y-4">
-                            <p className="text-sm text-muted-foreground">Conecta una cuenta de Stripe para aceptar propinas en tus publicaciones. Stripe cobra una comisión por transacción, y ChefAI tomará una pequeña parte para mantener la plataforma.</p>
+                            <p className="text-sm text-muted-foreground">Conecta una cuenta de Stripe para aceptar propinas de $2.00 en tus publicaciones. ChefAI recibe una comisión de $0.50 (25%) por cada propina para mantener la plataforma.</p>
                             <Button className="w-full" onClick={handleCreateConnectAccount} disabled={isConnectingStripe}>
                                 {isConnectingStripe ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Banknote className="mr-2 h-4 w-4" />}
                                 Conectar con Stripe

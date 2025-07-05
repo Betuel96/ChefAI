@@ -1,3 +1,4 @@
+
 import type { User } from 'firebase/auth';
 
 // The core recipe structure from AI
