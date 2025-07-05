@@ -48,6 +48,7 @@ const MealSchema = z.object({
     .describe(
       'Un array de strings, donde cada string es un paso de la preparación, numerado (ej: "1. Mezclar los ingredientes secos.").'
     ),
+  benefits: z.string().optional().describe('Una breve descripción de los beneficios nutricionales o para la salud de esta comida en particular.'),
 });
 
 const DailyMealPlanSchema = z.object({
@@ -92,6 +93,7 @@ const prompt = ai.definePrompt({
     - \`name\`: El nombre de la receta (ej: "Salmón al horno con espárragos").
     - \`ingredients\`: Un **ARRAY de strings**. Cada string debe ser un ingrediente individual con su cantidad (ej: ["1 filete de salmón de 150g", "1 manojo de espárragos", "1 cucharada de aceite de oliva", "Sal y pimienta al gusto"]).
     - \`instructions\`: Un **ARRAY de strings**. Cada string debe ser un paso de preparación claro y **numerado** (ej: ["1. Precalentar el horno a 200°C.", "2. Colocar el salmón y los espárragos en una bandeja.", "3. Rociar con aceite, sal y pimienta."]).
+    - \`benefits\`: (Opcional) Un string con una breve descripción de los beneficios de esta comida específica.
 6.  Utiliza los ingredientes disponibles como base, pero añade otros ingredientes comunes si es necesario para crear recetas completas.
 7.  Respeta estrictamente las preferencias dietéticas.
 `,

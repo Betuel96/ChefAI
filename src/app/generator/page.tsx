@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Sparkles, ChefHat, Save, Loader2 } from 'lucide-react';
+import { Sparkles, ChefHat, Save, Loader2, Info } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -26,7 +26,8 @@ const formSchema = z.object({
 
 type GeneratedRecipeWithImage = GenerateRecipeOutput & { 
   imageUrl: string; 
-  mediaType: 'image' | 'video'; 
+  mediaType: 'image' | 'video';
+  benefits: string;
 };
 
 export default function RecipeGeneratorPage() {
@@ -184,6 +185,12 @@ export default function RecipeGeneratorPage() {
                         className="object-cover"
                     />
                  </div>
+              {generatedRecipe.benefits && (
+                <div className="p-4 bg-primary/10 rounded-lg">
+                    <h3 className="font-headline text-lg font-semibold text-primary/80 flex items-center gap-2"><Sparkles className="w-5 h-5" /> Beneficios</h3>
+                    <p className="mt-2 text-primary/70 text-sm">{generatedRecipe.benefits}</p>
+                </div>
+              )}
               <div>
                 <h3 className="font-headline text-lg font-semibold text-accent">Ingredientes</h3>
                 <ul className="list-disc list-inside mt-2 text-muted-foreground">

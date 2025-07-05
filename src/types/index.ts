@@ -6,6 +6,7 @@ export interface Recipe {
     instructions: string[];
     ingredients: string[];
     equipment: string[];
+    benefits?: string;
 }
 // A recipe saved to a user's private collection
 export type SavedRecipe = Recipe & { 
@@ -101,6 +102,7 @@ export interface PublishedPost {
     instructions?: string[];
     ingredients?: string[];
     equipment?: string[];
+    benefits?: string;
     
     // This is only present if type is 'menu'
     weeklyMealPlan?: DailyMealPlan[];

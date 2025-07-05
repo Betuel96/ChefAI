@@ -43,6 +43,7 @@ const normalizePostData = (doc: any): PublishedPost => {
             instructions: normalizeField(recipe.instructions),
             ingredients: normalizeField(recipe.ingredients),
             equipment: normalizeField(recipe.equipment),
+            benefits: recipe.benefits || undefined,
         };
     };
 
@@ -73,6 +74,7 @@ const normalizePostData = (doc: any): PublishedPost => {
         instructions: data.type === 'recipe' ? normalizeField(data.instructions) : undefined,
         ingredients: data.type === 'recipe' ? normalizeField(data.ingredients) : undefined,
         equipment: data.type === 'recipe' ? normalizeField(data.equipment) : undefined,
+        benefits: data.type === 'recipe' ? data.benefits : undefined,
         weeklyMealPlan: processedPlan ?? undefined,
         likesCount: data.likesCount || 0,
         commentsCount: data.commentsCount || 0,
@@ -660,34 +662,6 @@ export async function getFollowingPosts(userId: string): Promise<PublishedPost[]
     return posts;
 }
 
-export async function getFriendSuggestions(currentUserId: string): Promise<ProfileListItem[]> {
-  if (!db) throw new Error("Firestore not initialized.");
-
-  const followingRef = collection(db, 'users', currentUserId, 'following');
-  const followingSnap = await getDocs(followingRef);
-  const followingIds = new Set(followingSnap.docs.map(doc => doc.id));
-  followingIds.add(currentUserId);
-
-  const usersCollection = collection(db, 'users');
-  const q = query(usersCollection, orderBy('createdAt', 'desc'), limit(10));
-  const snapshot = await getDocs(q);
-
-  const suggestions: ProfileListItem[] = [];
-  snapshot.forEach(doc => {
-    if (!followingIds.has(doc.id)) {
-      const data = doc.data();
-      suggestions.push({
-        id: doc.id,
-        name: data.name,
-        username: data.username,
-        photoURL: data.photoURL || null,
-      });
-    }
-  });
-  
-  return suggestions.slice(0, 5);
-}
-
 export async function getLatestPostTimestamp(
   forFeed: 'public' | 'following',
   userId?: string
@@ -712,18 +686,26 @@ export async function getLatestPostTimestamp(
     const followingIds = followingSnap.docs.map(doc => doc.id);
     if (followingIds.length === 0) return null;
     
-    const latestPostPromises = followingIds.map(id => 
-        getDocs(query(postsCollection, where('publisherId', '==', id), orderBy('createdAt', 'desc'), limit(1)))
-    );
-    const snapshots = await Promise.all(latestPostPromises);
-    const latestTimestamps = snapshots
-        .map(snap => !snap.empty ? snap.docs[0].data().createdAt as Timestamp : null)
-        .filter(ts => ts !== null) as Timestamp[];
+    // Firestore IN query limited to 30 values. We must chunk.
+    const chunks: string[][] = [];
+    for (let i = 0; i < followingIds.length; i += 30) {
+        chunks.push(followingIds.slice(i, i + 30));
+    }
+    
+    let latestTimestamp: Timestamp | null = null;
 
-    if (latestTimestamps.length === 0) return null;
+    for (const chunk of chunks) {
+         const q = query(postsCollection, where('publisherId', 'in', chunk), orderBy('createdAt', 'desc'), limit(1));
+         const snapshot = await getDocs(q);
+         if (!snapshot.empty) {
+            const currentLatest = snapshot.docs[0].data().createdAt as Timestamp;
+            if (!latestTimestamp || currentLatest.seconds > latestTimestamp.seconds) {
+                latestTimestamp = currentLatest;
+            }
+         }
+    }
 
-    const latest = latestTimestamps.reduce((latest, current) => current.seconds > latest.seconds ? current : latest);
-    return latest.toDate().toISOString();
+    return latestTimestamp ? latestTimestamp.toDate().toISOString() : null;
   }
 }
 

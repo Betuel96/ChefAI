@@ -31,7 +31,7 @@ import {
 } from '@/components/ui/dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MenuSquare, Trash2, LogIn, CalendarDays, Share2, Info, FilePenLine, Save, UtensilsCrossed, Loader2 } from 'lucide-react';
+import { MenuSquare, Trash2, LogIn, CalendarDays, Share2, Info, FilePenLine, Save, UtensilsCrossed, Loader2, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/use-auth';
@@ -42,6 +42,7 @@ import Link from 'next/link';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
 
 const MealCard = ({ meal, onChangeClick }: { meal: Recipe; onChangeClick: () => void }) => (
   <Card className="mt-4 border-accent/20">
@@ -52,6 +53,13 @@ const MealCard = ({ meal, onChangeClick }: { meal: Recipe; onChangeClick: () => 
       </Button>
     </CardHeader>
     <CardContent className="space-y-4 pt-0 pb-4">
+      {meal.benefits && (
+         <div className="mt-4 pt-4 border-t border-dashed">
+            <h5 className="font-headline font-semibold text-accent flex items-center gap-2"><Sparkles className="w-4 h-4" /> Beneficios</h5>
+            <p className="mt-1 text-sm text-muted-foreground">{meal.benefits}</p>
+        </div>
+      )}
+      <Separator />
       <div>
         <h5 className="font-headline font-semibold text-accent">Ingredientes</h5>
         <ul className="list-disc list-inside mt-2 text-muted-foreground">
@@ -180,6 +188,7 @@ export default function MyMenusPage() {
         ingredients: selectedRecipe.ingredients,
         instructions: selectedRecipe.instructions,
         equipment: selectedRecipe.equipment,
+        benefits: selectedRecipe.benefits,
     };
 
     setSavedMenus(currentMenus => 

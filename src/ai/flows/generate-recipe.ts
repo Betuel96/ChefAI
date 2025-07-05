@@ -30,6 +30,7 @@ const GenerateRecipeOutputSchema = z.object({
     .array(z.string())
     .describe('Un array de strings, donde cada string es un ingrediente adicional necesario, con cantidades.'),
   equipment: z.array(z.string()).describe('Un array de strings, donde cada string es un utensilio de cocina necesario.'),
+  benefits: z.string().describe('Una breve descripción de los beneficios nutricionales o para la salud de esta receta (ej: "Alto en proteínas, ideal para después del gimnasio.").'),
 });
 export type GenerateRecipeOutput = z.infer<typeof GenerateRecipeOutputSchema>;
 
@@ -55,6 +56,7 @@ La respuesta DEBE ser un objeto JSON válido con las siguientes claves:
 - \`ingredients\`: Un **ARRAY de strings**. Cada string debe ser un ingrediente necesario con su cantidad (ej: ["2 pechugas de pollo", "1 taza de arroz", "2 cucharadas de aceite de oliva"]).
 - \`instructions\`: Un **ARRAY de strings**. Cada string debe ser un paso de preparación claro y **numerado** (ej: ["1. Sazonar el pollo con sal y pimienta.", "2. Calentar el aceite en una sartén a fuego medio.", "3. Cocinar el pollo por 6-8 minutos por cada lado."]).
 - \`equipment\`: Un **ARRAY de strings**. Cada string es un utensilio necesario (ej: ["sartén", "tabla de cortar", "cuchillo de chef"]).
+- \`benefits\`: Un **string** con una breve descripción de los beneficios nutricionales o de salud de la receta (ej: "Alto en proteínas, ideal para la recuperación muscular después del ejercicio.").
 `,
   config: {
     temperature: 1.0,

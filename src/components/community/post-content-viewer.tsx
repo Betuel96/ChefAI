@@ -11,12 +11,19 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel"
 import { Separator } from '@/components/ui/separator';
+import { Sparkles } from 'lucide-react';
 
 const MealDetail = ({ title, meal }: { title: string, meal: Recipe | undefined }) => (
   meal ? (
     <div>
       <h4 className="font-headline text-xl font-semibold text-accent">{title}</h4>
       <div className="mt-2 space-y-3">
+        {meal.benefits && (
+            <div className="p-3 bg-primary/10 rounded-md">
+                <h5 className="font-semibold text-primary/80 flex items-center gap-2 text-sm"><Sparkles className="w-4 h-4" /> Beneficios</h5>
+                <p className="text-primary/70 text-xs mt-1">{meal.benefits}</p>
+            </div>
+        )}
         <div>
           <h5 className="font-semibold">Ingredientes:</h5>
           <ul className="whitespace-pre-wrap text-muted-foreground text-sm list-disc list-inside">
@@ -40,6 +47,12 @@ export const PostContentViewer = ({ post }: { post: PublishedPost }) => {
     return (
       <div className="space-y-6 pt-4">
           <Separator />
+           {post.benefits && (
+            <div className="p-4 bg-primary/10 rounded-lg">
+                <h3 className="font-headline text-xl font-semibold text-primary/80 flex items-center gap-2"><Sparkles className="w-5 h-5" /> Beneficios</h3>
+                <p className="mt-2 text-primary/70">{post.benefits}</p>
+            </div>
+            )}
           <div>
               <h3 className="font-headline text-2xl font-semibold text-accent">Ingredientes</h3>
               <ul className="list-disc list-inside mt-2">
