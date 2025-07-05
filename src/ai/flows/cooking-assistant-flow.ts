@@ -70,7 +70,7 @@ Instrucciones:
 
 **Historial de la Conversación:**
 {{#each history}}
-{{#if (eq this.role 'user')}}Usuario: {{else}}ChefAI: {{/if}}{{{this.content}}}
+{{this.role}}: {{{this.content}}}
 {{/each}}
 
 **Última Consulta del Usuario:**
