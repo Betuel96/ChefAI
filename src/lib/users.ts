@@ -60,6 +60,8 @@ export async function createUserDocument(userId: string, name: string, username:
         public: new Date().toISOString(),
         following: new Date().toISOString(),
     },
+    stripeConnectAccountId: null,
+    canMonetize: false,
   });
 
   batch.set(usernameDocRef, { userId });

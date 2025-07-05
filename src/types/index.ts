@@ -70,6 +70,9 @@ export interface UserAccount {
         public: string;
         following: string;
     };
+    // Monetization fields
+    stripeConnectAccountId?: string | null;
+    canMonetize?: boolean;
 }
 
 export type AppUser = (User & Partial<UserAccount>) | null;

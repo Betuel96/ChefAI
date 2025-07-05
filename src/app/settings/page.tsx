@@ -9,7 +9,7 @@ import { getProfileData } from '@/lib/community';
 import { resendVerificationEmail, updateProfileSettings, updateNotificationPreferences } from '@/lib/users';
 import type { ProfileData, UserAccount } from '@/types';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -18,7 +18,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { EditProfileForm } from '@/components/profile/EditProfileForm';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { ArrowLeft, CheckCircle, Gem, LogIn, Mail, VenetianMask, Terminal, ShieldQuestion, BellRing, Sparkles } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Gem, LogIn, Mail, VenetianMask, Terminal, ShieldQuestion, BellRing, Sparkles, Banknote, Loader2 } from 'lucide-react';
 
 const proFeatures = [
   'Generaciones ilimitadas de recetas',
@@ -57,6 +57,7 @@ const AccountSettings = ({ profile, onProfileUpdate }: { profile: ProfileData, o
   const [isSending, setIsSending] = useState(false);
   const [isPrivacySaving, setIsPrivacySaving] = useState(false);
   const [isNotificationSaving, setIsNotificationSaving] = useState(false);
+  const [isConnectingStripe, setIsConnectingStripe] = useState(false);
 
   if (!user) return null;
 
@@ -85,6 +86,34 @@ const AccountSettings = ({ profile, onProfileUpdate }: { profile: ProfileData, o
         setIsRedirecting(false);
     }
   };
+
+  const handleCreateConnectAccount = async () => {
+    setIsConnectingStripe(true);
+    try {
+        const response = await fetch('/api/create-connect-account', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: user.uid }),
+        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'No se pudo crear la cuenta de Stripe.');
+        }
+        const { url } = await response.json();
+        if (url) {
+            window.location.href = url;
+        } else {
+            throw new Error('No se recibió la URL de Stripe.');
+        }
+    } catch(error: any) {
+        toast({
+            title: 'Error de Conexión',
+            description: error.message,
+            variant: 'destructive',
+        });
+        setIsConnectingStripe(false);
+    }
+  }
 
   const handleResend = async () => {
     setIsSending(true);
@@ -140,6 +169,42 @@ const AccountSettings = ({ profile, onProfileUpdate }: { profile: ProfileData, o
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start pt-6">
         <div className="lg:col-span-2 space-y-8">
+             <Card>
+                <CardHeader>
+                    <CardTitle className="font-headline">Monetización</CardTitle>
+                    <CardDescription>Recibe pagos por tu contenido.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {profile.stripeConnectAccountId ? (
+                        profile.canMonetize ? (
+                            <Alert variant="default" className="border-green-500">
+                                <CheckCircle className="h-4 w-4 text-green-500" />
+                                <AlertTitle>¡Cuenta Conectada!</AlertTitle>
+                                <AlertDescription>
+                                    Tu cuenta de Stripe está configurada y lista para recibir pagos.
+                                </AlertDescription>
+                            </Alert>
+                        ) : (
+                            <Alert variant="destructive">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <AlertTitle>Configuración Pendiente</AlertTitle>
+                                <AlertDescription>
+                                    Tu cuenta de Stripe está conectada pero necesita más información. Completa el proceso en Stripe para empezar a monetizar.
+                                </AlertDescription>
+                            </Alert>
+                        )
+                    ) : (
+                        <div className="space-y-4">
+                            <p className="text-sm text-muted-foreground">Conecta una cuenta de Stripe para aceptar propinas en tus publicaciones y ganar dinero con tus recetas.</p>
+                            <Button className="w-full" onClick={handleCreateConnectAccount} disabled={isConnectingStripe}>
+                                {isConnectingStripe ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Banknote className="mr-2 h-4 w-4" />}
+                                Conectar con Stripe
+                            </Button>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+
             <Card>
                 <CardHeader>
                     <CardTitle className='font-headline'>Información de la Cuenta</CardTitle>
@@ -169,6 +234,32 @@ const AccountSettings = ({ profile, onProfileUpdate }: { profile: ProfileData, o
                             </Button>
                         )}
                      </div>
+                </CardContent>
+            </Card>
+
+            <EditProfileForm profile={profile} onProfileUpdate={onProfileUpdate} />
+
+            <Card>
+                <CardHeader>
+                    <CardTitle className="font-headline">Privacidad del Perfil</CardTitle>
+                    <CardDescription>Controla quién puede ver tu perfil y publicaciones.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex items-center space-x-4 rounded-md border p-4">
+                        <ShieldQuestion className="w-6 h-6" />
+                        <div className="flex-1 space-y-1">
+                            <Label htmlFor="private-profile-switch">Perfil Privado</Label>
+                            <p className="text-xs text-muted-foreground">
+                                Si está activado, los usuarios deberán solicitar seguirte.
+                            </p>
+                        </div>
+                        <Switch
+                            id="private-profile-switch"
+                            checked={profile.profileType === 'private'}
+                            onCheckedChange={handleProfileTypeChange}
+                            disabled={isPrivacySaving}
+                        />
+                    </div>
                 </CardContent>
             </Card>
 
@@ -210,32 +301,6 @@ const AccountSettings = ({ profile, onProfileUpdate }: { profile: ProfileData, o
                     </div>
                 </CardContent>
             </Card>
-            
-            <Card>
-                <CardHeader>
-                    <CardTitle className="font-headline">Privacidad del Perfil</CardTitle>
-                    <CardDescription>Controla quién puede ver tu perfil y publicaciones.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex items-center space-x-4 rounded-md border p-4">
-                        <ShieldQuestion className="w-6 h-6" />
-                        <div className="flex-1 space-y-1">
-                            <Label htmlFor="private-profile-switch">Perfil Privado</Label>
-                            <p className="text-xs text-muted-foreground">
-                                Si está activado, los usuarios deberán solicitar seguirte.
-                            </p>
-                        </div>
-                        <Switch
-                            id="private-profile-switch"
-                            checked={profile.profileType === 'private'}
-                            onCheckedChange={handleProfileTypeChange}
-                            disabled={isPrivacySaving}
-                        />
-                    </div>
-                </CardContent>
-            </Card>
-
-            <EditProfileForm profile={profile} onProfileUpdate={onProfileUpdate} />
 
         </div>
         <div className="lg:col-span-3">
@@ -324,8 +389,21 @@ const AccountSettings = ({ profile, onProfileUpdate }: { profile: ProfileData, o
 export default function SettingsPage() {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const { toast } = useToast();
     const [profile, setProfile] = useState<ProfileData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        if (searchParams.get('stripe_connect_return')) {
+            toast({
+                title: "¡Bienvenido de vuelta!",
+                description: "Tu cuenta de Stripe está siendo verificada. Recibirás una notificación cuando esté lista.",
+            });
+             // Clean up the URL
+            router.replace('/settings', undefined);
+        }
+    }, [searchParams, router, toast]);
 
     useEffect(() => {
         if (authLoading) return;

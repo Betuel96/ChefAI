@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { headers } from 'next/headers';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
@@ -62,6 +62,33 @@ export async function POST(req: Request) {
     } catch (error) {
       console.error('❌ Error al actualizar el documento del usuario en Firestore:', error);
       return new NextResponse('Webhook Error: No se pudo actualizar el usuario.', { status: 500 });
+    }
+  }
+
+  // Handle Stripe Connect account updates
+  if (event.type === 'account.updated') {
+    const account = event.data.object as Stripe.Account;
+    const accountId = account.id;
+
+    if (account.charges_enabled && account.details_submitted) {
+      console.log(`✅ Cuenta de Connect ${accountId} completamente habilitada.`);
+      try {
+        if (!db) throw new Error('Firestore no está inicializado.');
+        const usersRef = collection(db, 'users');
+        const q = query(usersRef, where('stripeConnectAccountId', '==', accountId));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+            const userDoc = querySnapshot.docs[0];
+            await updateDoc(userDoc.ref, { canMonetize: true });
+            console.log(`✅ Usuario ${userDoc.id} ahora puede monetizar.`);
+        } else {
+            console.warn(`⚠️ No se encontró ningún usuario para la cuenta de Connect ${accountId}.`);
+        }
+
+      } catch (error) {
+         console.error('❌ Error al actualizar el estado de monetización del usuario:', error);
+      }
     }
   }
 
