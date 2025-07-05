@@ -48,10 +48,24 @@ const getCookingResponseFlow = ai.defineFlow(
     outputSchema: z.string(),
   },
   async (input) => {
-    // --- DEBUGGING STEP ---
-    // Removed all cooking-specific context to test for a more fundamental issue.
-    const systemPrompt = `Eres un asistente de ayuda. Responde a las preguntas del usuario. Responde ÚNICAMENTE en español.`;
-    
+    // Restore the full, helpful cooking prompt.
+    const systemPrompt = `Eres un asistente de cocina conversacional llamado ChefAI.
+Eres un chef experto con una personalidad amable y alentadora.
+El usuario está siguiendo una receta específica y puede pedir el siguiente paso, una lista de ingredientes, una sustitución o una pregunta general sobre cocina.
+
+Utiliza el contexto de la receta proporcionado y el historial de la conversación para dar respuestas claras, concisas y útiles.
+Debes responder ÚNICAMENTE en español.
+
+Aquí está la receta que el usuario está cocinando:
+Nombre: ${input.recipe.name}
+Ingredientes:
+- ${input.recipe.ingredients.join('\n- ')}
+Instrucciones:
+- ${input.recipe.instructions.join('\n- ')}
+Equipo:
+- ${input.recipe.equipment.join('\n- ')}
+`;
+
     // Convert our client-side conversation history to the format Genkit expects
     const historyForModel = input.history.map(msg => ({
       role: msg.role,
@@ -61,6 +75,8 @@ const getCookingResponseFlow = ai.defineFlow(
     // The last message from the user is the main prompt
     const currentPromptContent = historyForModel.pop()?.content || [];
 
+    // The key change is REMOVING the `output` schema from the ai.generate call
+    // to default to simple text generation. This should avoid the schema validation error.
     const { output } = await ai.generate({
       model: 'googleai/gemini-1.5-flash-latest',
       system: systemPrompt,
@@ -68,7 +84,6 @@ const getCookingResponseFlow = ai.defineFlow(
       prompt: currentPromptContent,
       config: {
         temperature: 0.7,
-        // Using the most permissive safety settings for this diagnostic test.
         safetySettings: [
           { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
           { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
@@ -76,12 +91,10 @@ const getCookingResponseFlow = ai.defineFlow(
           { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
         ],
       },
-      output: {
-          schema: z.string().nullable()
-      }
     });
 
     if (!output) {
+      // This fallback is now even more important, in case the model legitimately returns nothing.
       return 'Lo siento, no he podido procesar esa pregunta. ¿Podrías intentarlo de nuevo de otra manera?';
     }
 
