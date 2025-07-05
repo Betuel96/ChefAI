@@ -9,6 +9,7 @@ import { AuthProvider } from '@/hooks/use-auth';
 import { MobileHeader } from '@/components/layout/mobile-header';
 import { NotificationProvider } from '@/hooks/use-notifications';
 import { FeedStatusProvider } from '@/hooks/use-feed-status';
+import { AppFooter } from '@/components/layout/app-footer';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -39,7 +40,10 @@ export default function RootLayout({
                 <AppSidebar />
                 <MobileHeader />
                 <SidebarInset>
-                  <main className="min-h-screen p-4 sm:p-6 lg:p-8">{children}</main>
+                  <div className="flex flex-col min-h-screen">
+                    <main className="flex-grow p-4 sm:p-6 lg:p-8">{children}</main>
+                    <AppFooter />
+                  </div>
                 </SidebarInset>
               </SidebarProvider>
             </FeedStatusProvider>

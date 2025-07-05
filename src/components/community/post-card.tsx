@@ -28,6 +28,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { UtensilsCrossed, UserCircle, MessageCircle, ChefHat, MoreVertical, Trash2, Pencil, Share2, MenuSquare, Bookmark, HeartHandshake, Loader2 } from 'lucide-react';
 import { PostMedia } from './post-media';
+import { Checkbox } from '../ui/checkbox';
+import { Label } from '../ui/label';
 
 export const PostCard = ({ post, onPostDeleted }: { post: PublishedPost, onPostDeleted: (postId: string) => void }) => {
     const { user } = useAuth();
@@ -37,6 +39,8 @@ export const PostCard = ({ post, onPostDeleted }: { post: PublishedPost, onPostD
     const [likesCount, setLikesCount] = useState(post.likesCount || 0);
     const [isSaved, setIsSaved] = useState(false);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [showTipDialog, setShowTipDialog] = useState(false);
+    const [isTipAgreed, setIsTipAgreed] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [isTipping, setIsTipping] = useState(false);
 
@@ -85,12 +89,20 @@ export const PostCard = ({ post, onPostDeleted }: { post: PublishedPost, onPostD
         }
     };
     
-    const handleTip = async (e: React.MouseEvent) => {
+    const handleTipClick = (e: React.MouseEvent) => {
         e.stopPropagation();
         if (!user) {
             toast({ title: 'Debes iniciar sesión para dar una propina.', variant: 'destructive' });
             return;
         }
+        setIsTipAgreed(false);
+        setShowTipDialog(true);
+    };
+
+    const proceedWithTip = async () => {
+        if (!user) return;
+        
+        setShowTipDialog(false);
         setIsTipping(true);
         try {
              const response = await fetch('/api/create-tip-session', {
@@ -272,7 +284,7 @@ export const PostCard = ({ post, onPostDeleted }: { post: PublishedPost, onPostD
                     <Bookmark className={cn("w-5 h-5 transition-colors", isSaved && "fill-primary text-primary")} />
                 </Button>
                 {post.canMonetize && !isOwner && (
-                    <Button variant="ghost" size="sm" onClick={handleTip} disabled={isTipping} className="flex items-center gap-2 text-muted-foreground hover:text-green-500">
+                    <Button variant="ghost" size="sm" onClick={handleTipClick} disabled={isTipping} className="flex items-center gap-2 text-muted-foreground hover:text-green-500">
                         {isTipping ? <Loader2 className="w-5 h-5 animate-spin" /> : <HeartHandshake className="w-5 h-5" />}
                         <span>Apoyar</span>
                     </Button>
@@ -282,6 +294,7 @@ export const PostCard = ({ post, onPostDeleted }: { post: PublishedPost, onPostD
                 </Button>
             </CardFooter>
         </Card>
+        
         <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
             <AlertDialogContent>
                 <AlertDialogHeader>
@@ -298,6 +311,30 @@ export const PostCard = ({ post, onPostDeleted }: { post: PublishedPost, onPostD
                         className={cn(buttonVariants({ variant: 'destructive' }))}
                     >
                         {isDeleting ? 'Eliminando...' : 'Eliminar'}
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={showTipDialog} onOpenChange={setShowTipDialog}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Apoyar al Creador</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Las propinas son una forma de apoyar directamente a los creadores por su trabajo. Esta transacción no es reembolsable.
+                        <div className="flex items-center space-x-2 mt-4">
+                            <Checkbox id={`tip-agreement-${post.id}`} checked={isTipAgreed} onCheckedChange={(checked) => setIsTipAgreed(checked as boolean)} />
+                            <Label htmlFor={`tip-agreement-${post.id}`} className="text-sm font-normal text-muted-foreground">
+                                Entiendo y acepto las <Link href="/policies#monetization-policy" className="underline" target="_blank">políticas de monetización</Link>.
+                            </Label>
+                        </div>
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={proceedWithTip} disabled={!isTipAgreed || isTipping}>
+                        {isTipping ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                        Continuar con la Propina ($2.00)
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>

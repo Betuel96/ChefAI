@@ -45,6 +45,8 @@ import {
 import { CommentInput } from '@/components/community/comment-input';
 import { PostMedia } from '@/components/community/post-media';
 import { PostContentViewer } from '@/components/community/post-content-viewer';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 
 type CommentWithReplies = Comment & { replies: CommentWithReplies[] };
 
@@ -241,6 +243,8 @@ export default function PostDetailPage() {
     const [likesCount, setLikesCount] = useState(0);
     const [isSaved, setIsSaved] = useState(false);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [showTipDialog, setShowTipDialog] = useState(false);
+    const [isTipAgreed, setIsTipAgreed] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [isTipping, setIsTipping] = useState(false);
 
@@ -345,11 +349,19 @@ export default function PostDetailPage() {
         }
     };
     
-    const handleTip = async () => {
+    const handleTipClick = () => {
         if (!user || !post) {
             toast({ title: 'Debes iniciar sesión para dar una propina.', variant: 'destructive' });
             return;
         }
+        setIsTipAgreed(false);
+        setShowTipDialog(true);
+    };
+
+    const proceedWithTip = async () => {
+        if (!user || !post) return;
+
+        setShowTipDialog(false);
         setIsTipping(true);
         try {
              const response = await fetch('/api/create-tip-session', {
@@ -546,7 +558,7 @@ export default function PostDetailPage() {
                         <Bookmark className={cn("w-6 h-6 transition-colors", isSaved && "fill-primary text-primary")} />
                     </Button>
                     {post.canMonetize && !isOwner && (
-                        <Button variant="ghost" onClick={handleTip} disabled={isTipping} className="flex items-center gap-2 text-muted-foreground hover:text-green-500">
+                        <Button variant="ghost" onClick={handleTipClick} disabled={isTipping} className="flex items-center gap-2 text-muted-foreground hover:text-green-500">
                              {isTipping ? <Loader2 className="w-6 h-6 animate-spin" /> : <HeartHandshake className="w-6 h-6" />}
                             <span className="font-semibold">Apoyar</span>
                         </Button>
@@ -601,6 +613,30 @@ export default function PostDetailPage() {
                             className={cn(buttonVariants({ variant: 'destructive' }))}
                         >
                             {isDeleting ? 'Eliminando...' : 'Eliminar'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog open={showTipDialog} onOpenChange={setShowTipDialog}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Apoyar al Creador</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Las propinas son una forma de apoyar directamente a los creadores por su trabajo. Esta transacción no es reembolsable.
+                            <div className="flex items-center space-x-2 mt-4">
+                                <Checkbox id="tip-agreement" checked={isTipAgreed} onCheckedChange={(checked) => setIsTipAgreed(checked as boolean)} />
+                                <Label htmlFor="tip-agreement" className="text-sm font-normal text-muted-foreground">
+                                    Entiendo y acepto las <Link href="/policies#monetization-policy" className="underline" target="_blank">políticas de monetización</Link>.
+                                </Label>
+                            </div>
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={proceedWithTip} disabled={!isTipAgreed || isTipping}>
+                            {isTipping ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                            Continuar con la Propina ($2.00)
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

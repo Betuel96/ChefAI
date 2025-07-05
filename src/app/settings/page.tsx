@@ -19,6 +19,9 @@ import { Label } from '@/components/ui/label';
 import { EditProfileForm } from '@/components/profile/EditProfileForm';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { ArrowLeft, CheckCircle, Gem, LogIn, Mail, VenetianMask, Terminal, ShieldQuestion, BellRing, Sparkles, Banknote, Loader2 } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Checkbox } from '@/components/ui/checkbox';
+
 
 const proFeatures = [
   'Generaciones ilimitadas de recetas',
@@ -58,16 +61,25 @@ const AccountSettings = ({ profile, onProfileUpdate }: { profile: ProfileData, o
   const [isPrivacySaving, setIsPrivacySaving] = useState(false);
   const [isNotificationSaving, setIsNotificationSaving] = useState(false);
   const [isConnectingStripe, setIsConnectingStripe] = useState(false);
+  
+  const [agreementDialog, setAgreementDialog] = useState<{type: 'monetization' | 'subscription', priceId?: string} | null>(null);
+  const [isAgreed, setIsAgreed] = useState(false);
 
-  if (!user) return null;
 
-  const handleUpgrade = async (priceId: string) => {
+  const handleUpgradeClick = (priceId: string) => {
+    setIsAgreed(false);
+    setAgreementDialog({ type: 'subscription', priceId });
+  };
+  
+  const proceedWithSubscription = async () => {
+    if (!agreementDialog || !agreementDialog.priceId || !user) return;
+    
     setIsRedirecting(true);
     try {
       const response = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.uid, priceId }),
+        body: JSON.stringify({ userId: user.uid, priceId: agreementDialog.priceId }),
       });
       if (!response.ok) {
         const errorData = await response.json();
@@ -82,13 +94,21 @@ const AccountSettings = ({ profile, onProfileUpdate }: { profile: ProfileData, o
         description: error.message || 'No se pudo redirigir a la página de pago. Inténtalo de nuevo.',
         variant: 'destructive',
       });
+      setIsRedirecting(false);
     } finally {
-        setIsRedirecting(false);
+      setAgreementDialog(null);
     }
   };
 
-  const handleCreateConnectAccount = async () => {
+  const handleCreateConnectAccountClick = () => {
+    setIsAgreed(false);
+    setAgreementDialog({ type: 'monetization' });
+  };
+  
+  const proceedWithStripeConnection = async () => {
+    if (!user) return;
     setIsConnectingStripe(true);
+    setAgreementDialog(null);
     try {
         const response = await fetch('/api/create-connect-account', {
             method: 'POST',
@@ -167,6 +187,7 @@ const AccountSettings = ({ profile, onProfileUpdate }: { profile: ProfileData, o
 
 
   return (
+    <>
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start pt-6">
         <div className="lg:col-span-2 space-y-8">
              <Card>
@@ -191,7 +212,7 @@ const AccountSettings = ({ profile, onProfileUpdate }: { profile: ProfileData, o
                                 <AlertDescription>
                                     Tu cuenta de Stripe está conectada pero necesita más información. Completa el proceso en Stripe para empezar a monetizar.
                                 </AlertDescription>
-                                 <Button size="sm" className="w-full mt-4" onClick={handleCreateConnectAccount} disabled={isConnectingStripe}>
+                                 <Button size="sm" className="w-full mt-4" onClick={handleCreateConnectAccountClick} disabled={isConnectingStripe}>
                                     {isConnectingStripe ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Banknote className="mr-2 h-4 w-4" />}
                                     Continuar en Stripe
                                 </Button>
@@ -200,7 +221,7 @@ const AccountSettings = ({ profile, onProfileUpdate }: { profile: ProfileData, o
                     ) : (
                         <div className="space-y-4">
                             <p className="text-sm text-muted-foreground">Conecta una cuenta de Stripe para aceptar propinas de $2.00 en tus publicaciones. ChefAI recibe una comisión de $0.50 (25%) por cada propina para mantener la plataforma.</p>
-                            <Button className="w-full" onClick={handleCreateConnectAccount} disabled={isConnectingStripe}>
+                            <Button className="w-full" onClick={handleCreateConnectAccountClick} disabled={isConnectingStripe}>
                                 {isConnectingStripe ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Banknote className="mr-2 h-4 w-4" />}
                                 Conectar con Stripe
                             </Button>
@@ -340,7 +361,7 @@ const AccountSettings = ({ profile, onProfileUpdate }: { profile: ProfileData, o
                                 <Button className="w-full" disabled>Suscripción Activa</Button>
                             ) : (
                                 <Button 
-                                    onClick={() => handleUpgrade(process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID!)} 
+                                    onClick={() => handleUpgradeClick(process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID!)} 
                                     className="w-full"
                                     disabled={isRedirecting || !!user?.subscriptionTier}
                                 >
@@ -373,7 +394,7 @@ const AccountSettings = ({ profile, onProfileUpdate }: { profile: ProfileData, o
                                 <Button className="w-full" disabled>Suscripción Activa</Button>
                             ) : (
                                 <Button 
-                                    onClick={() => handleUpgrade(process.env.NEXT_PUBLIC_STRIPE_VOICE_PLUS_PRICE_ID!)}
+                                    onClick={() => handleUpgradeClick(process.env.NEXT_PUBLIC_STRIPE_VOICE_PLUS_PRICE_ID!)}
                                     className="w-full"
                                     disabled={isRedirecting || user?.subscriptionTier === 'pro'}
                                 >
@@ -386,6 +407,37 @@ const AccountSettings = ({ profile, onProfileUpdate }: { profile: ProfileData, o
             </Card>
         </div>
       </div>
+      
+      <AlertDialog open={!!agreementDialog} onOpenChange={() => setAgreementDialog(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Acuerdo de {agreementDialog?.type === 'monetization' ? 'Monetización' : 'Suscripción'}</AlertDialogTitle>
+                <AlertDialogDescription>
+                    {agreementDialog?.type === 'monetization' 
+                        ? 'Al conectar tu cuenta, aceptas las Políticas de Monetización de ChefAI y los Términos de Servicio de Stripe.'
+                        : 'Al suscribirte, tu pago se procesará y se renovará automáticamente. Puedes cancelar en cualquier momento.'
+                    }
+                    <div className="flex items-center space-x-2 mt-4">
+                        <Checkbox id="terms-agreement" checked={isAgreed} onCheckedChange={(checked) => setIsAgreed(checked as boolean)} />
+                        <Label htmlFor="terms-agreement" className="text-sm font-normal text-muted-foreground">
+                            He leído y acepto los <Link href="/policies" className="underline" target="_blank">términos y políticas</Link> aplicables.
+                        </Label>
+                    </div>
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction 
+                    onClick={agreementDialog?.type === 'monetization' ? proceedWithStripeConnection : proceedWithSubscription} 
+                    disabled={!isAgreed || isConnectingStripe || isRedirecting}
+                >
+                    Aceptar y Continuar
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+
+    </>
   );
 }
 
