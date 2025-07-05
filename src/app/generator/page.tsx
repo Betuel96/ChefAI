@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Sparkles, ChefHat, Save, Loader2, Info, Beef } from 'lucide-react';
+import { Sparkles, ChefHat, Save, Loader2, Info, Beef, Gem, Tv } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -19,6 +19,7 @@ import { generateRecipeImage } from '@/ai/flows/generate-recipe-image';
 import { addRecipe } from '@/lib/recipes';
 import { PostMedia } from '@/components/community/post-media';
 import { NutritionalInfo } from '@/types';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 const formSchema = z.object({
   ingredients: z.string().min(10, 'Por favor, enumera al menos algunos ingredientes.'),
@@ -38,6 +39,7 @@ export default function RecipeGeneratorPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [generatedRecipe, setGeneratedRecipe] = useState<GeneratedRecipeWithImage | null>(null);
+  const [pendingAction, setPendingAction] = useState<{ type: 'generate' | 'save', data?: z.infer<typeof formSchema> } | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -47,12 +49,10 @@ export default function RecipeGeneratorPage() {
     },
   });
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  const runGeneration = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
     setGeneratedRecipe(null);
     try {
-      // For a better user experience, we generate the recipe name first for the image prompt.
-      // A more complex implementation might generate the recipe, then the image in a second step.
       const recipeNameGuess = 'un plato delicioso basado en ' + values.ingredients.split(',').slice(0, 2).join(', ');
 
       const [recipeResult, imageResult] = await Promise.all([
@@ -64,7 +64,6 @@ export default function RecipeGeneratorPage() {
         throw new Error('No se pudo generar la receta o la imagen.');
       }
       
-      // We'll override the AI-generated name if the recipe prompt gives a better one.
       recipeResult.name = recipeResult.name || "Receta Creativa";
 
       setGeneratedRecipe({ 
@@ -82,9 +81,17 @@ export default function RecipeGeneratorPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!user || !user.isPremium) {
+        setPendingAction({ type: 'generate', data: values });
+    } else {
+        await runGeneration(values);
+    }
   }
 
-  const handleSaveRecipe = async () => {
+  const runSave = async () => {
     if (!user) {
         toast({ title: 'Debes iniciar sesión para guardar recetas.', variant: 'destructive'});
         router.push('/login');
@@ -112,6 +119,21 @@ export default function RecipeGeneratorPage() {
     }
   }
 
+  const handleSaveClick = () => {
+    if (!user) {
+        toast({ title: 'Debes iniciar sesión para guardar recetas.', variant: 'destructive'});
+        router.push('/login');
+        return;
+    }
+    if (!generatedRecipe) return;
+    
+    if (!user.isPremium) {
+        setPendingAction({ type: 'save' });
+    } else {
+        runSave();
+    }
+  };
+
   const NutritionalTable = ({ table }: { table: NutritionalInfo }) => (
     <div className="p-4 bg-muted/50 rounded-lg">
       <h3 className="font-headline text-lg font-semibold text-accent/80 flex items-center gap-2"><Beef className="w-5 h-5" /> Info. Nutricional (por porción)</h3>
@@ -125,6 +147,7 @@ export default function RecipeGeneratorPage() {
   );
 
   return (
+    <>
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
       <div className="space-y-6">
         <header>
@@ -225,7 +248,7 @@ export default function RecipeGeneratorPage() {
               </div>
             </CardContent>
             <CardFooter>
-                <Button onClick={handleSaveRecipe} disabled={isSaving} className="w-full">
+                <Button onClick={handleSaveClick} disabled={isSaving} className="w-full">
                     {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                     {isSaving ? 'Guardando...' : 'Guardar en mi Libro de Recetas'}
                 </Button>
@@ -241,5 +264,35 @@ export default function RecipeGeneratorPage() {
         </Card>
       </div>
     </div>
+    
+    <AlertDialog open={!!pendingAction} onOpenChange={(isOpen) => !isOpen && setPendingAction(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle className="font-headline flex items-center gap-2">
+                    <Gem className="text-primary" /> ¡Actualiza a Pro!
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                    Para apoyar la plataforma, las generaciones y guardados para usuarios gratuitos requieren ver un anuncio. ¡Actualiza a Pro para una experiencia sin anuncios e ilimitada!
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <Button variant="secondary" onClick={() => router.push('/settings')}>
+                    <Gem className="mr-2 h-4 w-4" /> Actualizar a Pro
+                </Button>
+                <AlertDialogAction onClick={async () => {
+                    if (pendingAction?.type === 'generate') {
+                        await runGeneration(pendingAction.data!);
+                    } else if (pendingAction?.type === 'save') {
+                        await runSave();
+                    }
+                    setPendingAction(null);
+                }}>
+                    <Tv className="mr-2 h-4 w-4" /> Ver Anuncio y Continuar
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }

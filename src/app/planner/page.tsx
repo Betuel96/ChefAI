@@ -11,7 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { CalendarDays, Sparkles, Loader2, Save, ShoppingCart, Utensils, Share2 } from 'lucide-react';
+import { CalendarDays, Sparkles, Loader2, Save, ShoppingCart, Utensils, Share2, Gem, Tv } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -65,6 +65,7 @@ export default function MealPlannerPage() {
   const [, setShoppingList] = useLocalStorage<ShoppingListCategory[]>('shoppingList', []);
   const [selectedMenu, setSelectedMenu] = useState<WeeklyPlan | null>(null);
   const [caption, setCaption] = useState('');
+  const [pendingAction, setPendingAction] = useState<{ type: 'generate' | 'save', data?: z.infer<typeof formSchema> } | null>(null);
 
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -77,7 +78,7 @@ export default function MealPlannerPage() {
     },
   });
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  const runGeneration = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
     setMealPlan(null);
     try {
@@ -95,9 +96,17 @@ export default function MealPlannerPage() {
     } finally {
         setIsLoading(false);
     }
+  };
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!user || !user.isPremium) {
+      setPendingAction({ type: 'generate', data: values });
+    } else {
+      await runGeneration(values);
+    }
   }
   
-  const handleSaveMenu = async () => {
+  const runSave = async () => {
     if (!user) {
         toast({ title: 'Debes iniciar sesión para guardar menús.', variant: 'destructive' });
         router.push('/login');
@@ -121,6 +130,16 @@ export default function MealPlannerPage() {
         });
     } finally {
         setIsSaving(false);
+    }
+  };
+
+  const handleSaveMenu = async () => {
+    if (!user || !mealPlan) return;
+
+    if (!user.isPremium) {
+        setPendingAction({ type: 'save' });
+    } else {
+        await runSave();
     }
   }
 
@@ -359,6 +378,35 @@ export default function MealPlannerPage() {
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
+    </AlertDialog>
+    
+    <AlertDialog open={!!pendingAction} onOpenChange={(isOpen) => !isOpen && setPendingAction(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle className="font-headline flex items-center gap-2">
+                    <Gem className="text-primary" /> ¡Actualiza a Pro!
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                    Para apoyar la plataforma, las generaciones y guardados para usuarios gratuitos requieren ver un anuncio. ¡Actualiza a Pro para una experiencia sin anuncios e ilimitada!
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                 <Button variant="secondary" onClick={() => router.push('/settings')}>
+                    <Gem className="mr-2 h-4 w-4" /> Actualizar a Pro
+                </Button>
+                <AlertDialogAction onClick={async () => {
+                    if (pendingAction?.type === 'generate') {
+                        await runGeneration(pendingAction.data!);
+                    } else if (pendingAction?.type === 'save') {
+                        await runSave();
+                    }
+                    setPendingAction(null);
+                }}>
+                    <Tv className="mr-2 h-4 w-4" /> Ver Anuncio y Continuar
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
     </AlertDialog>
     </>
   );
