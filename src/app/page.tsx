@@ -3,10 +3,11 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { DailyMealPlan, Recipe, NutritionalInfo } from '@/types';
-import { UtensilsCrossed, Sparkles, Beef, Mic, Terminal } from 'lucide-react';
+import { UtensilsCrossed, Sparkles, Beef, Mic, Terminal, Gem, Tv } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmailVerificationBanner } from '@/components/layout/email-verification-banner';
@@ -16,6 +17,16 @@ import { collection, query, orderBy, onSnapshot, Timestamp } from 'firebase/fire
 import { db, isFirebaseConfigured } from '@/lib/firebase';
 import { CookingAssistant } from '@/components/cooking/cooking-assistant';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 
 const TodayMealCard = ({ meal, mealType, onStartCooking }: { meal: Recipe; mealType: string; onStartCooking: (recipe: Recipe) => void; }) => {
@@ -124,12 +135,17 @@ NEXT_PUBLIC_STRIPE_VOICE_PLUS_PRICE_ID="..."
 
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const [todaysPlan, setTodaysPlan] = useState<DailyMealPlan | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // State for the cooking assistant
   const [isCooking, setIsCooking] = useState(false);
   const [cookingRecipe, setCookingRecipe] = useState<Recipe | null>(null);
+  
+  // State for the voice upgrade/ad-wall gate
+  const [showVoiceUpgradeDialog, setShowVoiceUpgradeDialog] = useState(false);
+  const [pendingRecipe, setPendingRecipe] = useState<Recipe | null>(null);
 
   // If Firebase is not configured, show the setup guide and stop rendering the rest of the component.
   if (!isFirebaseConfigured) {
@@ -212,8 +228,25 @@ export default function Dashboard() {
   }, [user, authLoading]);
 
   const handleStartCooking = (recipe: Recipe) => {
-    setCookingRecipe(recipe);
-    setIsCooking(true);
+    // If user has the top-tier plan, let them through.
+    if (user?.subscriptionTier === 'voice+') {
+      setCookingRecipe(recipe);
+      setIsCooking(true);
+    } else {
+      // Otherwise, show the upgrade/ad-wall dialog.
+      setPendingRecipe(recipe);
+      setShowVoiceUpgradeDialog(true);
+    }
+  };
+
+  const proceedWithFreeCooking = () => {
+    if (pendingRecipe) {
+      setCookingRecipe(pendingRecipe);
+      setIsCooking(true);
+    }
+    // Reset state
+    setShowVoiceUpgradeDialog(false);
+    setPendingRecipe(null);
   };
 
   const renderContent = () => {
@@ -306,6 +339,29 @@ export default function Dashboard() {
             onOpenChange={setIsCooking}
         />
     )}
+    
+    {/* Voice Assistant Upgrade/Ad-Wall Dialog */}
+    <AlertDialog open={showVoiceUpgradeDialog} onOpenChange={setShowVoiceUpgradeDialog}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle className="font-headline flex items-center gap-2">
+                    <Gem className="text-primary" /> ¡Actualiza a Voice+ para usar el Asistente!
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                    El asistente de cocina por voz es una función premium que consume más recursos. Para usarlo, puedes actualizar a Voice+ o ver varios anuncios para cubrir los costos por un uso.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setPendingRecipe(null)}>Cancelar</AlertDialogCancel>
+                <Button variant="secondary" onClick={() => router.push('/settings')}>
+                    <Gem className="mr-2 h-4 w-4" /> Actualizar a Voice+
+                </Button>
+                <AlertDialogAction onClick={proceedWithFreeCooking}>
+                    <Tv className="mr-2 h-4 w-4" /> Ver Anuncios y Continuar
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 }
