@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Sparkles, ChefHat, Save, Loader2, Info } from 'lucide-react';
+import { Sparkles, ChefHat, Save, Loader2, Info, Beef } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -18,6 +18,7 @@ import { generateRecipe, GenerateRecipeOutput } from '@/ai/flows/generate-recipe
 import { generateRecipeImage } from '@/ai/flows/generate-recipe-image';
 import { addRecipe } from '@/lib/recipes';
 import { PostMedia } from '@/components/community/post-media';
+import { NutritionalInfo } from '@/types';
 
 const formSchema = z.object({
   ingredients: z.string().min(10, 'Por favor, enumera al menos algunos ingredientes.'),
@@ -111,6 +112,18 @@ export default function RecipeGeneratorPage() {
     }
   }
 
+  const NutritionalTable = ({ table }: { table: NutritionalInfo }) => (
+    <div className="p-4 bg-muted/50 rounded-lg">
+      <h3 className="font-headline text-lg font-semibold text-accent/80 flex items-center gap-2"><Beef className="w-5 h-5" /> Info. Nutricional (por porción)</h3>
+      <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-muted-foreground">
+        <span>Calorías: {table.calories}</span>
+        <span>Proteína: {table.protein}</span>
+        <span>Carbohidratos: {table.carbs}</span>
+        <span>Grasas: {table.fats}</span>
+      </div>
+    </div>
+  );
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
       <div className="space-y-6">
@@ -191,6 +204,7 @@ export default function RecipeGeneratorPage() {
                     <p className="mt-2 text-primary/70 text-sm">{generatedRecipe.benefits}</p>
                 </div>
               )}
+              {generatedRecipe.nutritionalTable && <NutritionalTable table={generatedRecipe.nutritionalTable} />}
               <div>
                 <h3 className="font-headline text-lg font-semibold text-accent">Ingredientes</h3>
                 <ul className="list-disc list-inside mt-2 text-muted-foreground">

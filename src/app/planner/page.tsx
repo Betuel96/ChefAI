@@ -85,7 +85,7 @@ export default function MealPlannerPage() {
       if (!result || !result.weeklyMealPlan) {
         throw new Error('La IA no pudo generar un plan de comidas.');
       }
-      setMealPlan(result);
+      setMealPlan({ ...result, ...values });
     } catch(error: any) {
         toast({
             title: 'Error de Generación',

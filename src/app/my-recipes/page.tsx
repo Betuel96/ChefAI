@@ -2,7 +2,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import type { SavedRecipe } from '@/types';
+import type { SavedRecipe, NutritionalInfo } from '@/types';
 import { Button } from '@/components/ui/button';
 import {
   Accordion,
@@ -22,7 +22,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BookHeart, LogIn, Trash2, UtensilsCrossed, Sparkles } from 'lucide-react';
+import { BookHeart, LogIn, Trash2, UtensilsCrossed, Sparkles, Beef } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { Separator } from '@/components/ui/separator';
@@ -31,6 +31,19 @@ import { getRecipes, deleteRecipe } from '@/lib/recipes';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { PostMedia } from '@/components/community/post-media';
+
+const NutritionalTable = ({ table }: { table: NutritionalInfo }) => (
+  <div className="p-4 bg-muted/50 rounded-lg">
+    <h3 className="font-headline text-lg font-semibold text-accent/80 flex items-center gap-2"><Beef className="w-5 h-5" /> Info. Nutricional (por porción)</h3>
+    <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-muted-foreground">
+      <span>Calorías: {table.calories}</span>
+      <span>Proteína: {table.protein}</span>
+      <span>Carbohidratos: {table.carbs}</span>
+      <span>Grasas: {table.fats}</span>
+    </div>
+  </div>
+);
+
 
 export default function MyRecipesPage() {
   const { user, loading: authLoading } = useAuth();
@@ -153,6 +166,14 @@ export default function MyRecipesPage() {
                     <p>Sin imagen/video</p>
                   </div>
                 )}
+                
+                {recipe.benefits && (
+                    <div className="p-4 bg-primary/10 rounded-lg">
+                        <h3 className="font-headline text-lg font-semibold text-primary/80 flex items-center gap-2"><Sparkles className="w-5 h-5" /> Beneficios</h3>
+                        <p className="mt-2 text-primary/70 text-sm">{recipe.benefits}</p>
+                    </div>
+                )}
+                {recipe.nutritionalTable && <NutritionalTable table={recipe.nutritionalTable} />}
 
                 <div>
                     <h3 className="font-headline text-xl font-semibold text-accent">Ingredientes</h3>

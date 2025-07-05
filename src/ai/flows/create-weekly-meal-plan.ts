@@ -38,6 +38,13 @@ const CreateWeeklyMealPlanInputSchema = z.object({
 });
 export type CreateWeeklyMealPlanInput = z.infer<typeof CreateWeeklyMealPlanInputSchema>;
 
+const NutritionalInfoSchema = z.object({
+  calories: z.string().describe('Calorías estimadas por porción.'),
+  protein: z.string().describe('Proteínas estimadas en gramos por porción.'),
+  carbs: z.string().describe('Carbohidratos estimados en gramos por porción.'),
+  fats: z.string().describe('Grasas estimadas en gramos por porción.'),
+});
+
 const MealSchema = z.object({
   name: z.string().describe('El nombre de la comida.'),
   ingredients: z
@@ -49,6 +56,7 @@ const MealSchema = z.object({
       'Un array de strings, donde cada string es un paso de la preparación, numerado (ej: "1. Mezclar los ingredientes secos.").'
     ),
   benefits: z.string().optional().describe('Una breve descripción de los beneficios nutricionales o para la salud de esta comida en particular.'),
+  nutritionalTable: NutritionalInfoSchema.optional().describe('Una tabla nutricional estimada para esta comida por porción.'),
 });
 
 const DailyMealPlanSchema = z.object({
@@ -94,6 +102,7 @@ const prompt = ai.definePrompt({
     - \`ingredients\`: Un **ARRAY de strings**. Cada string debe ser un ingrediente individual con su cantidad (ej: ["1 filete de salmón de 150g", "1 manojo de espárragos", "1 cucharada de aceite de oliva", "Sal y pimienta al gusto"]).
     - \`instructions\`: Un **ARRAY de strings**. Cada string debe ser un paso de preparación claro y **numerado** (ej: ["1. Precalentar el horno a 200°C.", "2. Colocar el salmón y los espárragos en una bandeja.", "3. Rociar con aceite, sal y pimienta."]).
     - \`benefits\`: (Opcional) Un string con una breve descripción de los beneficios de esta comida específica.
+    - \`nutritionalTable\`: (Opcional) Un **OBJETO** con información nutricional estimada por porción. Debe contener las claves: \`calories\`, \`protein\`, \`carbs\`, y \`fats\`. (ej: { "calories": "450kcal", "protein": "40g", "carbs": "30g", "fats": "15g" }).
 6.  Utiliza los ingredientes disponibles como base, pero añade otros ingredientes comunes si es necesario para crear recetas completas.
 7.  Respeta estrictamente las preferencias dietéticas.
 `,

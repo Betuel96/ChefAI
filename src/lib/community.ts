@@ -44,6 +44,7 @@ const normalizePostData = (doc: any): PublishedPost => {
             ingredients: normalizeField(recipe.ingredients),
             equipment: normalizeField(recipe.equipment),
             benefits: recipe.benefits || undefined,
+            nutritionalTable: recipe.nutritionalTable || undefined,
         };
     };
 
@@ -75,6 +76,7 @@ const normalizePostData = (doc: any): PublishedPost => {
         ingredients: data.type === 'recipe' ? normalizeField(data.ingredients) : undefined,
         equipment: data.type === 'recipe' ? normalizeField(data.equipment) : undefined,
         benefits: data.type === 'recipe' ? data.benefits : undefined,
+        nutritionalTable: data.type === 'recipe' ? data.nutritionalTable : undefined,
         weeklyMealPlan: processedPlan ?? undefined,
         likesCount: data.likesCount || 0,
         commentsCount: data.commentsCount || 0,
@@ -472,7 +474,7 @@ export async function unfollowUser(currentUserId: string, targetUserId:string) {
     await batch.commit();
 }
 
-export async function getFollowingStatus(currentUserId: string, targetUserId: string): Promise<FollowStatus> {
+export async function getFollowingStatus(currentUserId: string, targetUserId: string): Promise<any> {
     if (!db) throw new Error("Firestore not initialized.");
     
     const followingRef = doc(db, 'users', currentUserId, 'following', targetUserId);

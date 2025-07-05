@@ -1,7 +1,7 @@
 // src/components/community/post-content-viewer.tsx
 'use client';
 
-import type { PublishedPost, Recipe } from '@/types';
+import type { PublishedPost, Recipe, NutritionalInfo } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Carousel,
@@ -11,17 +11,28 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel"
 import { Separator } from '@/components/ui/separator';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Beef } from 'lucide-react';
 
 const MealDetail = ({ title, meal }: { title: string, meal: Recipe | undefined }) => (
   meal ? (
     <div>
-      <h4 className="font-headline text-xl font-semibold text-accent">{title}</h4>
+      <h4 className="font-headline text-xl font-semibold text-accent">{title}: {meal.name}</h4>
       <div className="mt-2 space-y-3">
         {meal.benefits && (
             <div className="p-3 bg-primary/10 rounded-md">
                 <h5 className="font-semibold text-primary/80 flex items-center gap-2 text-sm"><Sparkles className="w-4 h-4" /> Beneficios</h5>
                 <p className="text-primary/70 text-xs mt-1">{meal.benefits}</p>
+            </div>
+        )}
+        {meal.nutritionalTable && (
+             <div className="p-3 bg-muted/50 rounded-md">
+                <h5 className="font-semibold text-accent/80 flex items-center gap-2 text-sm"><Beef className="w-4 h-4" /> Info. Nutricional</h5>
+                <div className="text-accent/70 text-xs mt-1 grid grid-cols-2">
+                    <span>Calorías: {meal.nutritionalTable.calories}</span>
+                    <span>Proteína: {meal.nutritionalTable.protein}</span>
+                    <span>Carbohidratos: {meal.nutritionalTable.carbs}</span>
+                    <span>Grasas: {meal.nutritionalTable.fats}</span>
+                </div>
             </div>
         )}
         <div>
@@ -52,6 +63,17 @@ export const PostContentViewer = ({ post }: { post: PublishedPost }) => {
                 <h3 className="font-headline text-xl font-semibold text-primary/80 flex items-center gap-2"><Sparkles className="w-5 h-5" /> Beneficios</h3>
                 <p className="mt-2 text-primary/70">{post.benefits}</p>
             </div>
+            )}
+            {post.nutritionalTable && (
+                 <div className="p-4 bg-muted/50 rounded-lg">
+                    <h3 className="font-headline text-xl font-semibold text-accent/80 flex items-center gap-2"><Beef className="w-5 h-5" /> Info. Nutricional (por porción)</h3>
+                     <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                        <span>Calorías: {post.nutritionalTable.calories}</span>
+                        <span>Proteína: {post.nutritionalTable.protein}</span>
+                        <span>Carbohidratos: {post.nutritionalTable.carbs}</span>
+                        <span>Grasas: {post.nutritionalTable.fats}</span>
+                    </div>
+                </div>
             )}
           <div>
               <h3 className="font-headline text-2xl font-semibold text-accent">Ingredientes</h3>

@@ -3,7 +3,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import type { SavedWeeklyPlan, DailyMealPlan, Recipe, SavedRecipe } from '@/types';
+import type { SavedWeeklyPlan, DailyMealPlan, Recipe, SavedRecipe, NutritionalInfo } from '@/types';
 import { Button } from '@/components/ui/button';
 import {
   Accordion,
@@ -28,10 +28,11 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter
 } from '@/components/ui/dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MenuSquare, Trash2, LogIn, CalendarDays, Share2, Info, FilePenLine, Save, UtensilsCrossed, Loader2, Sparkles } from 'lucide-react';
+import { MenuSquare, Trash2, LogIn, CalendarDays, Share2, Info, FilePenLine, Save, UtensilsCrossed, Loader2, Sparkles, Beef, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/use-auth';
@@ -43,6 +44,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
+import { generateDetailedRecipe } from '@/ai/flows/generate-detailed-recipe';
+
 
 const MealCard = ({ meal, onChangeClick }: { meal: Recipe; onChangeClick: () => void }) => (
   <Card className="mt-4 border-accent/20">
@@ -57,6 +60,17 @@ const MealCard = ({ meal, onChangeClick }: { meal: Recipe; onChangeClick: () => 
          <div className="mt-4 pt-4 border-t border-dashed">
             <h5 className="font-headline font-semibold text-accent flex items-center gap-2"><Sparkles className="w-4 h-4" /> Beneficios</h5>
             <p className="mt-1 text-sm text-muted-foreground">{meal.benefits}</p>
+        </div>
+      )}
+      {meal.nutritionalTable && (
+        <div className="mt-4 pt-4 border-t border-dashed">
+            <h5 className="font-headline font-semibold text-accent flex items-center gap-2"><Beef className="w-4 h-4" /> Info. Nutricional (por porción)</h5>
+            <div className="text-sm text-muted-foreground grid grid-cols-2 gap-x-4 gap-y-1 mt-2">
+            <span>Calorías: {meal.nutritionalTable.calories}</span>
+            <span>Proteína: {meal.nutritionalTable.protein}</span>
+            <span>Carbohidratos: {meal.nutritionalTable.carbs}</span>
+            <span>Grasas: {meal.nutritionalTable.fats}</span>
+            </div>
         </div>
       )}
       <Separator />
@@ -94,9 +108,13 @@ export default function MyMenusPage() {
   const [caption, setCaption] = useState('');
 
   const [modifiedMenuIds, setModifiedMenuIds] = useState<Set<string>>(new Set());
-  const [isSelectorOpen, setIsSelectorOpen] = useState(false);
-  const [selectorContext, setSelectorContext] = useState<{
-    menuId: string;
+
+  // State for the new customization dialog flow
+  const [isActionDialogOpen, setIsActionDialogOpen] = useState(false);
+  const [isRecipeListOpen, setIsRecipeListOpen] = useState(false);
+  const [isGeneratingDetails, setIsGeneratingDetails] = useState(false);
+  const [actionContext, setActionContext] = useState<{
+    menu: SavedWeeklyPlan;
     dayIndex: number;
     mealType: 'breakfast' | 'lunch' | 'comida' | 'dinner';
   } | null>(null);
@@ -174,14 +192,14 @@ export default function MyMenusPage() {
     }
   };
   
-  const handleOpenSelector = (menuId: string, dayIndex: number, mealType: 'breakfast' | 'lunch' | 'comida' | 'dinner') => {
-    setSelectorContext({ menuId, dayIndex, mealType });
-    setIsSelectorOpen(true);
+  const handleOpenActionDialog = (menu: SavedWeeklyPlan, dayIndex: number, mealType: 'breakfast' | 'lunch' | 'comida' | 'dinner') => {
+    setActionContext({ menu, dayIndex, mealType });
+    setIsActionDialogOpen(true);
   };
 
   const handleSelectRecipe = (selectedRecipe: SavedRecipe) => {
-    if (!selectorContext) return;
-    const { menuId, dayIndex, mealType } = selectorContext;
+    if (!actionContext) return;
+    const { menu, dayIndex, mealType } = actionContext;
     
     const newRecipeForPlan: Recipe = {
         name: selectedRecipe.name,
@@ -189,20 +207,21 @@ export default function MyMenusPage() {
         instructions: selectedRecipe.instructions,
         equipment: selectedRecipe.equipment,
         benefits: selectedRecipe.benefits,
+        nutritionalTable: selectedRecipe.nutritionalTable
     };
 
     setSavedMenus(currentMenus => 
-        currentMenus.map(menu => {
-            if (menu.id === menuId) {
-                const newWeeklyPlan = [...menu.weeklyMealPlan];
+        currentMenus.map(m => {
+            if (m.id === menu.id) {
+                const newWeeklyPlan = [...m.weeklyMealPlan];
                 newWeeklyPlan[dayIndex] = { ...newWeeklyPlan[dayIndex], [mealType]: newRecipeForPlan };
-                return { ...menu, weeklyMealPlan: newWeeklyPlan };
+                return { ...m, weeklyMealPlan: newWeeklyPlan };
             }
-            return menu;
+            return m;
         })
     );
-    setModifiedMenuIds(prev => new Set(prev).add(menuId));
-    setIsSelectorOpen(false);
+    setModifiedMenuIds(prev => new Set(prev).add(menu.id));
+    setIsRecipeListOpen(false);
   };
   
   const handleSaveChanges = async (menuToSave: SavedWeeklyPlan) => {
@@ -223,6 +242,54 @@ export default function MyMenusPage() {
     }
   };
 
+  const handleRegenerateRecipe = async () => {
+    if (!actionContext) return;
+    const { menu, dayIndex, mealType } = actionContext;
+    const recipeToRegenerate = menu.weeklyMealPlan[dayIndex][mealType as keyof DailyMealPlan] as Recipe;
+    if (!recipeToRegenerate || !recipeToRegenerate.name) {
+        toast({ title: "Error", description: "No se puede regenerar una receta sin nombre.", variant: "destructive" });
+        return;
+    };
+
+    setIsGeneratingDetails(true);
+    try {
+        const result = await generateDetailedRecipe({
+            recipeName: recipeToRegenerate.name,
+            servings: menu.numberOfPeople || 2,
+            context: `Based on a weekly plan that included these ingredients: ${menu.ingredients || 'various'}. Dietary preferences: ${menu.dietaryPreferences || 'none'}`,
+        });
+        
+        if (!result) throw new Error("La IA no pudo generar los detalles.");
+
+        const newRecipeForPlan: Recipe = {
+            name: result.name,
+            ingredients: result.ingredients,
+            instructions: result.instructions,
+            equipment: result.equipment,
+            benefits: result.benefits,
+            nutritionalTable: result.nutritionalTable
+        };
+
+        setSavedMenus(currentMenus =>
+            currentMenus.map(m => {
+                if (m.id === menu.id) {
+                    const newWeeklyPlan = [...m.weeklyMealPlan];
+                    newWeeklyPlan[dayIndex] = { ...newWeeklyPlan[dayIndex], [mealType]: newRecipeForPlan };
+                    return { ...m, weeklyMealPlan: newWeeklyPlan };
+                }
+                return m;
+            })
+        );
+        setModifiedMenuIds(prev => new Set(prev).add(menu.id));
+        toast({ title: "¡Receta actualizada!", description: "La receta ha sido regenerada con más detalles." });
+
+    } catch (error: any) {
+        toast({ title: "Error al generar", description: error.message || "No se pudieron generar los detalles de la receta.", variant: "destructive" });
+    } finally {
+        setIsGeneratingDetails(false);
+        setIsActionDialogOpen(false);
+    }
+  };
 
   const renderContent = () => {
     if (authLoading || pageLoading) {
@@ -287,16 +354,16 @@ export default function MyMenusPage() {
                           <TabsTrigger value="dinner">Cena</TabsTrigger>
                         </TabsList>
                         <TabsContent value="breakfast">
-                          {dailyPlan.breakfast && <MealCard meal={dailyPlan.breakfast} onChangeClick={() => handleOpenSelector(menu.id, dayIndex, 'breakfast')} />}
+                          {dailyPlan.breakfast && <MealCard meal={dailyPlan.breakfast} onChangeClick={() => handleOpenActionDialog(menu, dayIndex, 'breakfast')} />}
                         </TabsContent>
                         <TabsContent value="lunch">
-                          {dailyPlan.lunch && <MealCard meal={dailyPlan.lunch} onChangeClick={() => handleOpenSelector(menu.id, dayIndex, 'lunch')} />}
+                          {dailyPlan.lunch && <MealCard meal={dailyPlan.lunch} onChangeClick={() => handleOpenActionDialog(menu, dayIndex, 'lunch')} />}
                         </TabsContent>
                         <TabsContent value="comida">
-                          {dailyPlan.comida && <MealCard meal={dailyPlan.comida} onChangeClick={() => handleOpenSelector(menu.id, dayIndex, 'comida')} />}
+                          {dailyPlan.comida && <MealCard meal={dailyPlan.comida} onChangeClick={() => handleOpenActionDialog(menu, dayIndex, 'comida')} />}
                         </TabsContent>
                         <TabsContent value="dinner">
-                          {dailyPlan.dinner && <MealCard meal={dailyPlan.dinner} onChangeClick={() => handleOpenSelector(menu.id, dayIndex, 'dinner')} />}
+                          {dailyPlan.dinner && <MealCard meal={dailyPlan.dinner} onChangeClick={() => handleOpenActionDialog(menu, dayIndex, 'dinner')} />}
                         </TabsContent>
                       </Tabs>
                     </div>
@@ -353,9 +420,9 @@ export default function MyMenusPage() {
       
       <Alert>
         <Info className="h-4 w-4" />
-        <AlertTitle>Nota sobre la Fase de Prueba</AlertTitle>
+        <AlertTitle>¡Personaliza tu Menú!</AlertTitle>
         <AlertDescription>
-          Como la IA está en pruebas, algunas recetas del menú pueden no ser perfectas. Puedes usar el 'Generador de Recetas' y luego usar el botón 'Cambiar' para personalizar tu menú con tus creaciones.
+          La IA está en pruebas y algunas recetas pueden ser mejorables. Usa el botón 'Cambiar' en cualquier comida para **sustituirla por una de tus recetas guardadas** o para **generar una nueva versión detallada** con la IA.
         </AlertDescription>
       </Alert>
 
@@ -394,7 +461,30 @@ export default function MyMenusPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <Dialog open={isSelectorOpen} onOpenChange={setIsSelectorOpen}>
+      {/* Action Dialog */}
+      <Dialog open={isActionDialogOpen} onOpenChange={setIsActionDialogOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle className="font-headline">Cambiar Receta</DialogTitle>
+                <DialogDescription>
+                    Elige cómo quieres cambiar esta receta en tu menú.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
+                <Button variant="outline" onClick={() => { setIsRecipeListOpen(true); setIsActionDialogOpen(false); }}>
+                    <UtensilsCrossed className="mr-2 h-4 w-4" />
+                    Sustituir de Mis Recetas
+                </Button>
+                <Button onClick={handleRegenerateRecipe} disabled={isGeneratingDetails}>
+                    {isGeneratingDetails ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                    Generar Detalles con IA
+                </Button>
+            </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Recipe Selector Dialog */}
+      <Dialog open={isRecipeListOpen} onOpenChange={setIsRecipeListOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="font-headline">Selecciona una Receta para Sustituir</DialogTitle>

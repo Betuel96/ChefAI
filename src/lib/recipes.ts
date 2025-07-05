@@ -89,6 +89,7 @@ export async function getRecipes(userId: string): Promise<SavedRecipe[]> {
         ingredients: normalizeField(data.ingredients),
         equipment: normalizeField(data.equipment),
         benefits: data.benefits || undefined,
+        nutritionalTable: data.nutritionalTable || undefined,
         mediaUrl: data.mediaUrl || null,
         mediaType: data.mediaType || null,
         createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),

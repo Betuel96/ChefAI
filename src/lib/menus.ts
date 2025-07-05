@@ -16,7 +16,7 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import type { WeeklyPlan, SavedWeeklyPlan, PublishedPost, UserAccount, Recipe, DailyMealPlan } from '@/types';
+import type { WeeklyPlan, SavedWeeklyPlan, PublishedPost, UserAccount, Recipe, DailyMealPlan, NutritionalInfo } from '@/types';
 
 /**
  * Adds a new weekly menu to a user's collection in Firestore.
@@ -54,20 +54,21 @@ export async function getMenus(userId: string): Promise<SavedWeeklyPlan[]> {
       const data = doc.data();
       const createdAtTimestamp = data.createdAt as Timestamp;
 
+      const normalizeField = (field: any): string[] => {
+        if (Array.isArray(field)) return field;
+        if (typeof field === 'string') return field.split('\n').filter(line => line.trim() !== '');
+        return [];
+      };
+
       const normalizeRecipe = (recipe: any): Recipe => {
         if (!recipe) return { name: '', instructions: [], ingredients: [], equipment: [] };
-        
-        const normalizeField = (field: any): string[] => {
-            if (Array.isArray(field)) return field;
-            if (typeof field === 'string') return field.split('\n').filter(line => line.trim() !== '');
-            return [];
-        };
-
         return {
           name: recipe.name || '',
           instructions: normalizeField(recipe.instructions),
           ingredients: normalizeField(recipe.ingredients),
           equipment: normalizeField(recipe.equipment || []),
+          benefits: recipe.benefits || undefined,
+          nutritionalTable: recipe.nutritionalTable || undefined,
         };
       };
       
@@ -87,6 +88,10 @@ export async function getMenus(userId: string): Promise<SavedWeeklyPlan[]> {
         id: doc.id,
         weeklyMealPlan: processedPlan,
         createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
+        ingredients: data.ingredients || '',
+        dietaryPreferences: data.dietaryPreferences || '',
+        numberOfDays: data.numberOfDays || 7,
+        numberOfPeople: data.numberOfPeople || 2,
       } as SavedWeeklyPlan;
     });
   } catch (error) {

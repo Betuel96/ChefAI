@@ -1,12 +1,20 @@
 import type { User } from 'firebase/auth';
 
 // The core recipe structure from AI
+export interface NutritionalInfo {
+    calories: string;
+    protein: string;
+    carbs: string;
+    fats: string;
+}
+
 export interface Recipe {
     name: string;
     instructions: string[];
     ingredients: string[];
     equipment: string[];
     benefits?: string;
+    nutritionalTable?: NutritionalInfo;
 }
 // A recipe saved to a user's private collection
 export type SavedRecipe = Recipe & { 
@@ -26,6 +34,10 @@ export interface DailyMealPlan {
 
 export interface WeeklyPlan {
     weeklyMealPlan: DailyMealPlan[];
+    ingredients?: string;
+    dietaryPreferences?: string;
+    numberOfDays?: number;
+    numberOfPeople?: number;
 }
 
 export type SavedWeeklyPlan = WeeklyPlan & { id:string; createdAt: string; };
@@ -86,7 +98,7 @@ export interface PublishedPost {
     publisherId: string;
     publisherName: string;
     publisherPhotoURL?: string | null;
-    createdAt: string;
+    createdAt: string; 
     
     mediaUrl?: string | null;
     mediaType?: 'image' | 'video' | null;
@@ -103,6 +115,7 @@ export interface PublishedPost {
     ingredients?: string[];
     equipment?: string[];
     benefits?: string;
+    nutritionalTable?: NutritionalInfo;
     
     // This is only present if type is 'menu'
     weeklyMealPlan?: DailyMealPlan[];
