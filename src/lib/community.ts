@@ -622,6 +622,41 @@ export async function getFollowersList(userId: string): Promise<ProfileListItem[
     return getProfilesFromIds(followerIds);
 }
 
+export async function getFriendSuggestions(userId: string): Promise<ProfileListItem[]> {
+    if (!db) throw new Error("Firestore not initialized.");
+
+    // 1. Get IDs of users the current user is already following
+    const followingRef = collection(db, 'users', userId, 'following');
+    const followingSnap = await getDocs(followingRef);
+    const followingIds = followingSnap.docs.map(doc => doc.id);
+    const usersToExclude = [userId, ...followingIds];
+
+    // 2. Fetch a sample of public users
+    // This is a simplified suggestion logic. A real-world app would use a more complex algorithm.
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, where('profileType', '==', 'public'), limit(30)); // Get up to 30 public users
+
+    const querySnapshot = await getDocs(q);
+    const potentialSuggestions: ProfileListItem[] = [];
+    querySnapshot.forEach(doc => {
+        const data = doc.data();
+        potentialSuggestions.push({
+            id: doc.id,
+            name: data.name,
+            username: data.username,
+            photoURL: data.photoURL || null
+        });
+    });
+
+    // 3. Filter out users the current user already follows or is the current user
+    const suggestions = potentialSuggestions.filter(
+        suggestion => !usersToExclude.includes(suggestion.id)
+    );
+
+    // 4. Return a small, shuffled list
+    return suggestions.sort(() => 0.5 - Math.random()).slice(0, 5);
+}
+
 export async function getFollowingPosts(userId: string): Promise<PublishedPost[]> {
     if (!db) throw new Error('Firestore is not initialized.');
     
