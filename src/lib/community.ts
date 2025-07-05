@@ -21,7 +21,7 @@ import {
   setDoc,
 } from 'firebase/firestore';
 import { db, storage } from './firebase';
-import type { PublishedPost, ProfileData as ProfileDataType, Comment, Mention, ProfileListItem, Notification, UserAccount, Story, StoryGroup, SavedWeeklyPlan, Recipe, DailyMealPlan } from '@/types';
+import type { PublishedPost, ProfileData as ProfileDataType, Comment, Mention, ProfileListItem, Notification, UserAccount, Story, StoryGroup, SavedWeeklyPlan, Recipe, DailyMealPlan, SavedRecipe } from '@/types';
 import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
 
 // Helper function to normalize recipe-like data within a post
@@ -161,6 +161,50 @@ export async function createPost(
         
         throw new Error('La publicación no se pudo crear. Esto puede deberse a las reglas de seguridad de Firebase Storage. Asegúrate de que los usuarios autenticados tengan permiso de escritura.');
     }
+}
+
+/**
+ * Publishes a saved recipe as a new post in the community feed.
+ */
+export async function publishRecipeAsPost(
+  userId: string,
+  userName: string,
+  userPhotoURL: string | null,
+  recipe: SavedRecipe
+): Promise<string> {
+    if (!db) throw new Error('Firestore is not initialized.');
+
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
+    if (!userSnap.exists()) {
+        throw new Error('User profile not found.');
+    }
+    const userData = userSnap.data() as UserAccount;
+
+    const postsCollection = collection(db, 'published_recipes');
+  
+    const newPostData = {
+        publisherId: userId,
+        publisherName: userName,
+        publisherPhotoURL,
+        type: 'recipe' as const,
+        profileType: userData.profileType || 'public',
+        content: recipe.name,
+        instructions: recipe.instructions,
+        ingredients: recipe.ingredients,
+        equipment: recipe.equipment,
+        benefits: recipe.benefits,
+        nutritionalTable: recipe.nutritionalTable,
+        mediaUrl: recipe.mediaUrl,
+        mediaType: recipe.mediaType,
+        likesCount: 0,
+        commentsCount: 0,
+        mentions: [],
+        createdAt: serverTimestamp(),
+    };
+
+    const docRef = await addDoc(postsCollection, newPostData);
+    return docRef.id;
 }
 
 

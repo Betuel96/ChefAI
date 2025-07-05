@@ -6,3 +6,4 @@ import '@/ai/flows/generate-shopping-list.ts';
 import '@/ai/flows/generate-recipe.ts';
 import '@/ai/flows/generate-recipe-image.ts';
 import '@/ai/flows/generate-detailed-recipe.ts';
+import '@/ai/flows/text-to-speech.ts';

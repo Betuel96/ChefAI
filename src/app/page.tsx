@@ -6,22 +6,29 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { DailyMealPlan, Recipe, NutritionalInfo } from '@/types';
-import { UtensilsCrossed, Sparkles, Beef } from 'lucide-react';
+import { UtensilsCrossed, Sparkles, Beef, Mic } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
-import { getMenus } from '@/lib/menus';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmailVerificationBanner } from '@/components/layout/email-verification-banner';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Separator } from '@/components/ui/separator';
+import { collection, query, orderBy, onSnapshot, Timestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { CookingAssistant } from '@/components/cooking/cooking-assistant';
 
-const TodayMealCard = ({ meal, mealType }: { meal: Recipe; mealType: string }) => {
+
+const TodayMealCard = ({ meal, mealType, onStartCooking }: { meal: Recipe; mealType: string; onStartCooking: (recipe: Recipe) => void; }) => {
   if (!meal || !meal.name) return null;
 
   return (
     <div className="p-1">
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row justify-between items-center">
           <CardTitle className="font-headline text-2xl text-accent">{mealType}: {meal.name}</CardTitle>
+           <Button variant="outline" size="icon" onClick={() => onStartCooking(meal)}>
+              <Mic className="h-5 w-5" />
+              <span className="sr-only">Empezar a Cocinar</span>
+            </Button>
         </CardHeader>
         <CardContent className="space-y-4">
           {meal.benefits && (
@@ -65,49 +72,89 @@ export default function Dashboard() {
   const [todaysPlan, setTodaysPlan] = useState<DailyMealPlan | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // State for the cooking assistant
+  const [isCooking, setIsCooking] = useState(false);
+  const [cookingRecipe, setCookingRecipe] = useState<Recipe | null>(null);
+
   useEffect(() => {
     if (authLoading) {
       setIsLoading(true);
       return;
     }
-    if (!user) {
+    if (!user || !db) {
       setIsLoading(false);
       setTodaysPlan(null);
       return;
     }
+    
+    setIsLoading(true);
+    const menusCollection = collection(db, 'users', user.uid, 'menus');
+    const q = query(menusCollection, orderBy('createdAt', 'desc'));
 
-    async function fetchLatestMenu() {
-      setIsLoading(true);
-      try {
-        const menus = await getMenus(user!.uid);
-        if (menus.length > 0) {
-          const lastMenu = menus[0]; // getMenus sorts by creation date desc
-          const weeklyPlanArray = lastMenu.weeklyMealPlan;
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        if (snapshot.empty) {
+            setTodaysPlan(null);
+            setIsLoading(false);
+            return;
+        }
 
-          if (Array.isArray(weeklyPlanArray) && weeklyPlanArray.length > 0) {
-            const dayOfWeek = new Date().getDay(); // 0 for Sunday, 1 for Monday, etc.
+        const lastMenuDoc = snapshot.docs[0];
+        const menuData = lastMenuDoc.data();
+        
+        const weeklyPlanArray = (Array.isArray(menuData.weeklyMealPlan) ? menuData.weeklyMealPlan : []);
+
+        if (weeklyPlanArray.length > 0) {
+            const dayOfWeek = new Date().getDay();
             const planIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
 
             if (weeklyPlanArray.length > planIndex) {
-              const planForToday = weeklyPlanArray[planIndex];
-              setTodaysPlan(planForToday);
-            } else {
-              setTodaysPlan(null);
-            }
-          }
-        } else {
-          setTodaysPlan(null);
-        }
-      } catch (error) {
-        console.error("Failed to fetch menus:", error);
-        setTodaysPlan(null);
-      } finally {
-        setIsLoading(false);
-      }
-    }
+                 const normalizeField = (field: any): string[] => {
+                    if (Array.isArray(field)) return field;
+                    if (typeof field === 'string') return field.split('\n').filter(line => line.trim() !== '');
+                    return [];
+                };
+                const normalizeRecipe = (recipe: any): Recipe => {
+                    if (!recipe) return { name: '', instructions: [], ingredients: [], equipment: [] };
+                    return {
+                        name: recipe.name || '',
+                        instructions: normalizeField(recipe.instructions),
+                        ingredients: normalizeField(recipe.ingredients),
+                        equipment: normalizeField(recipe.equipment || []),
+                        benefits: recipe.benefits || undefined,
+                        nutritionalTable: recipe.nutritionalTable || undefined,
+                    };
+                };
+                
+                const rawPlanForToday = weeklyPlanArray[planIndex];
+                const planForToday: DailyMealPlan = {
+                    day: rawPlanForToday.day,
+                    breakfast: normalizeRecipe(rawPlanForToday.breakfast),
+                    lunch: normalizeRecipe(rawPlanForToday.lunch),
+                    comida: normalizeRecipe(rawPlanForToday.comida),
+                    dinner: normalizeRecipe(rawPlanForToday.dinner)
+                };
+                setTodaysPlan(planForToday);
 
-    fetchLatestMenu();
+            } else {
+                setTodaysPlan(null);
+            }
+        } else {
+            setTodaysPlan(null);
+        }
+        setIsLoading(false);
+    }, (error) => {
+        console.error("Failed to fetch menus with snapshot:", error);
+        setTodaysPlan(null);
+        setIsLoading(false);
+    });
+
+    return () => unsubscribe();
   }, [user, authLoading]);
+
+  const handleStartCooking = (recipe: Recipe) => {
+    setCookingRecipe(recipe);
+    setIsCooking(true);
+  };
 
   const renderContent = () => {
     if (isLoading) {
@@ -141,7 +188,7 @@ export default function Dashboard() {
           <CarouselContent>
             {meals.map((meal, index) => (
               <CarouselItem key={index}>
-                <TodayMealCard meal={meal.recipe} mealType={meal.name} />
+                <TodayMealCard meal={meal.recipe} mealType={meal.name} onStartCooking={handleStartCooking} />
               </CarouselItem>
             ))}
           </CarouselContent>
@@ -171,6 +218,7 @@ export default function Dashboard() {
 
 
   return (
+    <>
     <div className="flex flex-col gap-8">
       <EmailVerificationBanner />
       <header>
@@ -190,5 +238,14 @@ export default function Dashboard() {
         </CardContent>
       </Card>
     </div>
+    
+    {cookingRecipe && (
+        <CookingAssistant 
+            recipe={cookingRecipe}
+            isOpen={isCooking}
+            onOpenChange={setIsCooking}
+        />
+    )}
+    </>
   );
 }

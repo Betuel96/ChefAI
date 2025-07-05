@@ -22,12 +22,13 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BookHeart, LogIn, Trash2, UtensilsCrossed, Sparkles, Beef } from 'lucide-react';
+import { BookHeart, LogIn, Trash2, UtensilsCrossed, Sparkles, Beef, Share2, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/hooks/use-auth';
 import { getRecipes, deleteRecipe } from '@/lib/recipes';
+import { publishRecipeAsPost } from '@/lib/community';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { PostMedia } from '@/components/community/post-media';
@@ -49,9 +50,12 @@ export default function MyRecipesPage() {
   const { user, loading: authLoading } = useAuth();
   const [savedRecipes, setSavedRecipes] = useState<SavedRecipe[]>([]);
   const [pageLoading, setPageLoading] = useState(true);
-
   const router = useRouter();
   const { toast } = useToast();
+
+  // State for publishing
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [selectedRecipeToPublish, setSelectedRecipeToPublish] = useState<SavedRecipe | null>(null);
 
   useEffect(() => {
     if (authLoading) {
@@ -74,6 +78,29 @@ export default function MyRecipesPage() {
       setPageLoading(false);
     }
   }, [user, authLoading, toast]);
+
+  const handlePublishConfirm = async () => {
+    if (!user || !selectedRecipeToPublish) return;
+    setIsPublishing(true);
+    try {
+      await publishRecipeAsPost(user.uid, user.displayName || 'Anónimo', user.photoURL, selectedRecipeToPublish);
+      toast({
+        title: "¡Receta Publicada!",
+        description: `"${selectedRecipeToPublish.name}" ahora es visible para la comunidad.`
+      });
+      setSelectedRecipeToPublish(null);
+      router.push('/community');
+    } catch (error: any) {
+      toast({
+        title: "Error al Publicar",
+        description: error.message || "No se pudo publicar tu receta.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
 
   const handleDeleteRecipe = async (recipeId: string) => {
     if (!user) return;
@@ -196,6 +223,10 @@ export default function MyRecipesPage() {
                     </ul>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 mt-6 pt-6 border-t">
+                    <Button variant="outline" size="sm" onClick={() => setSelectedRecipeToPublish(recipe)}>
+                        <Share2 className="mr-2 h-4 w-4" />
+                        Compartir en la Comunidad
+                    </Button>
                     <AlertDialog>
                     <AlertDialogTrigger asChild>
                         <Button variant="destructive" className="w-full sm:w-auto">
@@ -229,6 +260,7 @@ export default function MyRecipesPage() {
   };
 
   return (
+    <>
     <div className="max-w-4xl mx-auto space-y-6">
       <header>
         <h1 className="font-headline text-4xl font-bold text-primary">Mis Recetas Guardadas</h1>
@@ -245,5 +277,23 @@ export default function MyRecipesPage() {
         </CardContent>
       </Card>
     </div>
+    
+    <AlertDialog open={!!selectedRecipeToPublish} onOpenChange={(isOpen) => !isOpen && setSelectedRecipeToPublish(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Compartir tu Receta</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esto publicará "{selectedRecipeToPublish?.name}" en el feed de la comunidad para que otros la vean. ¿Deseas continuar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handlePublishConfirm} disabled={isPublishing}>
+              {isPublishing ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Publicando...</> : 'Publicar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
