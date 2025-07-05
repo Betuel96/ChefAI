@@ -48,30 +48,9 @@ const getCookingResponseFlow = ai.defineFlow(
     outputSchema: z.string(),
   },
   async (input) => {
-    // Manually construct the system prompt string
-    const recipeContext = `Contexto de la Receta:
-Nombre de la Receta: ${input.recipe.name}
-Ingredientes:
-${input.recipe.ingredients.map(i => `- ${i}`).join('\n')}
-Instrucciones:
-${input.recipe.instructions.map(i => `- ${i}`).join('\n')}
-`;
-
-    const systemPrompt = `Eres ChefAI, un asistente de cocina amigable y experto. Estás guiando a un usuario a través de una receta, paso a paso, por voz.
-
-Tu personalidad: Alentador, claro y conciso. Eres un profesor paciente.
-
-Tu Tarea: Responde a la última consulta del usuario basándote en la receta proporcionada y el historial de la conversación.
-
-${recipeContext}
-
-Instrucciones para tu respuesta:
-1.  Responde directamente a la consulta del usuario. Si piden los ingredientes, lístalos. Si piden una sustitución, proporciona una sugerencia útil. Si dicen que están listos para el siguiente paso, proporciona la siguiente instrucción. Si el usuario te pregunta por el paso anterior, dáselo.
-2.  Sé conciso. Tus respuestas serán habladas en voz alta. Mantenlas cortas y al grano.
-3.  Mantén el contexto. Usa el historial de la conversación para entender en qué parte del proceso de cocción se encuentran.
-4.  No repitas la consulta del usuario en tu respuesta. Solo proporciona la respuesta.
-5.  Idioma: Responde ÚNICAMENTE en español.
-`;
+    // --- DEBUGGING STEP ---
+    // Removed all cooking-specific context to test for a more fundamental issue.
+    const systemPrompt = `Eres un asistente de ayuda. Responde a las preguntas del usuario. Responde ÚNICAMENTE en español.`;
     
     // Convert our client-side conversation history to the format Genkit expects
     const historyForModel = input.history.map(msg => ({
@@ -89,6 +68,7 @@ Instrucciones para tu respuesta:
       prompt: currentPromptContent,
       config: {
         temperature: 0.7,
+        // Using the most permissive safety settings for this diagnostic test.
         safetySettings: [
           { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
           { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
