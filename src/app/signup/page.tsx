@@ -1,4 +1,3 @@
-
 'use client';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -122,9 +121,9 @@ export default function SignupPage() {
           {!isFirebaseConfigured && (
             <Alert variant="destructive" className="mb-4">
                 <Terminal className="h-4 w-4" />
-                <AlertTitle>Configuración Requerida</AlertTitle>
+                <AlertTitle>Configuración de Firebase Requerida</AlertTitle>
                 <AlertDescription>
-                    Firebase no está configurado. Por favor, añade tus credenciales en el archivo <code>.env</code> para habilitar el registro.
+                    La aplicación no puede conectar con Firebase. Por favor, asegúrate de que tus credenciales de Firebase (API Key, Project ID, etc.) están correctamente añadidas en el archivo <code>.env</code> en la raíz de tu proyecto para habilitar el registro y el inicio de sesión.
                 </AlertDescription>
             </Alert>
           )}
