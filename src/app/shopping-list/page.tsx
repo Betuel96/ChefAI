@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useLocalStorage } from '@/hooks/use-local-storage';
@@ -5,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import type { ShoppingListCategory } from '@/types';
-import { Trash2, ShoppingCart } from 'lucide-react';
+import { Trash2, ShoppingCart, CalendarDays } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
@@ -40,16 +41,18 @@ export default function ShoppingListPage() {
     <div className="max-w-2xl mx-auto space-y-6">
       <header>
         <h1 className="font-headline text-4xl font-bold text-primary">Lista de Compras</h1>
-        <p className="text-muted-foreground mt-2 text-lg">Tu lista de compras. Las listas generadas por IA están en pausa.</p>
+        <p className="text-muted-foreground mt-2 text-lg">Tu lista de compras inteligente, generada a partir de tu plan de comidas.</p>
       </header>
       
       <Card className="shadow-lg">
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle className="font-headline flex items-center gap-2"><ShoppingCart /> Tu Lista</CardTitle>
-            <CardDescription>
-              {checkedItemsCount} de {totalItems} artículos comprados.
-            </CardDescription>
+            {totalItems > 0 && 
+                <CardDescription>
+                {checkedItemsCount} de {totalItems} artículos comprados.
+                </CardDescription>
+            }
           </div>
           {validShoppingList.length > 0 && (
             <Button variant="destructive" size="sm" onClick={handleClearList}>
@@ -89,12 +92,18 @@ export default function ShoppingListPage() {
               ))}
             </div>
           ) : (
-            <div className="text-center text-muted-foreground py-10">
-              <p>Tu lista de compras está vacía.</p>
-              <p>
-                La generación de listas desde <Link href="/planner" className="underline">el Planificador</Link> o 
-                desde <Link href="/my-recipes" className="underline">tus Recetas</Link> está temporalmente desactivada.
+             <div className="text-center text-muted-foreground py-10 flex flex-col items-center">
+              <ShoppingCart className="w-16 h-16 mb-4" />
+              <h3 className="font-headline text-2xl font-semibold mb-2 text-foreground">Tu Lista de Compras está Vacía</h3>
+              <p className="mb-6 max-w-sm">
+                Genera un plan de comidas y luego crea una lista de compras para que aparezca aquí.
               </p>
+              <Button asChild>
+                <Link href="/planner">
+                    <CalendarDays className="mr-2 h-4 w-4" />
+                    Ir al Planificador
+                </Link>
+              </Button>
             </div>
           )}
         </CardContent>
