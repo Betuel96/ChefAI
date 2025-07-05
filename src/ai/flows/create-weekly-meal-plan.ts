@@ -42,6 +42,7 @@ const MealSchema = z.object({
   name: z.string().describe('El nombre de la comida.'),
   ingredients: z
     .string()
+
     .describe('Una lista de ingredientes para la receta, separados por saltos de línea.'),
   instructions: z
     .string()
@@ -75,7 +76,7 @@ const prompt = ai.definePrompt({
   output: {schema: CreateWeeklyMealPlanOutputSchema},
   prompt: `Eres un planificador de comidas experto y un genio culinario. Tu tarea es diseñar un plan de comidas semanal que sea emocionante, variado y delicioso, basándote en las preferencias del usuario.
 
-**Instrucción CRÍTICA:** ¡La variedad es la clave! Cada vez que generes un plan, DEBE ser significativamente diferente al anterior, incluso con las mismas preferencias. No repitas recetas entre planes. Varía los tipos de platos, las cocinas del mundo (italiana, mexicana, asiática, etc.) y los métodos de cocción para mantenerlo interesante.
+**Instrucción CRÍTICA:** ¡La variedad es la clave absoluta! Cada vez que generes un plan, DEBE ser significativamente diferente a cualquier plan anterior, incluso con las mismas preferencias. Nunca repitas recetas entre los días de un mismo plan, y evita repetir platos principales en planes consecutivos. Varía constantemente los tipos de platos, las cocinas del mundo (italiana, mexicana, asiática, mediterránea, etc.), y los métodos de cocción para crear un menú emocionante y que no sea monótono.
 
 **Preferencias del Usuario:**
 - **Ingredientes disponibles:** {{{ingredients}}}

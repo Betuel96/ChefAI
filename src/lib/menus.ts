@@ -84,7 +84,7 @@ export async function deleteMenu(userId: string, menuId: string): Promise<void> 
  * @param userName The display name of the user.
  * @param userPhotoURL The photo URL of the user.
  * @param caption A caption or title for the post.
- * @param menu The saved weekly plan to publish.
+ * @param menu The weekly plan to publish.
  * @returns The ID of the newly created post document.
  */
 export async function publishMenuAsPost(
@@ -92,7 +92,7 @@ export async function publishMenuAsPost(
   userName: string,
   userPhotoURL: string | null,
   caption: string,
-  menu: SavedWeeklyPlan
+  menu: WeeklyPlan
 ): Promise<string> {
   if (!db) throw new Error('Firestore is not initialized.');
 

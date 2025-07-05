@@ -11,16 +11,18 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { CalendarDays, Sparkles, Loader2, Save, ShoppingCart, Utensils } from 'lucide-react';
+import { CalendarDays, Sparkles, Loader2, Save, ShoppingCart, Utensils, Share2 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import type { DailyMealPlan, ShoppingListCategory, WeeklyPlan } from '@/types';
 import { createWeeklyMealPlan } from '@/ai/flows/create-weekly-meal-plan';
-import { addMenu } from '@/lib/menus';
+import { addMenu, publishMenuAsPost } from '@/lib/menus';
 import { generateShoppingList } from '@/ai/flows/generate-shopping-list';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { v4 as uuidv4 } from 'uuid';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Label } from '@/components/ui/label';
 
 const formSchema = z.object({
   ingredients: z.string().min(10, 'Por favor, enumera al menos algunos ingredientes.'),
@@ -54,8 +56,11 @@ export default function MealPlannerPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isGeneratingList, setIsGeneratingList] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
   const [mealPlan, setMealPlan] = useState<WeeklyPlan | null>(null);
   const [, setShoppingList] = useLocalStorage<ShoppingListCategory[]>('shoppingList', []);
+  const [selectedMenu, setSelectedMenu] = useState<WeeklyPlan | null>(null);
+  const [caption, setCaption] = useState('');
 
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -115,6 +120,37 @@ export default function MealPlannerPage() {
     }
   }
 
+  const handlePublishClick = (menu: WeeklyPlan) => {
+    if (!user) {
+        toast({ title: 'Debes iniciar sesión para publicar.', variant: 'destructive'});
+        router.push('/login');
+        return;
+    }
+    setSelectedMenu(menu);
+    setCaption(`¡Prueba mi nuevo plan de comidas semanal! Hecho con ChefAI.`);
+  };
+
+  const handlePublishConfirm = async () => {
+    if (!user || !selectedMenu) return;
+    setIsPublishing(true);
+    try {
+      await publishMenuAsPost(user.uid, user.displayName || 'Anónimo', user.photoURL, caption, selectedMenu);
+      toast({
+        title: "¡Menú Publicado!",
+        description: "Tu plan de comidas ahora es visible en la comunidad."
+      });
+      setSelectedMenu(null);
+    } catch (error: any) {
+      toast({
+        title: "Error al Publicar",
+        description: error.message || "No se pudo publicar tu menú.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsPublishing(false);
+    }
+  }
+
   const handleGenerateShoppingList = async () => {
     if (!mealPlan) return;
     setIsGeneratingList(true);
@@ -155,8 +191,10 @@ export default function MealPlannerPage() {
     }
   }
 
+  const isActionInProgress = isSaving || isGeneratingList || isPublishing;
 
   return (
+    <>
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
       <div className="space-y-6">
         <header>
@@ -279,18 +317,45 @@ export default function MealPlannerPage() {
           </CardContent>
           {mealPlan && (
             <CardFooter className="flex flex-col sm:flex-row gap-2">
-                <Button onClick={handleSaveMenu} disabled={isSaving || isGeneratingList} className="w-full">
+                <Button onClick={handleSaveMenu} disabled={isActionInProgress} className="w-full">
                     {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                     Guardar Menú
                 </Button>
-                <Button onClick={handleGenerateShoppingList} disabled={isSaving || isGeneratingList} variant="secondary" className="w-full">
+                 <Button onClick={() => handlePublishClick(mealPlan)} disabled={isActionInProgress} variant="outline" className="w-full">
+                    <Share2 className="mr-2 h-4 w-4" />
+                    Compartir
+                </Button>
+                <Button onClick={handleGenerateShoppingList} disabled={isActionInProgress} variant="secondary" className="w-full">
                      {isGeneratingList ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShoppingCart className="mr-2 h-4 w-4" />}
-                    Generar Lista de Compras
+                    Generar Lista
                 </Button>
             </CardFooter>
           )}
         </Card>
       </div>
     </div>
+    <AlertDialog open={!!selectedMenu} onOpenChange={(isOpen) => !isOpen && setSelectedMenu(null)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Compartir tu Plan de Comidas</AlertDialogTitle>
+          <AlertDialogDescription>
+            Añade un título o descripción para tu publicación. Será visible para otros en la comunidad.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label htmlFor="caption">Título/Descripción</Label>
+            <Textarea id="caption" value={caption} onChange={(e) => setCaption(e.target.value)} />
+          </div>
+        </div>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogAction onClick={handlePublishConfirm} disabled={isPublishing}>
+            {isPublishing ? 'Publicando...' : 'Publicar'}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
