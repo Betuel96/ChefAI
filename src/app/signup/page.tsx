@@ -118,15 +118,6 @@ export default function SignupPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {!isFirebaseConfigured && (
-            <Alert variant="destructive" className="mb-4">
-                <Terminal className="h-4 w-4" />
-                <AlertTitle>Configuración de Firebase Requerida</AlertTitle>
-                <AlertDescription>
-                    La aplicación no puede conectar con Firebase. Por favor, asegúrate de que tus credenciales de Firebase (API Key, Project ID, etc.) están correctamente añadidas en el archivo <code>.env</code> en la raíz de tu proyecto para habilitar el registro y el inicio de sesión.
-                </AlertDescription>
-            </Alert>
-          )}
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
               <FormField

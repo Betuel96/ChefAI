@@ -6,14 +6,14 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { DailyMealPlan, Recipe, NutritionalInfo } from '@/types';
-import { UtensilsCrossed, Sparkles, Beef, Mic } from 'lucide-react';
+import { UtensilsCrossed, Sparkles, Beef, Mic, Terminal } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmailVerificationBanner } from '@/components/layout/email-verification-banner';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Separator } from '@/components/ui/separator';
 import { collection, query, orderBy, onSnapshot, Timestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db, isFirebaseConfigured } from '@/lib/firebase';
 import { CookingAssistant } from '@/components/cooking/cooking-assistant';
 
 
@@ -67,6 +67,63 @@ const TodayMealCard = ({ meal, mealType, onStartCooking }: { meal: Recipe; mealT
   );
 };
 
+const FirebaseSetupGuide = () => (
+    <div className="flex items-center justify-center min-h-[calc(100vh-8rem)]">
+        <Card className="w-full max-w-2xl shadow-lg">
+            <CardHeader>
+                <CardTitle className="text-2xl font-headline text-destructive flex items-center gap-2">
+                    <Terminal /> Acción Requerida: Configura tu Backend
+                </CardTitle>
+                <CardDescription>
+                    La aplicación no puede conectar con Firebase. Por favor, sigue estos pasos para habilitar las funciones principales.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <p>
+                    Para que el inicio de sesión, el guardado de datos y las funciones de IA funcionen, necesitas proporcionar tus propias claves de API de Firebase y Stripe.
+                </p>
+                <div className="space-y-2">
+                    <h3 className="font-semibold">1. Crea un archivo <code>.env</code></h3>
+                    <p className="text-sm text-muted-foreground">
+                        En la raíz de tu proyecto (en el mismo nivel que <code>package.json</code>), crea un nuevo archivo llamado <code>.env</code>.
+                    </p>
+                </div>
+                <div className="space-y-2">
+                    <h3 className="font-semibold">2. Añade tus claves</h3>
+                    <p className="text-sm text-muted-foreground">
+                        Copia el siguiente texto, pégalo en tu archivo <code>.env</code> y reemplaza los valores <code>...</code> con tus claves reales.
+                    </p>
+                    <pre className="mt-2 p-4 bg-muted rounded-md text-xs overflow-x-auto">
+                        <code>
+                            {`# Firebase Configuration (Encuentra esto en tu Consola de Firebase > Configuración del Proyecto > General)
+NEXT_PUBLIC_FIREBASE_API_KEY="..."
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="..."
+NEXT_PUBLIC_FIREBASE_PROJECT_ID="..."
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET="..."
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID="..."
+NEXT_PUBLIC_FIREBASE_APP_ID="..."
+
+# Stripe Configuration (Encuentra esto en tu Dashboard de Stripe > Desarrolladores > Claves API)
+STRIPE_SECRET_KEY="..."
+STRIPE_WEBHOOK_SECRET="..."
+NEXT_PUBLIC_STRIPE_PRO_PRICE_ID="..."
+NEXT_PUBLIC_STRIPE_VOICE_PLUS_PRICE_ID="..."
+`}
+                        </code>
+                    </pre>
+                </div>
+                <div className="space-y-2">
+                    <h3 className="font-semibold">3. Reinicia la aplicación</h3>
+                    <p className="text-sm text-muted-foreground">
+                        Detén y vuelve a iniciar el servidor de desarrollo para que los nuevos cambios surtan efecto.
+                    </p>
+                </div>
+            </CardContent>
+        </Card>
+    </div>
+);
+
+
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
   const [todaysPlan, setTodaysPlan] = useState<DailyMealPlan | null>(null);
@@ -75,6 +132,11 @@ export default function Dashboard() {
   // State for the cooking assistant
   const [isCooking, setIsCooking] = useState(false);
   const [cookingRecipe, setCookingRecipe] = useState<Recipe | null>(null);
+
+  // If Firebase is not configured, show the setup guide and stop rendering the rest of the component.
+  if (!isFirebaseConfigured) {
+      return <FirebaseSetupGuide />;
+  }
 
   useEffect(() => {
     if (authLoading) {
