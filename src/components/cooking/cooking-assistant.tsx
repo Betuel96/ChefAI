@@ -4,9 +4,14 @@ import { useState, useEffect, useRef } from 'react';
 import type { Recipe } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Loader2, Mic, ChefHat, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
+import { Loader2, Mic, ChefHat } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { UserCircle } from 'lucide-react';
+import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
+import { cookingAssistant, CookingAssistantInput } from '@/ai/flows/cooking-assistant-flow';
 import { generateSpokenInstructions } from '@/ai/flows/text-to-speech';
-import { Progress } from '../ui/progress';
 
 interface CookingAssistantProps {
   isOpen: boolean;
@@ -14,63 +19,95 @@ interface CookingAssistantProps {
   recipe: Recipe;
 }
 
+interface Message {
+  role: 'user' | 'model';
+  content: string;
+}
+
 export function CookingAssistant({ isOpen, onOpenChange, recipe }: CookingAssistantProps) {
-  const [currentStepIndex, setCurrentStepIndex] = useState(0);
-  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [conversation, setConversation] = useState<Message[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const isGreetingRef = useRef(false);
 
-  const instructions = recipe.instructions;
-  const currentInstruction = instructions[currentStepIndex];
+  // This function is called when the speech recognition hook gets a final result.
+  const handleSpeechResult = async (userQuery: string) => {
+    if (!userQuery.trim()) return;
 
-  const speakInstruction = async (instructionText: string) => {
-    setIsSpeaking(true);
-    setAudioUrl(null);
+    setIsProcessing(true);
+    const updatedConversation = [...conversation, { role: 'user' as const, content: userQuery }];
+    setConversation(updatedConversation);
+
     try {
-      const { audioDataUri } = await generateSpokenInstructions(instructionText);
-      setAudioUrl(audioDataUri);
+      const input: CookingAssistantInput = {
+        recipe,
+        history: updatedConversation,
+        userQuery,
+      };
+      const result = await cookingAssistant(input);
+      setConversation(prev => [...prev, { role: 'model', content: result.responseText }]);
+      setAudioUrl(result.audioDataUri);
     } catch (error) {
-      console.error("Error generating speech:", error);
+      console.error("Error with cooking assistant:", error);
+      const errorMessage = "Lo siento, he tenido un problema. ¿Podrías repetirlo?";
+      setConversation(prev => [...prev, { role: 'model', content: errorMessage }]);
+      // You could optionally generate TTS for the error message as well
     } finally {
-      setIsSpeaking(false);
+      setIsProcessing(false);
     }
   };
 
-  useEffect(() => {
-    if (isOpen && currentInstruction) {
-      speakInstruction(currentInstruction);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, currentStepIndex]);
-  
+  const { isListening, startListening, hasRecognitionSupport } = useSpeechRecognition({
+    onResult: handleSpeechResult,
+  });
+
+  // Effect to play audio when a new audioUrl is set
   useEffect(() => {
     if (audioUrl && audioRef.current) {
-        audioRef.current.play().catch(e => console.error("Audio playback failed:", e));
+      audioRef.current.src = audioUrl;
+      audioRef.current.play().catch(e => console.error("Audio playback failed:", e));
     }
   }, [audioUrl]);
 
-  const handleNext = () => {
-    if (currentStepIndex < instructions.length - 1) {
-      setCurrentStepIndex(prev => prev + 1);
-    } else {
-      onOpenChange(false); // Close when finished
+  // Effect to auto-scroll the conversation view
+  useEffect(() => {
+    if (scrollAreaRef.current) {
+      scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
     }
-  };
+  }, [conversation]);
 
-  const handlePrev = () => {
-    if (currentStepIndex > 0) {
-      setCurrentStepIndex(prev => prev - 1);
+  // Effect to greet the user when the dialog opens for the first time
+  useEffect(() => {
+    if (isOpen && conversation.length === 0 && !isGreetingRef.current) {
+      isGreetingRef.current = true; // Prevents re-greeting on re-renders
+      const initialGreeting = `¡Hola! Soy ChefAI, tu asistente de cocina. Estoy aquí para ayudarte con la receta de "${recipe.name}". Puedes pedirme los ingredientes, el siguiente paso, o preguntarme por sustituciones. Simplemente pulsa el micrófono para hablar. ¿Estás listo para empezar?`;
+      
+      const greet = async () => {
+        setIsProcessing(true);
+        try {
+          const { audioDataUri } = await generateSpokenInstructions(initialGreeting);
+          setConversation([{ role: 'model', content: initialGreeting }]);
+          setAudioUrl(audioDataUri);
+        } catch (e) {
+          console.error("Failed to generate greeting:", e);
+          setConversation([{ role: 'model', content: "Hola, ¿listo para cocinar?" }]);
+        } finally {
+          setIsProcessing(false);
+        }
+      };
+      greet();
     }
-  };
-  
-  const handleRepeat = () => {
-      if (currentInstruction) {
-        speakInstruction(currentInstruction);
-      }
-  };
+    
+    // Reset on close
+    if (!isOpen) {
+        setConversation([]);
+        isGreetingRef.current = false;
+    }
+  }, [isOpen, recipe.name, conversation.length]);
 
-  const progress = ((currentStepIndex + 1) / instructions.length) * 100;
-  
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
@@ -80,31 +117,53 @@ export function CookingAssistant({ isOpen, onOpenChange, recipe }: CookingAssist
           </DialogTitle>
           <DialogDescription>{recipe.name}</DialogDescription>
         </DialogHeader>
-        <div className="py-6 space-y-6 text-center">
-            <div className="h-40 flex items-center justify-center p-4 bg-muted rounded-lg">
-                <p className="text-lg font-semibold">{currentInstruction || "¡Todo listo!"}</p>
-            </div>
-            <div className="space-y-2">
-                 <Progress value={progress} />
-                 <p className="text-sm text-muted-foreground">Paso {currentStepIndex + 1} de {instructions.length}</p>
-            </div>
-             <div className="flex justify-center items-center gap-4 pt-4">
-                <Button variant="outline" size="icon" onClick={handlePrev} disabled={currentStepIndex === 0 || isSpeaking}>
-                    <ChevronLeft className="h-5 w-5" />
-                </Button>
-                <Button size="lg" onClick={handleRepeat} disabled={isSpeaking}>
-                    {isSpeaking ? (
-                        <Loader2 className="h-6 w-6 animate-spin" />
-                    ): (
-                        <RotateCcw className="h-6 w-6" />
+        <div className="py-6 space-y-4">
+          <ScrollArea className="h-64 w-full rounded-md border p-4" ref={scrollAreaRef}>
+             <div className="flex flex-col gap-4">
+                {conversation.map((msg, index) => (
+                  <div key={index} className={cn('flex items-start gap-3', msg.role === 'user' && 'justify-end')}>
+                    {msg.role === 'model' && (
+                        <Avatar className="w-8 h-8 flex-shrink-0">
+                           <AvatarFallback className="bg-primary text-primary-foreground"><ChefHat className="w-5 h-5"/></AvatarFallback>
+                        </Avatar>
                     )}
-                </Button>
-                <Button variant="outline" size="icon" onClick={handleNext} disabled={isSpeaking}>
-                    <ChevronRight className="h-5 w-5" />
-                </Button>
-            </div>
+                    <div className={cn(
+                        'p-3 rounded-lg max-w-xs', 
+                        msg.role === 'model' ? 'bg-muted' : 'bg-primary text-primary-foreground'
+                    )}>
+                      <p className="text-sm">{msg.content}</p>
+                    </div>
+                     {msg.role === 'user' && (
+                        <Avatar className="w-8 h-8 flex-shrink-0">
+                            <AvatarFallback><UserCircle /></AvatarFallback>
+                        </Avatar>
+                     )}
+                  </div>
+                ))}
+             </div>
+          </ScrollArea>
+
+          <div className="flex flex-col justify-center items-center gap-2">
+            <Button 
+              size="lg" 
+              className={cn(
+                "rounded-full w-20 h-20 transition-all duration-300",
+                isListening && 'bg-destructive hover:bg-destructive/90 scale-110'
+              )}
+              onClick={startListening}
+              disabled={!hasRecognitionSupport || isListening || isProcessing}
+            >
+              {isProcessing ? <Loader2 className="h-8 w-8 animate-spin" /> : <Mic className="h-8 w-8" />}
+            </Button>
+            {!hasRecognitionSupport && (
+                <p className="text-xs text-destructive text-center">El reconocimiento de voz no es compatible con este navegador.</p>
+            )}
+             {isListening && (
+                <p className="text-sm text-muted-foreground animate-pulse">Escuchando...</p>
+             )}
+          </div>
         </div>
-        {audioUrl && <audio ref={audioRef} src={audioUrl} />}
+        <audio ref={audioRef} className="hidden" />
       </DialogContent>
     </Dialog>
   );

@@ -7,3 +7,4 @@ import '@/ai/flows/generate-recipe.ts';
 import '@/ai/flows/generate-recipe-image.ts';
 import '@/ai/flows/generate-detailed-recipe.ts';
 import '@/ai/flows/text-to-speech.ts';
+import '@/ai/flows/cooking-assistant-flow.ts';
