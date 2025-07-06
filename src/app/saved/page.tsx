@@ -1,3 +1,4 @@
+
 // src/app/saved/page.tsx
 'use client';
 
@@ -10,8 +11,10 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PostGrid } from '@/components/profile/PostGrid';
-import { LogIn, Bookmark } from 'lucide-react';
+import { LogIn, Bookmark, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { useLocalStorage } from '@/hooks/use-local-storage';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const SavedPostsSkeleton = () => (
      <div className="max-w-4xl mx-auto space-y-8">
@@ -92,11 +95,21 @@ export function SavedPostsView() {
 
 // Default export for Next.js page compatibility
 export default function SavedPostsPage() {
+    const [showIntro, setShowIntro] = useLocalStorage('show-saved-intro', true);
     return (
         <div className="max-w-4xl mx-auto space-y-6">
             <header>
                 <h1 className="font-headline text-4xl font-bold text-primary">Guardados</h1>
-                <p className="text-muted-foreground mt-2 text-lg">Tu colección personal de recetas y menús favoritos.</p>
+                {showIntro && (
+                    <Alert className="mt-4 relative pr-8">
+                        <AlertDescription>
+                            Tu colección personal de recetas y menús favoritos.
+                        </AlertDescription>
+                        <button onClick={() => setShowIntro(false)} className="absolute top-1/2 -translate-y-1/2 right-2 p-1 rounded-full hover:bg-muted/50">
+                            <X className="h-4 w-4" />
+                        </button>
+                    </Alert>
+                )}
             </header>
             <SavedPostsView />
         </div>

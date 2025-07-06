@@ -32,7 +32,7 @@ import {
 } from '@/components/ui/dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MenuSquare, Trash2, LogIn, CalendarDays, Share2, Info, FilePenLine, Save, UtensilsCrossed, Loader2, Sparkles, Beef, RefreshCw } from 'lucide-react';
+import { MenuSquare, Trash2, LogIn, CalendarDays, Share2, Info, FilePenLine, Save, UtensilsCrossed, Loader2, Sparkles, Beef, RefreshCw, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/use-auth';
@@ -45,6 +45,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { generateDetailedRecipe } from '@/ai/flows/generate-detailed-recipe';
+import { useLocalStorage } from '@/hooks/use-local-storage';
 
 
 const MealCard = ({ meal, onChangeClick }: { meal: Recipe; onChangeClick: () => void }) => (
@@ -101,6 +102,7 @@ export function MyMenusView() {
   const [pageLoading, setPageLoading] = useState(true);
   const router = useRouter();
   const { toast } = useToast();
+  const [showBetaAlert, setShowBetaAlert] = useLocalStorage('show-menu-beta-alert', true);
 
   const [isPublishing, setIsPublishing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -422,13 +424,18 @@ export function MyMenusView() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-             <Alert>
-                <Info className="h-4 w-4" />
-                <AlertTitle>¡Personaliza tu Menú!</AlertTitle>
-                <AlertDescription>
-                La IA está en pruebas y algunas recetas pueden ser mejorables. Usa el botón 'Cambiar' en cualquier comida para **sustituirla por una de tus recetas guardadas** o para **generar una nueva versión detallada** con la IA.
-                </AlertDescription>
-            </Alert>
+             {showBetaAlert && (
+                <Alert className="relative pr-8">
+                    <Info className="h-4 w-4" />
+                    <AlertTitle>¡Personaliza tu Menú!</AlertTitle>
+                    <AlertDescription>
+                    La IA está en pruebas y algunas recetas pueden ser mejorables. Usa el botón 'Cambiar' en cualquier comida para **sustituirla por una de tus recetas guardadas** o para **generar una nueva versión detallada** con la IA.
+                    </AlertDescription>
+                    <button onClick={() => setShowBetaAlert(false)} className="absolute top-1/2 -translate-y-1/2 right-2 p-1 rounded-full hover:bg-muted/50">
+                        <X className="h-4 w-4" />
+                    </button>
+                </Alert>
+             )}
             {renderContent()}
           </div>
         </CardContent>
@@ -517,11 +524,21 @@ export function MyMenusView() {
 
 // Default export for Next.js page compatibility
 export default function MyMenusPage() {
+    const [showIntro, setShowIntro] = useLocalStorage('show-my-menus-intro', true);
     return (
         <div className="max-w-4xl mx-auto space-y-6">
             <header>
                 <h1 className="font-headline text-4xl font-bold text-primary">Mis Menús Guardados</h1>
-                <p className="text-muted-foreground mt-2 text-lg">Tu colección de planes de comidas semanales.</p>
+                {showIntro && (
+                    <Alert className="mt-4 relative pr-8">
+                        <AlertDescription>
+                          Tu colección de planes de comidas semanales.
+                        </AlertDescription>
+                        <button onClick={() => setShowIntro(false)} className="absolute top-1/2 -translate-y-1/2 right-2 p-1 rounded-full hover:bg-muted/50">
+                            <X className="h-4 w-4" />
+                        </button>
+                    </Alert>
+                )}
             </header>
             <MyMenusView />
         </div>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -21,7 +22,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BookHeart, LogIn, Trash2, UtensilsCrossed, Sparkles, Beef, Share2, Loader2 } from 'lucide-react';
+import { BookHeart, LogIn, Trash2, UtensilsCrossed, Sparkles, Beef, Share2, Loader2, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { Separator } from '@/components/ui/separator';
@@ -31,6 +32,8 @@ import { publishRecipeAsPost } from '@/lib/community';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { PostMedia } from '@/components/community/post-media';
+import { useLocalStorage } from '@/hooks/use-local-storage';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const NutritionalTable = ({ table }: { table: NutritionalInfo }) => (
   <div className="p-4 bg-muted/50 rounded-lg">
@@ -292,11 +295,21 @@ export function MyRecipesView() {
 
 // Default export for Next.js page compatibility
 export default function MyRecipesPage() {
+    const [showIntro, setShowIntro] = useLocalStorage('show-my-recipes-intro', true);
     return (
         <div className="max-w-4xl mx-auto space-y-6">
              <header>
                 <h1 className="font-headline text-4xl font-bold text-primary">Mis Recetas Guardadas</h1>
-                <p className="text-muted-foreground mt-2 text-lg">Todas tus recetas favoritas en un solo lugar.</p>
+                {showIntro && (
+                    <Alert className="mt-4 relative pr-8">
+                        <AlertDescription>
+                          Todas tus recetas favoritas en un solo lugar.
+                        </AlertDescription>
+                        <button onClick={() => setShowIntro(false)} className="absolute top-1/2 -translate-y-1/2 right-2 p-1 rounded-full hover:bg-muted/50">
+                            <X className="h-4 w-4" />
+                        </button>
+                    </Alert>
+                )}
             </header>
             <MyRecipesView />
         </div>
