@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { DailyMealPlan, Recipe, NutritionalInfo } from '@/types';
-import { UtensilsCrossed, Sparkles, Beef, Mic, Terminal, Gem, Tv } from 'lucide-react';
+import { UtensilsCrossed, Sparkles, Beef, Mic, Terminal, Gem, Tv, X } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmailVerificationBanner } from '@/components/layout/email-verification-banner';
@@ -27,6 +27,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { useLocalStorage } from '@/hooks/use-local-storage';
 
 
 const TodayMealCard = ({ meal, mealType, onStartCooking }: { meal: Recipe; mealType: string; onStartCooking: (recipe: Recipe) => void; }) => {
@@ -138,6 +139,7 @@ export default function Dashboard() {
   const router = useRouter();
   const [todaysPlan, setTodaysPlan] = useState<DailyMealPlan | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showDashboardIntro, setShowDashboardIntro] = useLocalStorage('show-dashboard-intro', true);
 
   // State for the cooking assistant
   const [isCooking, setIsCooking] = useState(false);
@@ -315,16 +317,22 @@ export default function Dashboard() {
     <div className="flex flex-col gap-8">
       <EmailVerificationBanner />
       <header>
-        <h1 className="font-headline text-4xl font-bold text-primary">Panel de ChefAI</h1>
-        <p className="text-muted-foreground mt-2 text-lg">Tu resumen culinario.</p>
+        <h1 className="font-headline text-4xl font-bold text-primary">Menú del Día</h1>
+        {showDashboardIntro && (
+            <Alert className="mt-4 relative pr-8">
+                <AlertDescription>
+                    Este es tu resumen culinario. Aquí verás el plan de comidas para hoy de tu menú semanal más reciente.
+                </AlertDescription>
+                 <button onClick={() => setShowDashboardIntro(false)} className="absolute top-1/2 -translate-y-1/2 right-2 p-1 rounded-full hover:bg-muted/50">
+                    <X className="h-4 w-4" />
+                </button>
+            </Alert>
+        )}
       </header>
       
       <Card className="shadow-lg border-2 border-primary/20">
         <CardHeader>
-          <CardTitle className="font-headline text-2xl">{todaysPlan ? `Menú para Hoy (${todaysPlan.day})` : 'Comidas de Hoy'}</CardTitle>
-          <CardDescription>
-            {user ? 'Esto es lo que hay en el menú de hoy de tu último plan.' : 'Crea un plan para ver tus comidas aquí.'}
-          </CardDescription>
+          <CardTitle className="font-headline text-2xl">{todaysPlan ? todaysPlan.day : 'Comidas de Hoy'}</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           {renderContent()}
