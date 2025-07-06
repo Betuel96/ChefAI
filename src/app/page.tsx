@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -148,6 +147,13 @@ export default function Dashboard() {
   // State for the voice upgrade/ad-wall gate
   const [showVoiceUpgradeDialog, setShowVoiceUpgradeDialog] = useState(false);
   const [pendingRecipe, setPendingRecipe] = useState<Recipe | null>(null);
+
+  // State to prevent hydration errors from useLocalStorage
+  const [hasMounted, setHasMounted] = useState(false);
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
 
   // If Firebase is not configured, show the setup guide and stop rendering the rest of the component.
   if (!isFirebaseConfigured) {
@@ -318,7 +324,7 @@ export default function Dashboard() {
       <EmailVerificationBanner />
       <header>
         <h1 className="font-headline text-4xl font-bold text-primary">Menú del Día</h1>
-        {showDashboardIntro && (
+        {hasMounted && showDashboardIntro && (
             <Alert className="mt-4 relative pr-8">
                 <AlertDescription>
                     Este es tu resumen culinario. Aquí verás el plan de comidas para hoy de tu menú semanal más reciente.
