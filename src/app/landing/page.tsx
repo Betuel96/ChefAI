@@ -63,11 +63,11 @@ export default function LandingPage() {
                 <section className="px-6 md:px-12 -mt-12">
                      <div className="relative aspect-video max-w-4xl mx-auto rounded-lg shadow-2xl overflow-hidden bg-muted">
                         <Image 
-                            src="https://placehold.co/1280x720/333333/f7a849?text=ChefAI+Demo" 
-                            alt="Demostración de la aplicación ChefAI"
+                            src="https://placehold.co/1280x720.png" 
+                            alt="Una persona cocinando en una cocina moderna con la ayuda de ChefAI"
                             layout="fill"
                             objectFit="cover"
-                            data-ai-hint="app interface food"
+                            data-ai-hint="modern kitchen"
                          />
                      </div>
                 </section>
