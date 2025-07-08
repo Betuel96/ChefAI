@@ -19,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { getDictionary } from '@/lib/get-dictionary';
 import type { Locale } from '@/i18n.config';
+import { useParams } from 'next/navigation';
 
 
 const TodayMealCard = ({ meal, mealType, onStartCooking, dict }: { meal: Recipe; mealType: string; onStartCooking: (recipe: Recipe) => void; dict: any; }) => {
@@ -72,11 +73,9 @@ const TodayMealCard = ({ meal, mealType, onStartCooking, dict }: { meal: Recipe;
 };
 
 
-export default function Dashboard({
-    params: { locale },
-    }: {
-    params: { locale: Locale };
-}) {
+export default function Dashboard() {
+  const params = useParams();
+  const locale = params.locale as Locale;
   const { user, loading: authLoading } = useAuth();
   const [todaysPlan, setTodaysPlan] = useState<DailyMealPlan | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -90,7 +89,9 @@ export default function Dashboard({
 
   useEffect(() => {
     setHasMounted(true);
-    getDictionary(locale).then(setDict);
+    if (locale) {
+      getDictionary(locale).then(setDict);
+    }
   }, [locale]);
 
 

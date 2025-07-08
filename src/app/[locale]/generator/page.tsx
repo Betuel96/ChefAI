@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -33,11 +33,9 @@ type GeneratedRecipeWithImage = GenerateRecipeOutput & {
   benefits: string;
 };
 
-export default function RecipeGeneratorPage({
-    params: { locale },
-    }: {
-    params: { locale: Locale };
-}) {
+export default function RecipeGeneratorPage() {
+  const params = useParams();
+  const locale = params.locale as Locale;
   const { user } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -47,7 +45,9 @@ export default function RecipeGeneratorPage({
   const [dict, setDict] = useState<any>(null);
 
   useEffect(() => {
-    getDictionary(locale).then(setDict);
+    if (locale) {
+      getDictionary(locale).then(setDict);
+    }
   }, [locale]);
 
   const form = useForm<z.infer<typeof formSchema>>({
