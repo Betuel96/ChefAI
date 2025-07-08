@@ -73,9 +73,15 @@ export default function RecipeGeneratorPage() {
       });
 
     } catch (error: any) {
+      let description = 'No se pudo generar la receta. Inténtalo de nuevo.';
+      if (error.message && (error.message.includes('API key not valid') || error.message.includes('API key is invalid') || error.message.includes('PERMISSION_DENIED'))) {
+        description = 'La clave de API de Google AI no es válida o está ausente. Asegúrate de que tu archivo .env contenga una clave válida en la variable GOOGLE_API_KEY y que la "Vertex AI API" esté habilitada en tu proyecto de Google Cloud.';
+      } else if (error.message && error.message.includes('billing')) {
+        description = 'Parece que hay un problema de facturación con tu cuenta de Google Cloud. Asegúrate de que la facturación esté habilitada para tu proyecto.';
+      }
       toast({
         title: 'Error de Generación',
-        description: error.message || 'No se pudo generar la receta. Inténtalo de nuevo.',
+        description: description,
         variant: 'destructive',
       });
     } finally {
