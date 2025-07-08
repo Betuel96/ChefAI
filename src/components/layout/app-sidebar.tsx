@@ -37,13 +37,9 @@ import { UserCircle } from 'lucide-react';
 import { UserSearch } from './user-search';
 import { useNotifications } from '@/hooks/use-notifications';
 import { useFeedStatus } from '@/hooks/use-feed-status';
+import LanguageSwitcher from '../i18n/language-switcher';
 
-const aiToolsItems = [
-  { href: '/generator', label: 'Generador de Recetas', icon: Sparkles },
-  { href: '/planner', label: 'Planificador Semanal', icon: CalendarDays },
-];
-
-export function AppSidebar() {
+export function AppSidebar({ dict }: { dict: any }) {
   const pathname = usePathname();
   const { isOpen } = useSidebar();
   const { user, loading } = useAuth();
@@ -90,12 +86,30 @@ export function AppSidebar() {
     return <div className="h-2 w-2 rounded-full bg-primary" />;
   }, [unreadCount, isOpen]);
   
-  const communityItems = [
-    { href: '/community', label: 'Comunidad', icon: Users, indicator: CommunityIndicator },
-    { href: '/publish', label: 'Crear Publicación', icon: PlusSquare },
-    { href: '/requests', label: 'Notificaciones', icon: Bell, indicator: NotificationIndicator },
+  const removeLocaleFromPath = (path: string) => {
+    const segments = path.split('/');
+    if (segments.length > 2 && /^[a-z]{2}(-[A-Z]{2})?$/.test(segments[1])) {
+        return `/${segments.slice(2).join('/')}`;
+    }
+    return path;
+  }
+  const currentRoute = removeLocaleFromPath(pathname);
+
+  const getIsActive = (href: string) => {
+    return href === '/' ? currentRoute === href : currentRoute.startsWith(href);
+  }
+
+  const aiToolsItems = [
+    { href: '/generator', label: dict.sidebar.recipe_generator, icon: Sparkles },
+    { href: '/planner', label: dict.sidebar.weekly_planner, icon: CalendarDays },
   ];
 
+  const communityItems = [
+    { href: '/community', label: dict.sidebar.community, icon: Users, indicator: CommunityIndicator },
+    { href: '/publish', label: dict.sidebar.create_post, icon: PlusSquare },
+    { href: '/requests', label: dict.sidebar.notifications, icon: Bell, indicator: NotificationIndicator },
+  ];
+  
   return (
     <Sidebar>
       <SidebarHeader>
@@ -138,20 +152,20 @@ export function AppSidebar() {
 
           <SidebarMenuItem>
               <Link href="/">
-                <SidebarMenuButton isActive={pathname === '/'} tooltip="Panel">
+                <SidebarMenuButton isActive={getIsActive('/')} tooltip={dict.sidebar.dashboard}>
                   <Home />
-                  <span>Panel</span>
+                  <span>{dict.sidebar.dashboard}</span>
                 </SidebarMenuButton>
               </Link>
           </SidebarMenuItem>
 
           <Separator className="my-2" />
           
-          {isOpen && <h3 className="px-4 pt-2 pb-1 text-xs uppercase text-muted-foreground font-semibold tracking-wider">Herramientas AI</h3>}
+          {isOpen && <h3 className="px-4 pt-2 pb-1 text-xs uppercase text-muted-foreground font-semibold tracking-wider">{dict.sidebar.ai_tools}</h3>}
           {aiToolsItems.map((item) => (
             <SidebarMenuItem key={item.href}>
               <Link href={item.href}>
-                <SidebarMenuButton isActive={pathname.startsWith(item.href)} tooltip={item.label}>
+                <SidebarMenuButton isActive={getIsActive(item.href)} tooltip={item.label}>
                   <item.icon />
                   <span>{item.label}</span>
                 </SidebarMenuButton>
@@ -161,12 +175,12 @@ export function AppSidebar() {
 
           <Separator className="my-2" />
 
-          {isOpen && <h3 className="px-4 pt-2 pb-1 text-xs uppercase text-muted-foreground font-semibold tracking-wider">Comunidad</h3>}
+          {isOpen && <h3 className="px-4 pt-2 pb-1 text-xs uppercase text-muted-foreground font-semibold tracking-wider">{dict.sidebar.community}</h3>}
            {communityItems.map((item) => (
             <SidebarMenuItem key={item.href}>
               <Link href={item.href}>
                 <SidebarMenuButton 
-                  isActive={pathname.startsWith(item.href)} 
+                  isActive={getIsActive(item.href)}
                   tooltip={item.label}
                   indicator={item.indicator}
                 >
@@ -180,28 +194,32 @@ export function AppSidebar() {
            <Separator className="my-2" />
            <SidebarMenuItem>
               <Link href="/settings">
-                <SidebarMenuButton isActive={pathname.startsWith('/settings')} tooltip="Ajustes">
+                <SidebarMenuButton isActive={getIsActive('/settings')} tooltip={dict.sidebar.settings}>
                   <Settings />
-                  <span>Ajustes</span>
+                  <span>{dict.sidebar.settings}</span>
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
+            <SidebarMenuItem>
+              <LanguageSwitcher />
+            </SidebarMenuItem>
+
          {user ? (
              <SidebarMenuItem>
-                <SidebarMenuButton onClick={handleLogout} tooltip="Cerrar Sesión">
+                <SidebarMenuButton onClick={handleLogout} tooltip={dict.sidebar.logout}>
                   <LogOut />
-                  <span>Cerrar Sesión</span>
+                  <span>{dict.sidebar.logout}</span>
                 </SidebarMenuButton>
              </SidebarMenuItem>
           ) : !loading ? (
             <SidebarMenuItem>
               <Link href="/login">
                 <SidebarMenuButton
-                  isActive={pathname === '/login' || pathname === '/signup'}
-                  tooltip="Acceder"
+                  isActive={getIsActive('/login')}
+                  tooltip={dict.sidebar.login}
                 >
                   <LogIn />
-                  <span>Acceder / Registrarse</span>
+                  <span>{dict.sidebar.login}</span>
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>

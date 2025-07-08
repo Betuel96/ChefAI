@@ -1,0 +1,61 @@
+
+{
+  "sidebar": {
+    "dashboard": "Tableau de bord",
+    "recipe_generator": "Générateur de Recettes",
+    "weekly_planner": "Planificateur Hebdomadaire",
+    "ai_tools": "Outils d'IA",
+    "community": "Communauté",
+    "create_post": "Créer un post",
+    "notifications": "Notifications",
+    "settings": "Paramètres",
+    "login": "Connexion / Inscription",
+    "logout": "Déconnexion",
+    "profile_tooltip": "Profil"
+  },
+  "generator_page": {
+    "title": "Générateur de Recettes",
+    "description": "Transformez vos ingrédients en un délicieux repas !",
+    "form_title": "Vos Ingrédients",
+    "form_description": "Entrez ce que vous avez, et nous créerons une recette pour vous.",
+    "ingredients_label": "Ingrédients Disponibles",
+    "ingredients_placeholder": "ex., poitrine de poulet, riz, brocoli, sauce soja",
+    "servings_label": "Nombre de Portions",
+    "button_generating": "Génération...",
+    "button_generate": "Générer la Recette",
+    "generated_recipe_title": "Recette Générée",
+    "generated_recipe_placeholder_title": "Votre recette apparaîtra ici.",
+    "generated_recipe_placeholder_description": "Remplissez le formulaire à gauche et cliquez sur 'Générer la Recette'.",
+    "benefits": "Bénéfices",
+    "nutritional_info": "Informations Nutritionnelles (par portion)",
+    "calories": "Calories",
+    "protein": "Protéines",
+    "carbs": "Glucides",
+    "fats": "Lipides",
+    "ingredients_heading": "Ingrédients",
+    "instructions_heading": "Instructions",
+    "equipment_heading": "Équipement Nécessaire",
+    "save_button_saving": "Enregistrement...",
+    "save_button": "Enregistrer dans mon livre de recettes"
+  },
+  "error_messages": {
+    "generation_error_title": "Erreur de Génération",
+    "generation_error_description": "Impossible de générer la recette. Veuillez réessayer.",
+    "api_key_error": "La clé API Google AI est invalide ou manquante. Assurez-vous que votre fichier .env contient une clé valide et que l'API 'Vertex AI' est activée dans votre projet Google Cloud.",
+    "billing_error": "Il semble y avoir un problème de facturation avec votre compte Google Cloud. Veuillez vous assurer que la facturation est activée pour votre projet.",
+    "save_error_title": "Erreur d'Enregistrement",
+    "save_error_description": "Impossible d'enregistrer la recette.",
+    "login_to_save": "Vous devez être connecté pour enregistrer des recettes."
+  },
+  "success_messages": {
+    "recipe_saved_title": "Recette Enregistrée !",
+    "recipe_saved_description": "a été ajouté à votre livre de recettes."
+  },
+  "language_switcher": {
+    "es": "Español",
+    "en": "English",
+    "fr": "Français",
+    "de": "Deutsch",
+    "it": "Italiano"
+  }
+}

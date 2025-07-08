@@ -1,0 +1,61 @@
+
+{
+  "sidebar": {
+    "dashboard": "Dashboard",
+    "recipe_generator": "Generatore di Ricette",
+    "weekly_planner": "Pianificatore Settimanale",
+    "ai_tools": "Strumenti AI",
+    "community": "Comunità",
+    "create_post": "Crea Post",
+    "notifications": "Notifiche",
+    "settings": "Impostazioni",
+    "login": "Accedi / Registrati",
+    "logout": "Esci",
+    "profile_tooltip": "Profilo"
+  },
+  "generator_page": {
+    "title": "Generatore di Ricette",
+    "description": "Trasforma i tuoi ingredienti in un pasto delizioso!",
+    "form_title": "I Tuoi Ingredienti",
+    "form_description": "Inserisci quello che hai e creeremo una ricetta per te.",
+    "ingredients_label": "Ingredienti Disponibili",
+    "ingredients_placeholder": "es. petto di pollo, riso, broccoli, salsa di soia",
+    "servings_label": "Numero di Porzioni",
+    "button_generating": "In generazione...",
+    "button_generate": "Genera Ricetta",
+    "generated_recipe_title": "Ricetta Generata",
+    "generated_recipe_placeholder_title": "La tua ricetta apparirà qui.",
+    "generated_recipe_placeholder_description": "Compila il modulo a sinistra e clicca su 'Genera Ricetta'.",
+    "benefits": "Benefici",
+    "nutritional_info": "Informazioni Nutrizionali (per porzione)",
+    "calories": "Calorie",
+    "protein": "Proteine",
+    "carbs": "Carboidrati",
+    "fats": "Grassi",
+    "ingredients_heading": "Ingredienti",
+    "instructions_heading": "Istruzioni",
+    "equipment_heading": "Attrezzatura Necessaria",
+    "save_button_saving": "Salvataggio...",
+    "save_button": "Salva nel mio ricettario"
+  },
+  "error_messages": {
+    "generation_error_title": "Errore di Generazione",
+    "generation_error_description": "Impossibile generare la ricetta. Si prega di riprovare.",
+    "api_key_error": "La chiave API di Google AI non è valida o mancante. Assicurati che il tuo file .env contenga una chiave valida e che l'API 'Vertex AI' sia abilitata nel tuo progetto Google Cloud.",
+    "billing_error": "Sembra esserci un problema di fatturazione con il tuo account Google Cloud. Assicurati che la fatturazione sia abilitata per il tuo progetto.",
+    "save_error_title": "Errore nel Salvataggio",
+    "save_error_description": "Impossibile salvare la ricetta.",
+    "login_to_save": "Devi essere loggato per salvare le ricette."
+  },
+  "success_messages": {
+    "recipe_saved_title": "Ricetta Salvata!",
+    "recipe_saved_description": "è stata aggiunta al tuo ricettario."
+  },
+  "language_switcher": {
+    "es": "Español",
+    "en": "English",
+    "fr": "Français",
+    "de": "Deutsch",
+    "it": "Italiano"
+  }
+}

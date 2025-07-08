@@ -1,3 +1,4 @@
+
 // src/app/api/create-connect-account/route.ts
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
@@ -7,14 +8,14 @@ import { db } from '@/lib/firebase';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
 
 export async function POST(req: Request) {
-  const origin = req.headers.get('origin') || 'http://localhost:9002';
-  const { userId } = await req.json();
+  const origin = req.headers.get('origin') || 'http://localhost:3000';
+  const { userId, locale } = await req.json();
 
   if (!userId) {
-    return NextResponse.json({ error: 'Usuario no especificado.' }, { status: 400 });
+    return NextResponse.json({ error: 'User not specified.' }, { status: 400 });
   }
   if (!db) {
-    return NextResponse.json({ error: 'La base de datos no está inicializada.' }, { status: 500 });
+    return NextResponse.json({ error: 'Database not initialized.' }, { status: 500 });
   }
 
   try {
@@ -22,7 +23,7 @@ export async function POST(req: Request) {
     const userDocSnap = await getDoc(userDocRef);
 
     if (!userDocSnap.exists()) {
-        return NextResponse.json({ error: 'Usuario no encontrado.' }, { status: 404 });
+        return NextResponse.json({ error: 'User not found.' }, { status: 404 });
     }
     const userData = userDocSnap.data();
     let accountId = userData.stripeConnectAccountId;
@@ -45,15 +46,15 @@ export async function POST(req: Request) {
     // Create an account link for the user to complete onboarding
     const accountLink = await stripe.accountLinks.create({
       account: accountId,
-      refresh_url: `${origin}/settings`,
-      return_url: `${origin}/settings?stripe_connect_return=true`,
+      refresh_url: `${origin}/${locale}/settings`,
+      return_url: `${origin}/${locale}/settings?stripe_connect_return=true`,
       type: 'account_onboarding',
     });
     
     return NextResponse.json({ url: accountLink.url });
 
   } catch (error: any) {
-    console.error('Error al crear la cuenta de Stripe Connect:', error);
+    console.error('Error creating Stripe Connect account:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

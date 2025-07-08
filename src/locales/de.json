@@ -1,0 +1,61 @@
+
+{
+  "sidebar": {
+    "dashboard": "Dashboard",
+    "recipe_generator": "Rezept-Generator",
+    "weekly_planner": "Wochenplaner",
+    "ai_tools": "KI-Werkzeuge",
+    "community": "Community",
+    "create_post": "Beitrag erstellen",
+    "notifications": "Benachrichtigungen",
+    "settings": "Einstellungen",
+    "login": "Anmelden / Registrieren",
+    "logout": "Abmelden",
+    "profile_tooltip": "Profil"
+  },
+  "generator_page": {
+    "title": "Rezept-Generator",
+    "description": "Verwandeln Sie Ihre Zutaten in ein köstliches Mahl!",
+    "form_title": "Ihre Zutaten",
+    "form_description": "Geben Sie ein, was Sie haben, und wir erstellen ein Rezept für Sie.",
+    "ingredients_label": "Verfügbare Zutaten",
+    "ingredients_placeholder": "z.B. Hähnchenbrust, Reis, Brokkoli, Sojasauce",
+    "servings_label": "Anzahl der Portionen",
+    "button_generating": "Wird generiert...",
+    "button_generate": "Rezept generieren",
+    "generated_recipe_title": "Generiertes Rezept",
+    "generated_recipe_placeholder_title": "Ihr Rezept wird hier erscheinen.",
+    "generated_recipe_placeholder_description": "Füllen Sie das Formular links aus und klicken Sie auf 'Rezept generieren'.",
+    "benefits": "Vorteile",
+    "nutritional_info": "Nährwertangaben (pro Portion)",
+    "calories": "Kalorien",
+    "protein": "Protein",
+    "carbs": "Kohlenhydrate",
+    "fats": "Fette",
+    "ingredients_heading": "Zutaten",
+    "instructions_heading": "Anleitung",
+    "equipment_heading": "Benötigte Ausrüstung",
+    "save_button_saving": "Wird gespeichert...",
+    "save_button": "In meinem Rezeptbuch speichern"
+  },
+  "error_messages": {
+    "generation_error_title": "Generierungsfehler",
+    "generation_error_description": "Rezept konnte nicht generiert werden. Bitte versuchen Sie es erneut.",
+    "api_key_error": "Der Google AI API-Schlüssel ist ungültig oder fehlt. Stellen Sie sicher, dass Ihre .env-Datei einen gültigen Schlüssel enthält und die 'Vertex AI API' in Ihrem Google Cloud-Projekt aktiviert ist.",
+    "billing_error": "Es scheint ein Abrechnungsproblem mit Ihrem Google Cloud-Konto zu geben. Stellen Sie sicher, dass die Abrechnung für Ihr Projekt aktiviert ist.",
+    "save_error_title": "Fehler beim Speichern",
+    "save_error_description": "Rezept konnte nicht gespeichert werden.",
+    "login_to_save": "Sie müssen angemeldet sein, um Rezepte zu speichern."
+  },
+  "success_messages": {
+    "recipe_saved_title": "Rezept gespeichert!",
+    "recipe_saved_description": "wurde zu Ihrem Rezeptbuch hinzugefügt."
+  },
+  "language_switcher": {
+    "es": "Español",
+    "en": "English",
+    "fr": "Français",
+    "de": "Deutsch",
+    "it": "Italiano"
+  }
+}

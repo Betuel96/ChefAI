@@ -7,12 +7,12 @@ import { auth } from '@/lib/firebase';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
 
 export async function POST(req: Request) {
-  const origin = headers().get('origin') || 'http://localhost:9002';
+  const origin = headers().get('origin') || 'http://localhost:3000';
   
-  const { userId, priceId } = await req.json();
+  const { userId, priceId, locale } = await req.json();
 
   if (!userId || !priceId) {
-    return NextResponse.json({ error: 'Usuario o plan no especificado.' }, { status: 400 });
+    return NextResponse.json({ error: 'User or plan not specified.' }, { status: 400 });
   }
 
   try {
@@ -25,8 +25,8 @@ export async function POST(req: Request) {
         },
       ],
       mode: 'subscription',
-      success_url: `${origin}/settings?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/settings`,
+      success_url: `${origin}/${locale}/settings?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/${locale}/settings`,
       metadata: {
         userId: userId,
         priceId: priceId,
@@ -36,11 +36,11 @@ export async function POST(req: Request) {
     if (session.url) {
       return NextResponse.json({ url: session.url });
     } else {
-      return NextResponse.json({ error: 'No se pudo crear la sesión de pago.' }, { status: 500 });
+      return NextResponse.json({ error: 'Could not create checkout session.' }, { status: 500 });
     }
 
   } catch (error: any) {
-    console.error('Error al crear la sesión de Stripe:', error);
+    console.error('Error creating Stripe session:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

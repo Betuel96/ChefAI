@@ -1,0 +1,61 @@
+
+{
+  "sidebar": {
+    "dashboard": "Dashboard",
+    "recipe_generator": "Recipe Generator",
+    "weekly_planner": "Weekly Planner",
+    "ai_tools": "AI Tools",
+    "community": "Community",
+    "create_post": "Create Post",
+    "notifications": "Notifications",
+    "settings": "Settings",
+    "login": "Login / Sign Up",
+    "logout": "Log Out",
+    "profile_tooltip": "Profile"
+  },
+  "generator_page": {
+    "title": "Recipe Generator",
+    "description": "Turn your ingredients into a delicious meal!",
+    "form_title": "Your Ingredients",
+    "form_description": "Enter what you have, and we'll create a recipe for you.",
+    "ingredients_label": "Available Ingredients",
+    "ingredients_placeholder": "e.g., chicken breast, rice, broccoli, soy sauce",
+    "servings_label": "Number of Servings",
+    "button_generating": "Generating...",
+    "button_generate": "Generate Recipe",
+    "generated_recipe_title": "Generated Recipe",
+    "generated_recipe_placeholder_title": "Your recipe will appear here.",
+    "generated_recipe_placeholder_description": "Fill out the form on the left and click 'Generate Recipe'.",
+    "benefits": "Benefits",
+    "nutritional_info": "Nutritional Info (per serving)",
+    "calories": "Calories",
+    "protein": "Protein",
+    "carbs": "Carbs",
+    "fats": "Fats",
+    "ingredients_heading": "Ingredients",
+    "instructions_heading": "Instructions",
+    "equipment_heading": "Equipment Needed",
+    "save_button_saving": "Saving...",
+    "save_button": "Save to my Cookbook"
+  },
+  "error_messages": {
+    "generation_error_title": "Generation Error",
+    "generation_error_description": "Could not generate the recipe. Please try again.",
+    "api_key_error": "The Google AI API key is invalid or missing. Ensure your .env file contains a valid key and the 'Vertex AI API' is enabled in your Google Cloud project.",
+    "billing_error": "There seems to be a billing issue with your Google Cloud account. Please ensure billing is enabled for your project.",
+    "save_error_title": "Error Saving",
+    "save_error_description": "Could not save the recipe.",
+    "login_to_save": "You must be logged in to save recipes."
+  },
+  "success_messages": {
+    "recipe_saved_title": "Recipe Saved!",
+    "recipe_saved_description": "has been added to your cookbook."
+  },
+  "language_switcher": {
+    "es": "Español",
+    "en": "English",
+    "fr": "Français",
+    "de": "Deutsch",
+    "it": "Italiano"
+  }
+}

@@ -15,31 +15,32 @@ import {z} from 'genkit';
 const GenerateRecipeInputSchema = z.object({
   ingredients: z
     .string()
-    .describe('Una lista de ingredientes disponibles separados por comas.'),
+    .describe('A comma-separated list of available ingredients.'),
   servings: z
     .number()
     .int()
     .positive()
-    .describe('El número de porciones que debe tener la receta.'),
+    .describe('The number of servings the recipe should yield.'),
+  language: z.string().describe('The language for the output, e.g., "Spanish", "English".'),
 });
 export type GenerateRecipeInput = z.infer<typeof GenerateRecipeInputSchema>;
 
 const NutritionalInfoSchema = z.object({
-  calories: z.string().describe('Calorías estimadas por porción.'),
-  protein: z.string().describe('Proteínas estimadas en gramos por porción.'),
-  carbs: z.string().describe('Carbohidratos estimados en gramos por porción.'),
-  fats: z.string().describe('Grasas estimadas en gramos por porción.'),
+  calories: z.string().describe('Estimated calories per serving.'),
+  protein: z.string().describe('Estimated protein in grams per serving.'),
+  carbs: z.string().describe('Estimated carbohydrates in grams per serving.'),
+  fats: z.string().describe('Estimated fats in grams per serving.'),
 });
 
 const GenerateRecipeOutputSchema = z.object({
-  name: z.string().describe('El nombre de la receta.'),
-  instructions: z.array(z.string()).describe('Un array de strings, donde cada string es un paso numerado de la preparación.'),
+  name: z.string().describe('The name of the recipe.'),
+  instructions: z.array(z.string()).describe('An array of strings, where each string is a numbered preparation step.'),
   ingredients: z
     .array(z.string())
-    .describe('Un array de strings, donde cada string es un ingrediente adicional necesario, con cantidades.'),
-  equipment: z.array(z.string()).describe('Un array de strings, donde cada string es un utensilio de cocina necesario.'),
-  benefits: z.string().describe('Una breve descripción de los beneficios nutricionales o para la salud de esta receta (ej: "Alto en proteínas, ideal para después del gimnasio.").'),
-  nutritionalTable: NutritionalInfoSchema.describe('Una tabla nutricional estimada para la receta por porción.'),
+    .describe('An array of strings, where each string is a required ingredient with its quantity.'),
+  equipment: z.array(z.string()).describe('An array of strings, where each string is a needed piece of kitchen equipment.'),
+  benefits: z.string().describe('A brief description of the nutritional or health benefits of this recipe (e.g., "High in protein, great for post-workout muscle recovery.").'),
+  nutritionalTable: NutritionalInfoSchema.describe('An estimated nutritional table for the recipe per serving.'),
 });
 export type GenerateRecipeOutput = z.infer<typeof GenerateRecipeOutputSchema>;
 
@@ -51,23 +52,23 @@ const prompt = ai.definePrompt({
   name: 'generateRecipePrompt',
   input: {schema: GenerateRecipeInputSchema},
   output: {schema: GenerateRecipeOutputSchema},
-  prompt: `Eres un chef de talla mundial con una imaginación sin límites. Tu misión es sorprender al usuario con una receta creativa, deliciosa y MUY DETALLADA, usando los ingredientes que te dan.
+  prompt: `You are a world-class chef with limitless imagination. Your mission is to surprise the user with a creative, delicious, and VERY DETAILED recipe, using the ingredients provided.
 
-**Instrucción CRÍTICA:** ¡La creatividad y la variedad son tu sello! Cada vez que recibas esta petición, incluso con los mismos ingredientes, DEBES generar una idea completamente nueva y con mucho detalle. Explora diferentes cocinas, métodos de cocción y tipos de plato.
+**CRITICAL Instruction:** Creativity and variety are your signature! Every time you receive this request, even with the same ingredients, you MUST generate a completely new and detailed idea. Explore different cuisines, cooking methods, and dish types.
 
-**Ingredientes Base:** {{{ingredients}}}
-**Porciones:** {{{servings}}}
+**Base Ingredients:** {{{ingredients}}}
+**Servings:** {{{servings}}}
 
 ---
-**Instrucciones de Formato DETALLADO:**
-La respuesta DEBE ser un objeto JSON válido con las siguientes claves:
-- \`name\`: El nombre de la receta.
-- \`ingredients\`: Un **ARRAY de strings**. Cada string debe ser un ingrediente necesario con su cantidad (ej: ["2 pechugas de pollo", "1 taza de arroz", "2 cucharadas de aceite de oliva"]).
-- \`instructions\`: Un **ARRAY de strings**. Cada string debe ser un paso de preparación claro y **numerado** (ej: ["1. Sazonar el pollo con sal y pimienta.", "2. Calentar el aceite en una sartén a fuego medio.", "3. Cocinar el pollo por 6-8 minutos por cada lado."]).
-- \`equipment\`: Un **ARRAY de strings**. Cada string es un utensilio necesario (ej: ["sartén", "tabla de cortar", "cuchillo de chef"]).
-- \`benefits\`: Un **string** con una breve descripción de los beneficios nutricionales o de salud de la receta (ej: "Alto en proteínas, ideal para la recuperación muscular después del ejercicio.").
-- \`nutritionalTable\`: Un **OBJETO** con información nutricional estimada por porción. Debe contener las claves: \`calories\`, \`protein\`, \`carbs\`, y \`fats\`. (ej: { "calories": "450kcal", "protein": "40g", "carbs": "30g", "fats": "15g" }).
-**Instrucción de Idioma:** Toda la respuesta y el contenido DEBE estar en español.
+**DETAILED Formatting Instructions:**
+The response MUST be a valid JSON object with the following keys:
+- \`name\`: The recipe name.
+- \`ingredients\`: An **ARRAY of strings**. Each string must be a single ingredient with its quantity (e.g., ["2 chicken breasts", "1 cup of rice", "2 tbsp olive oil"]).
+- \`instructions\`: An **ARRAY of strings**. Each string must be a clear and **numbered** preparation step (e.g., ["1. Season the chicken with salt and pepper.", "2. Heat oil in a pan over medium heat.", "3. Cook chicken for 6-8 minutes per side."]).
+- \`equipment\`: An **ARRAY of strings**. Each string is a necessary piece of equipment (e.g., ["frying pan", "cutting board", "chef's knife"]).
+- \`benefits\`: A **string** with a brief description of the nutritional or health benefits of the recipe (e.g., "High in protein, great for post-workout muscle recovery.").
+- \`nutritionalTable\`: An **OBJECT** with estimated nutritional information per serving. It MUST contain the keys: \`calories\`, \`protein\`, \`carbs\`, and \`fats\`. (e.g., { "calories": "450kcal", "protein": "40g", "carbs": "30g", "fats": "15g" }).
+**Language Instruction:** The entire response and all its content MUST be in {{{language}}}.
 `,
   config: {
     temperature: 1.0,
