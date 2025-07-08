@@ -37,3 +37,23 @@ El éxito de ChefAI es solo el comienzo. Es el combustible que necesitamos para 
 Al apoyar ChefAI, no solo estás transformando tu cocina. Estás invirtiendo en un futuro donde la tecnología nos cuida.
 
 **Únete a nosotros. Ayúdanos a construir inteligencia artificial para la vida real.**
+
+---
+
+### Riesgos y Desafíos
+
+Creemos en la transparencia total con nuestra comunidad. Como en todo proyecto ambicioso, existen riesgos y desafíos que hemos identificado y para los cuales tenemos un plan.
+
+*   **Costos y Escalabilidad de la IA:** Las tecnologías de inteligencia artificial generativa tienen un costo operativo. A medida que nuestra base de usuarios crezca, también lo harán los costos de la API.
+    *   **Nuestro Plan:** Hemos diseñado nuestra arquitectura para ser eficiente. Las suscripciones premium están pensadas para cubrir estos costos a largo plazo y asegurar la sostenibilidad del proyecto sin comprometer la experiencia del usuario.
+
+*   **Calidad y Fiabilidad de la IA:** La IA, aunque potente, no es perfecta. Puede generar recetas que necesiten ajustes o que no sean del gusto de todos.
+    *   **Nuestro Plan:** El prototipo actual ya genera resultados de alta calidad. Planeamos implementar un sistema de feedback donde la comunidad pueda calificar y comentar las recetas, lo que nos permitirá refinar y mejorar continuamente los modelos y las instrucciones que damos a la IA.
+
+*   **Adopción y Construcción de Comunidad:** El éxito de la plataforma social depende de atraer tanto a consumidores de contenido como a creadores.
+    *   **Nuestro Plan:** Nuestra estrategia se centra en dos pilares: una experiencia de usuario impecable y gratuita para las funciones esenciales, y herramientas de monetización justas y fáciles de usar para incentivar a los creadores a compartir su pasión desde el primer día.
+
+*   **Complejidad Técnica:** ChefAI integra múltiples sistemas (autenticación, base de datos, IA, pagos). Mantener y escalar esta infraestructura es un desafío técnico.
+    *   **Nuestro Plan:** El prototipo actual demuestra que la integración es viable y robusta. Los fondos de esta campaña nos permitirán contratar al talento necesario para asegurar que la arquitectura no solo funcione, sino que sea segura y escalable para millones de usuarios.
+
+Somos un equipo preparado y apasionado, consciente de los obstáculos, pero con una visión clara de cómo superarlos. Tu apoyo es la pieza clave para convertir estos desafíos en éxitos.
