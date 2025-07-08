@@ -80,46 +80,6 @@ const TodayMealCard = ({ meal, mealType, onStartCooking }: { meal: Recipe; mealT
   );
 };
 
-const ConfigurationGuide = () => (
-    <div className="flex items-center justify-center min-h-[calc(100vh-8rem)]">
-        <Card className="w-full max-w-2xl shadow-lg">
-            <CardHeader>
-                <CardTitle className="text-2xl font-headline text-destructive flex items-center gap-2">
-                    <Terminal /> Acción Requerida: Configura tus Claves de API
-                </CardTitle>
-                <CardDescription>
-                     Para que la aplicación funcione para tu video, necesitas añadir tus claves de API en el archivo <code>.env</code>.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-                 <Alert variant="destructive">
-                    <AlertTitle>¡Configuración Incompleta!</AlertTitle>
-                    <AlertDescription>
-                       <p>Esta pantalla aparece porque tus claves de API no están configuradas. He preparado el archivo <code>.env</code> para ti. Por favor, ábrelo y reemplaza los valores de marcador de posición con tus claves reales.</p>
-                    </AlertDescription>
-                </Alert>
-                 <div className="space-y-4 text-sm">
-                    <div>
-                      <h3 className="font-semibold">1. Claves de Google AI (Genkit)</h3>
-                      <p className="text-muted-foreground">Necesaria para todas las funciones de IA. Créala en la <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="underline font-bold">Consola de Google Cloud</a> y habilita la "Vertex AI API".</p>
-                    </div>
-
-                    <div>
-                      <h3 className="font-semibold">2. Claves de Firebase</h3>
-                      <p className="text-muted-foreground">Necesarias para la base de datos y autenticación. Encuéntralas en la <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="underline font-bold">Consola de Firebase</a> en la configuración de tu proyecto.</p>
-                    </div>
-
-                    <div>
-                      <h3 className="font-semibold">3. Claves de Stripe (Opcional)</h3>
-                      <p className="text-muted-foreground">Necesarias para suscripciones y propinas. Encuéntralas en tu <a href="https://dashboard.stripe.com/apikeys" target="_blank" rel="noopener noreferrer" className="underline font-bold">Dashboard de Stripe</a>.</p>
-                    </div>
-                </div>
-                <p className="text-sm text-muted-foreground pt-4 border-t">Una vez que hayas añadido tus claves, reinicia la aplicación para que los cambios surtan efecto.</p>
-            </CardContent>
-        </Card>
-    </div>
-);
-
 
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
@@ -143,10 +103,6 @@ export default function Dashboard() {
   }, []);
 
 
-  // If Firebase is not configured, show the setup guide and stop rendering the rest of the component.
-  if (!isFirebaseConfigured) {
-      return <ConfigurationGuide />;
-  }
 
   useEffect(() => {
     if (authLoading) {
