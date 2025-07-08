@@ -6,7 +6,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { checkIsAdmin } from '@/lib/admin';
 import { AdminSidebar } from '@/components/admin/admin-sidebar';
-import { Toaster } from '@/components/ui/toaster';
 import { Loader2, Terminal } from 'lucide-react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -91,11 +90,8 @@ export default function AdminLayout({
   };
   
   return (
-    <html lang="es">
-        <body>
-            {renderContent()}
-            <Toaster />
-        </body>
-    </html>
+    <>
+      {renderContent()}
+    </>
   )
 }
