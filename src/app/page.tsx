@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -79,54 +80,41 @@ const TodayMealCard = ({ meal, mealType, onStartCooking }: { meal: Recipe; mealT
   );
 };
 
-const FirebaseSetupGuide = () => (
+const ConfigurationGuide = () => (
     <div className="flex items-center justify-center min-h-[calc(100vh-8rem)]">
         <Card className="w-full max-w-2xl shadow-lg">
             <CardHeader>
                 <CardTitle className="text-2xl font-headline text-destructive flex items-center gap-2">
-                    <Terminal /> Acción Requerida: Configura tu Backend
+                    <Terminal /> Acción Requerida: Configura tus Claves de API
                 </CardTitle>
                 <CardDescription>
-                     La aplicación no puede conectar con Firebase. Por favor, revisa la configuración de tu archivo <code>.env</code>.
+                     Para que la aplicación funcione para tu video, necesitas añadir tus claves de API en el archivo <code>.env</code>.
                 </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
                  <Alert variant="destructive">
-                    <AlertTitle>¡Error de Configuración Detectado!</AlertTitle>
+                    <AlertTitle>¡Configuración Incompleta!</AlertTitle>
                     <AlertDescription>
-                       <p>Esta pantalla aparece porque una o más claves de Firebase no están configuradas en tu archivo <code>.env</code>.</p>
-                       <p className="mt-2">Recientemente, me proporcionaste tus claves. Es posible que haya cometido un error al guardarlas. Por favor, verifica que tu archivo <code>.env</code> en la raíz del proyecto contenga **TODAS** las siguientes claves con los valores correctos:</p>
-                        <pre className="mt-2 p-4 bg-muted rounded-md text-xs overflow-x-auto">
-                        <code>
-                            {`# Asegúrate de que TODAS estas líneas estén en tu .env
-NEXT_PUBLIC_FIREBASE_API_KEY="..."
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="..."
-NEXT_PUBLIC_FIREBASE_PROJECT_ID="..."
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET="..."
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID="..."
-NEXT_PUBLIC_FIREBASE_APP_ID="..."
-`}
-                        </code>
-                    </pre>
-                    <p className="mt-2">Si alguna clave falta, por favor, añádela desde tu <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="underline">Consola de Firebase</a> y reinicia la aplicación.</p>
+                       <p>Esta pantalla aparece porque tus claves de API no están configuradas. He preparado el archivo <code>.env</code> para ti. Por favor, ábrelo y reemplaza los valores de marcador de posición con tus claves reales.</p>
                     </AlertDescription>
                 </Alert>
-                 <div className="space-y-2">
-                    <h3 className="font-semibold">Claves de Stripe (Aún necesarias)</h3>
-                    <p className="text-sm text-muted-foreground">
-                        Una vez que Firebase funcione, también necesitarás añadir tus claves de Stripe para habilitar las suscripciones.
-                    </p>
-                    <pre className="mt-2 p-4 bg-muted rounded-md text-xs overflow-x-auto">
-                        <code>
-                            {`# Encuentra esto en tu Dashboard de Stripe
-STRIPE_SECRET_KEY="..."
-STRIPE_WEBHOOK_SECRET="..."
-NEXT_PUBLIC_STRIPE_PRO_PRICE_ID="..."
-NEXT_PUBLIC_STRIPE_VOICE_PLUS_PRICE_ID="..."
-`}
-                        </code>
-                    </pre>
+                 <div className="space-y-4 text-sm">
+                    <div>
+                      <h3 className="font-semibold">1. Claves de Google AI (Genkit)</h3>
+                      <p className="text-muted-foreground">Necesaria para todas las funciones de IA. Créala en la <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="underline font-bold">Consola de Google Cloud</a> y habilita la "Vertex AI API".</p>
+                    </div>
+
+                    <div>
+                      <h3 className="font-semibold">2. Claves de Firebase</h3>
+                      <p className="text-muted-foreground">Necesarias para la base de datos y autenticación. Encuéntralas en la <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="underline font-bold">Consola de Firebase</a> en la configuración de tu proyecto.</p>
+                    </div>
+
+                    <div>
+                      <h3 className="font-semibold">3. Claves de Stripe (Opcional)</h3>
+                      <p className="text-muted-foreground">Necesarias para suscripciones y propinas. Encuéntralas en tu <a href="https://dashboard.stripe.com/apikeys" target="_blank" rel="noopener noreferrer" className="underline font-bold">Dashboard de Stripe</a>.</p>
+                    </div>
                 </div>
+                <p className="text-sm text-muted-foreground pt-4 border-t">Una vez que hayas añadido tus claves, reinicia la aplicación para que los cambios surtan efecto.</p>
             </CardContent>
         </Card>
     </div>
@@ -157,7 +145,7 @@ export default function Dashboard() {
 
   // If Firebase is not configured, show the setup guide and stop rendering the rest of the component.
   if (!isFirebaseConfigured) {
-      return <FirebaseSetupGuide />;
+      return <ConfigurationGuide />;
   }
 
   useEffect(() => {

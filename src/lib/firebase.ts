@@ -18,14 +18,20 @@ let db: Firestore | null = null;
 let storage: FirebaseStorage | null = null;
 let googleProvider: GoogleAuthProvider | null = null;
 
-// Check if all necessary environment variables are set
+const isKeyConfigured = (key: string | undefined): boolean => {
+  // A key is considered configured if it exists and is not a placeholder.
+  return !!key && !key.includes('AQUÍ');
+};
+
+
+// Check if all necessary environment variables are set and are not placeholders
 export const isFirebaseConfigured =
-  !!firebaseConfig.apiKey &&
-  !!firebaseConfig.authDomain &&
-  !!firebaseConfig.projectId &&
-  !!firebaseConfig.storageBucket &&
-  !!firebaseConfig.messagingSenderId &&
-  !!firebaseConfig.appId;
+  isKeyConfigured(firebaseConfig.apiKey) &&
+  isKeyConfigured(firebaseConfig.authDomain) &&
+  isKeyConfigured(firebaseConfig.projectId) &&
+  isKeyConfigured(firebaseConfig.storageBucket) &&
+  isKeyConfigured(firebaseConfig.messagingSenderId) &&
+  isKeyConfigured(firebaseConfig.appId);
 
 if (isFirebaseConfigured) {
   try {
