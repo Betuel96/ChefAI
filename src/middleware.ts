@@ -26,7 +26,7 @@ function getLocale(request: NextRequest): string | undefined {
 export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   
-  // Skip middleware for API routes, static files, and images
+  // This check is now mostly redundant due to the matcher, but acts as a safeguard.
   if (
     pathname.startsWith('/api/') ||
     pathname.startsWith('/static/') ||
@@ -34,11 +34,6 @@ export function middleware(request: NextRequest) {
     pathname.includes('.')
   ) {
     return;
-  }
-  
-  // Do not redirect admin routes
-  if (pathname.startsWith('/admin')) {
-      return NextResponse.next();
   }
 
   const pathnameIsMissingLocale = i18n.locales.every(
@@ -58,6 +53,6 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Matcher ignoring `/_next/` and `/api/`
-  matcher: ['/((?!api|_next/static|_next/image|assets|favicon.ico|sw.js|landing).*)'],
+  // Matcher ignoring `/api/`, `/_next/`, static files, and now `/admin/` routes.
+  matcher: ['/((?!api|admin|_next/static|_next/image|assets|favicon.ico|sw.js|landing).*)'],
 };
