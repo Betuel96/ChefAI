@@ -8,9 +8,11 @@ import {
   getDoc,
   updateDoc,
   Timestamp,
+  query,
+  orderBy,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import type { UserAccount } from '@/types';
+import type { UserAccount, PublishedPost } from '@/types';
 
 // En un entorno de producción, esta lista estaría vacía y la verificación se haría
 // únicamente contra la colección 'admins' en Firestore para máxima seguridad.
@@ -81,5 +83,36 @@ export async function updateUserSubscription(userId: string, tier: string | null
     await updateDoc(userDocRef, {
         isPremium: isPremium,
         subscriptionTier: tier,
+    });
+}
+
+
+/**
+ * Fetches all published content from the platform.
+ * @returns A promise that resolves to an array of all published posts.
+ */
+export async function getAllPublishedContent(): Promise<PublishedPost[]> {
+    if (!db) {
+        throw new Error('Firestore is not initialized.');
+    }
+    const contentCollection = collection(db, 'published_recipes');
+    const q = query(contentCollection, orderBy('createdAt', 'desc'));
+    const snapshot = await getDocs(q);
+
+    return snapshot.docs.map(doc => {
+        const data = doc.data();
+        const createdAtTimestamp = data.createdAt as Timestamp;
+        // Basic normalization, detailed content is not needed for the table view
+        return {
+            id: doc.id,
+            publisherId: data.publisherId,
+            publisherName: data.publisherName,
+            publisherPhotoURL: data.publisherPhotoURL || null,
+            type: data.type,
+            content: data.content,
+            likesCount: data.likesCount || 0,
+            commentsCount: data.commentsCount || 0,
+            createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
+        } as PublishedPost;
     });
 }
