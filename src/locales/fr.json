@@ -57,5 +57,31 @@
     "fr": "Français",
     "de": "Deutsch",
     "it": "Italiano"
+  },
+  "dashboard": {
+    "title": "Menu du Jour",
+    "intro_banner": "Ceci est votre résumé culinaire. Vous y verrez le plan de repas d'aujourd'hui de votre menu hebdomadaire le plus récent.",
+    "todays_meals_fallback": "Repas du Jour",
+    "start_cooking": "Commencer à Cuisiner",
+    "benefits": "Bénéfices",
+    "nutritional_info": "Infos Nutritionnelles",
+    "calories": "Calories",
+    "protein": "Protéines",
+    "carbs": "Glucides",
+    "fats": "Lipides",
+    "ingredients": "Ingrédients",
+    "instructions": "Instructions",
+    "breakfast": "Petit-déjeuner",
+    "lunch": "Déjeuner",
+    "main_meal": "Repas Principal",
+    "dinner": "Dîner",
+    "no_meals_today_title": "Aucun Repas Prévu Aujourd'hui",
+    "no_meals_today_desc": "Votre plan pour cette semaine ne semble pas contenir de repas pour aujourd'hui.",
+    "no_plan_title_user": "Aucun Repas Planifié Pour Aujourd'hui",
+    "no_plan_title_guest": "Bienvenue chez ChefAI !",
+    "no_plan_desc_user": "Prêt à cuisiner ? Créez un nouveau plan de repas hebdomadaire pour commencer.",
+    "no_plan_desc_guest": "Connectez-vous pour enregistrer vos plans et recettes, ou créez votre premier plan de repas hebdomadaire pour commencer.",
+    "no_plan_button_user": "Aller au Planificateur Hebdomadaire",
+    "no_plan_button_guest": "Aller au Planificateur"
   }
 }

@@ -57,5 +57,31 @@
     "fr": "Français",
     "de": "Deutsch",
     "it": "Italiano"
+  },
+  "dashboard": {
+    "title": "Menu del Giorno",
+    "intro_banner": "Questo è il tuo riepilogo culinario. Qui vedrai il piano pasti di oggi dal tuo menu settimanale più recente.",
+    "todays_meals_fallback": "Pasti di Oggi",
+    "start_cooking": "Inizia a Cucinare",
+    "benefits": "Benefici",
+    "nutritional_info": "Info Nutrizionali",
+    "calories": "Calorie",
+    "protein": "Proteine",
+    "carbs": "Carboidrati",
+    "fats": "Grassi",
+    "ingredients": "Ingredienti",
+    "instructions": "Istruzioni",
+    "breakfast": "Colazione",
+    "lunch": "Pranzo",
+    "main_meal": "Pasto Principale",
+    "dinner": "Cena",
+    "no_meals_today_title": "Nessun Pasto nel Piano di Oggi",
+    "no_meals_today_desc": "Il tuo piano per questa settimana non sembra avere pasti per oggi.",
+    "no_plan_title_user": "Nessun Pasto Pianificato per Oggi",
+    "no_plan_title_guest": "Benvenuto in ChefAI!",
+    "no_plan_desc_user": "Pronto a cucinare? Crea un nuovo piano pasti settimanale per iniziare.",
+    "no_plan_desc_guest": "Accedi per salvare i tuoi piani e le tue ricette, o crea il tuo primo piano pasti settimanale.",
+    "no_plan_button_user": "Vai al Pianificatore Settimanale",
+    "no_plan_button_guest": "Vai al Pianificatore"
   }
 }

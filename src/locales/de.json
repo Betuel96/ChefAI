@@ -57,5 +57,31 @@
     "fr": "Français",
     "de": "Deutsch",
     "it": "Italiano"
+  },
+  "dashboard": {
+    "title": "Heutiges Menü",
+    "intro_banner": "Dies ist Ihre kulinarische Zusammenfassung. Hier sehen Sie den heutigen Speiseplan aus Ihrem letzten Wochenmenü.",
+    "todays_meals_fallback": "Heutige Mahlzeiten",
+    "start_cooking": "Kochen starten",
+    "benefits": "Vorteile",
+    "nutritional_info": "Nährwertangaben",
+    "calories": "Kalorien",
+    "protein": "Protein",
+    "carbs": "Kohlenhydrate",
+    "fats": "Fette",
+    "ingredients": "Zutaten",
+    "instructions": "Anleitung",
+    "breakfast": "Frühstück",
+    "lunch": "Mittagessen",
+    "main_meal": "Hauptgericht",
+    "dinner": "Abendessen",
+    "no_meals_today_title": "Keine Mahlzeiten für heute geplant",
+    "no_meals_today_desc": "Ihr Plan für diese Woche scheint keine Mahlzeiten für heute zu enthalten.",
+    "no_plan_title_user": "Keine Mahlzeiten für heute geplant",
+    "no_plan_title_guest": "Willkommen bei ChefAI!",
+    "no_plan_desc_user": "Bereit zum Kochen? Erstellen Sie einen neuen wöchentlichen Speiseplan, um loszulegen.",
+    "no_plan_desc_guest": "Melden Sie sich an, um Ihre Pläne und Rezepte zu speichern, oder erstellen Sie Ihren ersten wöchentlichen Speiseplan.",
+    "no_plan_button_user": "Zum Wochenplaner",
+    "no_plan_button_guest": "Zum Planer"
   }
 }

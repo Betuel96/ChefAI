@@ -57,5 +57,31 @@
     "fr": "Français",
     "de": "Deutsch",
     "it": "Italiano"
+  },
+  "dashboard": {
+    "title": "Menú del Día",
+    "intro_banner": "Este es tu resumen culinario. Aquí verás el plan de comidas para hoy de tu menú semanal más reciente.",
+    "todays_meals_fallback": "Comidas de Hoy",
+    "start_cooking": "Empezar a Cocinar",
+    "benefits": "Beneficios",
+    "nutritional_info": "Info. Nutricional",
+    "calories": "Calorías",
+    "protein": "Proteína",
+    "carbs": "Carbohidratos",
+    "fats": "Grasas",
+    "ingredients": "Ingredientes",
+    "instructions": "Instrucciones",
+    "breakfast": "Desayuno",
+    "lunch": "Almuerzo",
+    "main_meal": "Comida",
+    "dinner": "Cena",
+    "no_meals_today_title": "No Hay Comidas en el Plan Para Hoy",
+    "no_meals_today_desc": "Tu plan de esta semana no parece tener ninguna comida para el día de hoy.",
+    "no_plan_title_user": "No Hay Comidas Planificadas Para Hoy",
+    "no_plan_title_guest": "¡Bienvenido/a a ChefAI!",
+    "no_plan_desc_user": "¿Listo/a para cocinar? Crea un nuevo plan de comidas semanal para empezar.",
+    "no_plan_desc_guest": "Inicia sesión para guardar tus planes y recetas, o crea tu primer plan de comidas semanal para empezar.",
+    "no_plan_button_user": "Ir al Planificador Semanal",
+    "no_plan_button_guest": "Ir al Planificador"
   }
 }

@@ -57,5 +57,31 @@
     "fr": "Français",
     "de": "Deutsch",
     "it": "Italiano"
+  },
+  "dashboard": {
+    "title": "Today's Menu",
+    "intro_banner": "This is your culinary summary. Here you'll see today's meal plan from your most recent weekly menu.",
+    "todays_meals_fallback": "Today's Meals",
+    "start_cooking": "Start Cooking",
+    "benefits": "Benefits",
+    "nutritional_info": "Nutritional Info",
+    "calories": "Calories",
+    "protein": "Protein",
+    "carbs": "Carbs",
+    "fats": "Fats",
+    "ingredients": "Ingredients",
+    "instructions": "Instructions",
+    "breakfast": "Breakfast",
+    "lunch": "Lunch",
+    "main_meal": "Main Meal",
+    "dinner": "Dinner",
+    "no_meals_today_title": "No Meals in Today's Plan",
+    "no_meals_today_desc": "Your plan for this week doesn't seem to have any meals for today.",
+    "no_plan_title_user": "No Meals Planned For Today",
+    "no_plan_title_guest": "Welcome to ChefAI!",
+    "no_plan_desc_user": "Ready to cook? Create a new weekly meal plan to get started.",
+    "no_plan_desc_guest": "Log in to save your plans and recipes, or create your first weekly meal plan to get started.",
+    "no_plan_button_user": "Go to Weekly Planner",
+    "no_plan_button_guest": "Go to Planner"
   }
 }
