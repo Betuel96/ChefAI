@@ -65,8 +65,6 @@ export default function MealPlannerPage() {
   const [, setShoppingList] = useLocalStorage<ShoppingListCategory[]>('shoppingList', []);
   const [selectedMenu, setSelectedMenu] = useState<WeeklyPlan | null>(null);
   const [caption, setCaption] = useState('');
-  const [pendingAction, setPendingAction] = useState<{ type: 'generate' | 'save', data?: z.infer<typeof formSchema> } | null>(null);
-
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -99,11 +97,7 @@ export default function MealPlannerPage() {
   };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!user || !user.isPremium) {
-      setPendingAction({ type: 'generate', data: values });
-    } else {
-      await runGeneration(values);
-    }
+    await runGeneration(values);
   }
   
   const runSave = async () => {
@@ -135,12 +129,7 @@ export default function MealPlannerPage() {
 
   const handleSaveMenu = async () => {
     if (!user || !mealPlan) return;
-
-    if (!user.isPremium) {
-        setPendingAction({ type: 'save' });
-    } else {
-        await runSave();
-    }
+    await runSave();
   }
 
   const handlePublishClick = (menu: WeeklyPlan) => {
@@ -378,35 +367,6 @@ export default function MealPlannerPage() {
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
-    </AlertDialog>
-    
-    <AlertDialog open={!!pendingAction} onOpenChange={(isOpen) => !isOpen && setPendingAction(null)}>
-        <AlertDialogContent>
-            <AlertDialogHeader>
-                <AlertDialogTitle className="font-headline flex items-center gap-2">
-                    <Gem className="text-primary" /> ¡Actualiza a Pro!
-                </AlertDialogTitle>
-                <AlertDialogDescription>
-                    Para apoyar la plataforma, las generaciones y guardados para usuarios gratuitos requieren ver un anuncio. ¡Actualiza a Pro para una experiencia sin anuncios e ilimitada!
-                </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                 <Button variant="secondary" onClick={() => router.push('/settings')}>
-                    <Gem className="mr-2 h-4 w-4" /> Actualizar a Pro
-                </Button>
-                <AlertDialogAction onClick={async () => {
-                    if (pendingAction?.type === 'generate') {
-                        await runGeneration(pendingAction.data!);
-                    } else if (pendingAction?.type === 'save') {
-                        await runSave();
-                    }
-                    setPendingAction(null);
-                }}>
-                    <Tv className="mr-2 h-4 w-4" /> Ver Anuncio y Continuar
-                </AlertDialogAction>
-            </AlertDialogFooter>
-        </AlertDialogContent>
     </AlertDialog>
     </>
   );

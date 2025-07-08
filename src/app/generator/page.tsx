@@ -19,7 +19,6 @@ import { generateRecipeImage } from '@/ai/flows/generate-recipe-image';
 import { addRecipe } from '@/lib/recipes';
 import { PostMedia } from '@/components/community/post-media';
 import { NutritionalInfo } from '@/types';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 const formSchema = z.object({
   ingredients: z.string().min(10, 'Por favor, enumera al menos algunos ingredientes.'),
@@ -39,7 +38,6 @@ export default function RecipeGeneratorPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [generatedRecipe, setGeneratedRecipe] = useState<GeneratedRecipeWithImage | null>(null);
-  const [pendingAction, setPendingAction] = useState<{ type: 'generate' | 'save', data?: z.infer<typeof formSchema> } | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -90,11 +88,7 @@ export default function RecipeGeneratorPage() {
   };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!user || !user.isPremium) {
-        setPendingAction({ type: 'generate', data: values });
-    } else {
-        await runGeneration(values);
-    }
+    await runGeneration(values);
   }
 
   const runSave = async () => {
@@ -133,11 +127,7 @@ export default function RecipeGeneratorPage() {
     }
     if (!generatedRecipe) return;
     
-    if (!user.isPremium) {
-        setPendingAction({ type: 'save' });
-    } else {
-        runSave();
-    }
+    runSave();
   };
 
   const NutritionalTable = ({ table }: { table: NutritionalInfo }) => (
@@ -270,35 +260,6 @@ export default function RecipeGeneratorPage() {
         </Card>
       </div>
     </div>
-    
-    <AlertDialog open={!!pendingAction} onOpenChange={(isOpen) => !isOpen && setPendingAction(null)}>
-        <AlertDialogContent>
-            <AlertDialogHeader>
-                <AlertDialogTitle className="font-headline flex items-center gap-2">
-                    <Gem className="text-primary" /> ¡Actualiza a Pro!
-                </AlertDialogTitle>
-                <AlertDialogDescription>
-                    Para apoyar la plataforma, las generaciones y guardados para usuarios gratuitos requieren ver un anuncio. ¡Actualiza a Pro para una experiencia sin anuncios e ilimitada!
-                </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <Button variant="secondary" onClick={() => router.push('/settings')}>
-                    <Gem className="mr-2 h-4 w-4" /> Actualizar a Pro
-                </Button>
-                <AlertDialogAction onClick={async () => {
-                    if (pendingAction?.type === 'generate') {
-                        await runGeneration(pendingAction.data!);
-                    } else if (pendingAction?.type === 'save') {
-                        await runSave();
-                    }
-                    setPendingAction(null);
-                }}>
-                    <Tv className="mr-2 h-4 w-4" /> Ver Anuncio y Continuar
-                </AlertDialogAction>
-            </AlertDialogFooter>
-        </AlertDialogContent>
-    </AlertDialog>
     </>
   );
 }
