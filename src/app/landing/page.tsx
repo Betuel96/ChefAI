@@ -29,8 +29,8 @@ export default function LandingPage() {
             // En una implementación real, esto se enviaría a un servicio de email marketing.
             console.log('Email submitted:', email);
             toast({
-                title: '¡Gracias por tu interés!',
-                description: 'Te hemos añadido a la lista de espera. Te notificaremos cuando lancemos.',
+                title: '¡Gracias por unirte a la misión!',
+                description: 'Te hemos añadido a la lista de espera. Te notificaremos cuando lancemos la campaña.',
             });
             setEmail('');
         }
@@ -48,13 +48,13 @@ export default function LandingPage() {
             <main>
                 {/* Hero Section */}
                 <section className="py-20 px-6 text-center bg-secondary/30">
-                    <h2 className="text-4xl md:text-6xl font-bold font-headline text-primary">El Futuro de la Cocina Inteligente</h2>
+                    <h2 className="text-4xl md:text-6xl font-bold font-headline text-primary">Inteligencia Artificial para la Vida Real</h2>
                     <p className="mt-4 max-w-2xl mx-auto text-lg md:text-xl text-muted-foreground">
-                        ChefAI es tu asistente de cocina personal. Genera recetas, planifica tus menús semanales y te guía paso a paso con voz. Deja que la IA se encargue de la planificación para que tú disfrutes de la cocina.
+                        ChefAI es nuestro primer paso para crear tecnología que realmente importa. Un asistente de cocina que elimina el estrés para que tú disfrutes de lo esencial: cocinar, comer, vivir.
                     </p>
                     <div className="mt-8 flex justify-center">
                         <Button size="lg" asChild>
-                            <a href="#kickstarter-signup">Únete a la Lista de Espera</a>
+                            <a href="#kickstarter-signup">Apoya la Misión</a>
                         </Button>
                     </div>
                 </section>
@@ -63,7 +63,7 @@ export default function LandingPage() {
                 <section className="px-6 md:px-12 -mt-12">
                      <div className="relative aspect-video max-w-4xl mx-auto rounded-lg shadow-2xl overflow-hidden bg-muted">
                         <Image 
-                            src="https://placehold.co/1280x720.png" 
+                            src="https://placehold.co/1280x720/f7a849/333333.png" 
                             alt="Una persona cocinando en una cocina moderna con la ayuda de ChefAI"
                             layout="fill"
                             objectFit="cover"
@@ -95,10 +95,16 @@ export default function LandingPage() {
 
                 {/* Kickstarter Signup Section */}
                 <section id="kickstarter-signup" className="py-20 px-6 bg-secondary/30">
-                    <div className="max-w-xl mx-auto text-center">
-                        <h3 className="text-3xl md:text-4xl font-bold font-headline">¡Sé parte de nuestra historia!</h3>
+                    <div className="max-w-2xl mx-auto text-center">
+                        <h3 className="text-3xl md:text-4xl font-bold font-headline text-primary">Apoya una Revolución Tecnológica Centrada en el Ser Humano</h3>
                         <p className="mt-4 text-muted-foreground text-lg">
-                           Estamos preparando nuestro lanzamiento en Kickstarter para llevar ChefAI al siguiente nivel. Únete a nuestra lista de correo para ser el primero en saberlo y tener acceso a recompensas exclusivas para los primeros patrocinadores.
+                           ChefAI es mucho más que una app de cocina. Es la primera prueba de que la Inteligencia Artificial puede ser una herramienta empática, una que resuelve problemas reales y cotidianos para mejorar nuestras vidas.
+                        </p>
+                         <p className="mt-4 text-muted-foreground text-lg">
+                           El éxito de ChefAI es el combustible para nuestra siguiente misión: una aplicación de asistencia médica capaz de realizar diagnósticos preliminares mediante la cámara de tu teléfono, ofreciendo una primera línea de ayuda vital cuando más se necesita.
+                        </p>
+                        <p className="mt-6 text-foreground font-semibold text-xl">
+                           Al apoyarnos hoy, no estás comprando una suscripción. Estás invirtiendo en un futuro donde la tecnología nos cuida. Únete a nuestra lista de espera y sé el primero en saber cuándo lanzaremos nuestra campaña en Kickstarter.
                         </p>
                         <form onSubmit={handleSubmit} className="mt-8 flex flex-col sm:flex-row gap-2 max-w-md mx-auto">
                             <Input 
@@ -109,7 +115,7 @@ export default function LandingPage() {
                                 required
                                 className="h-12 text-base"
                             />
-                            <Button type="submit" size="lg" className="h-12">Notifícame</Button>
+                            <Button type="submit" size="lg" className="h-12">Quiero Ser Parte del Futuro</Button>
                         </form>
                     </div>
                 </section>
