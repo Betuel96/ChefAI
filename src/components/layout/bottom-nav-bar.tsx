@@ -23,6 +23,15 @@ export function BottomNavBar() {
     return null;
   }
   
+  const removeLocaleFromPath = (path: string) => {
+    const segments = path.split('/');
+    if (segments.length > 2 && /^[a-z]{2}(-[A-Z]{2})?$/.test(segments[1])) {
+        return `/${segments.slice(2).join('/')}`;
+    }
+    return path;
+  }
+  const currentRoute = removeLocaleFromPath(pathname);
+
   const navItems = [
     { href: '/', icon: Home, label: 'Inicio' },
     { href: '/community', icon: Users, label: 'Comunidad' },
@@ -35,17 +44,15 @@ export function BottomNavBar() {
     <nav className="fixed bottom-0 left-0 z-40 w-full h-16 bg-background border-t border-border sm:hidden">
       <div className="grid h-full grid-cols-5 mx-auto">
         {navItems.map((item) => {
-          let isActive = pathname.startsWith(item.href);
+          let isActive = false;
           if (item.href === '/') {
-            isActive = pathname === '/';
-          }
-          // Make profile link active for /pro page as well, and other profile subpages
-          if (item.href.startsWith('/profile') && (pathname.startsWith('/profile/') || pathname.startsWith('/pro'))) {
-            isActive = true;
-          }
-           // Make library link active for all sub-pages that were moved
-          if (item.href === '/library' && (pathname.startsWith('/my-recipes') || pathname.startsWith('/my-menus') || pathname.startsWith('/shopping-list') || pathname.startsWith('/saved'))) {
-            isActive = true;
+            isActive = currentRoute === '/';
+          } else if (item.href.startsWith('/profile')) {
+             isActive = currentRoute.startsWith('/profile') || currentRoute.startsWith('/pro');
+          } else if (item.href === '/library') {
+             isActive = currentRoute.startsWith('/library') || currentRoute.startsWith('/my-recipes') || currentRoute.startsWith('/my-menus') || currentRoute.startsWith('/shopping-list') || currentRoute.startsWith('/saved');
+          } else {
+             isActive = currentRoute.startsWith(item.href);
           }
           
           if (item.isCentral) {

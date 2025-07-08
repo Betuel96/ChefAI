@@ -1,5 +1,5 @@
-
 import type { User } from 'firebase/auth';
+import type { i18n } from '@/i18n.config';
 
 // The core recipe structure from AI
 export interface NutritionalInfo {
@@ -8,6 +8,8 @@ export interface NutritionalInfo {
     carbs: string;
     fats: string;
 }
+
+export type Locale = (typeof i18n)['locales'][number];
 
 export interface Recipe {
     name: string;
