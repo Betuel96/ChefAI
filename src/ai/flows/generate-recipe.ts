@@ -22,6 +22,7 @@ const GenerateRecipeInputSchema = z.object({
     .positive()
     .describe('The number of servings the recipe should yield.'),
   language: z.string().describe('The language for the output, e.g., "Spanish", "English".'),
+  cuisine: z.string().optional().describe('The preferred cuisine type (e.g., "Italian", "Mexican").'),
 });
 export type GenerateRecipeInput = z.infer<typeof GenerateRecipeInputSchema>;
 
@@ -54,12 +55,21 @@ const prompt = ai.definePrompt({
   output: {schema: GenerateRecipeOutputSchema},
   prompt: `You are a world-class chef with limitless imagination. Your mission is to surprise the user with a creative, delicious, and VERY DETAILED recipe, using the ingredients provided.
 
-**CRITICAL Instruction:** Creativity and variety are your signature! Every time you receive this request, even with the same ingredients, you MUST generate a completely new and detailed idea. Explore different cuisines, cooking methods, and dish types.
+**CRITICAL Instruction:** Creativity and variety are your signature! Every time you receive this request, even with the same ingredients, you MUST generate a completely new and detailed idea.
 
-**Base Ingredients:** {{{ingredients}}}
-**Servings:** {{{servings}}}
+**User Preferences:**
+- **Base Ingredients:** {{{ingredients}}}
+- **Servings:** {{{servings}}}
+{{#if cuisine}}
+- **Cuisine Type:** {{{cuisine}}}
+{{/if}}
 
 ---
+**Recipe Generation Rules:**
+- If a cuisine type is specified, create a recipe that fits that style.
+- If no cuisine is specified, feel free to choose any world cuisine that works well with the ingredients.
+- Prioritize using the base ingredients, but you may add 1-2 common ingredients if absolutely essential for a complete dish.
+
 **DETAILED Formatting Instructions:**
 The response MUST be a valid JSON object with the following keys:
 - \`name\`: The recipe name.

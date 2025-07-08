@@ -21,10 +21,13 @@ import { PostMedia } from '@/components/community/post-media';
 import { NutritionalInfo } from '@/types';
 import { getDictionary } from '@/lib/get-dictionary';
 import { Locale, localeToAILanguage } from '@/i18n.config';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const formSchema = z.object({
   ingredients: z.string().min(10, 'Por favor, enumera al menos algunos ingredientes.'),
   servings: z.coerce.number().int().min(1, 'Debe servir al menos para 1 persona.').max(20, 'No puede servir para más de 20 personas.'),
+  cuisineSelection: z.string().optional(),
+  customCuisine: z.string().optional(),
 });
 
 type GeneratedRecipeWithImage = GenerateRecipeOutput & { 
@@ -55,10 +58,14 @@ export default function RecipeGeneratorPage() {
     defaultValues: {
       ingredients: '',
       servings: 2,
+      cuisineSelection: 'aleatoria',
+      customCuisine: '',
     },
   });
 
-  const runGeneration = async (values: z.infer<typeof formSchema>) => {
+  const cuisineSelection = form.watch('cuisineSelection');
+
+  const runGeneration = async (values: { ingredients: string; servings: number; cuisine?: string }) => {
     setIsLoading(true);
     setGeneratedRecipe(null);
     try {
@@ -101,7 +108,12 @@ export default function RecipeGeneratorPage() {
   };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    await runGeneration(values);
+    const cuisine = values.cuisineSelection === 'otra' ? values.customCuisine : (values.cuisineSelection === 'aleatoria' ? '' : values.cuisineSelection);
+    await runGeneration({
+      ingredients: values.ingredients,
+      servings: values.servings,
+      cuisine: cuisine || undefined,
+    });
   }
 
   const runSave = async () => {
@@ -206,6 +218,48 @@ export default function RecipeGeneratorPage() {
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="cuisineSelection"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo de Cocina (opcional)</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoading}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecciona un tipo de cocina" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="aleatoria">Aleatoria</SelectItem>
+                          <SelectItem value="mexicana">Mexicana</SelectItem>
+                          <SelectItem value="italiana">Italiana</SelectItem>
+                          <SelectItem value="asiatica">Asiática</SelectItem>
+                          <SelectItem value="mediterranea">Mediterránea</SelectItem>
+                          <SelectItem value="india">India</SelectItem>
+                          <SelectItem value="espanola">Española</SelectItem>
+                          <SelectItem value="otra">Otra...</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                {cuisineSelection === 'otra' && (
+                  <FormField
+                    control={form.control}
+                    name="customCuisine"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Especifica la cocina</FormLabel>
+                        <FormControl>
+                          <Input placeholder="ej., Fusión Peruana, Tailandesa" {...field} disabled={isLoading} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
                 <Button type="submit" disabled={isLoading} className="w-full">
                   {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
                   {isLoading ? dict.generator_page.button_generating : dict.generator_page.button_generate}

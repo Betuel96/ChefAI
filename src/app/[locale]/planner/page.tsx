@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -23,12 +24,15 @@ import { v4 as uuidv4 } from 'uuid';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import type { Locale } from '@/i18n.config';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const formSchema = z.object({
   ingredients: z.string().min(10, 'Por favor, enumera al menos algunos ingredientes.'),
   dietaryPreferences: z.string().optional(),
   numberOfDays: z.coerce.number().int().min(1, 'El plan debe ser de al menos 1 día.').max(7, 'El plan no puede exceder los 7 días.'),
   numberOfPeople: z.coerce.number().int().min(1, 'Debe servir para al menos 1 persona.').max(20, 'No puede servir para más de 20 personas.'),
+  cuisineSelection: z.string().optional(),
+  customCuisine: z.string().optional(),
 });
 
 const MealCard = ({ meal }: { meal: Recipe }) => (
@@ -75,14 +79,22 @@ export default function MealPlannerPage() {
       dietaryPreferences: '',
       numberOfDays: 7,
       numberOfPeople: 2,
+      cuisineSelection: 'aleatoria',
+      customCuisine: '',
     },
   });
+
+  const cuisineSelection = form.watch('cuisineSelection');
 
   const runGeneration = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
     setMealPlan(null);
     try {
-      const result = await createWeeklyMealPlan(values);
+      const cuisine = values.cuisineSelection === 'otra' ? values.customCuisine : (values.cuisineSelection === 'aleatoria' ? '' : values.cuisineSelection);
+      const result = await createWeeklyMealPlan({
+        ...values,
+        cuisine: cuisine || undefined,
+      });
       if (!result || !result.weeklyMealPlan) {
         throw new Error('La IA no pudo generar un plan de comidas.');
       }
@@ -237,6 +249,48 @@ export default function MealPlannerPage() {
                     </FormItem>
                   )}
                 />
+                 <FormField
+                  control={form.control}
+                  name="cuisineSelection"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo de Cocina (opcional)</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoading}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecciona un tipo de cocina" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="aleatoria">Aleatoria</SelectItem>
+                          <SelectItem value="mexicana">Mexicana</SelectItem>
+                          <SelectItem value="italiana">Italiana</SelectItem>
+                          <SelectItem value="asiatica">Asiática</SelectItem>
+                          <SelectItem value="mediterranea">Mediterránea</SelectItem>
+                          <SelectItem value="india">India</SelectItem>
+                           <SelectItem value="espanola">Española</SelectItem>
+                          <SelectItem value="otra">Otra...</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                {cuisineSelection === 'otra' && (
+                  <FormField
+                    control={form.control}
+                    name="customCuisine"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Especifica la cocina</FormLabel>
+                        <FormControl>
+                          <Input placeholder="ej., Fusión Peruana, Tailandesa" {...field} disabled={isLoading} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
                 <FormField
                   control={form.control}
                   name="dietaryPreferences"

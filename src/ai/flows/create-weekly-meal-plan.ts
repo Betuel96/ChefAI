@@ -36,6 +36,7 @@ const CreateWeeklyMealPlanInputSchema = z.object({
     .number()
     .min(1)
     .describe('El número de personas para las que debe servir el plan de comidas.'),
+  cuisine: z.string().optional().describe('El tipo de cocina principal para el plan semanal (ej: "Italiana", "Mexicana"). Si es "Aleatoria", varía las cocinas.'),
 });
 export type CreateWeeklyMealPlanInput = z.infer<typeof CreateWeeklyMealPlanInputSchema>;
 
@@ -85,28 +86,31 @@ const prompt = ai.definePrompt({
   output: {schema: CreateWeeklyMealPlanOutputSchema},
   prompt: `Eres un planificador de comidas experto y un genio culinario. Tu tarea es diseñar un plan de comidas semanal que sea emocionante, variado, delicioso y DETALLADO, basándote en las preferencias del usuario.
 
-**Instrucción CRÍTICA:** ¡La variedad y el detalle son la clave absoluta! Cada vez que generes un plan, DEBE ser significativamente diferente a cualquier plan anterior. Varía constantemente los tipos de platos, las cocinas del mundo (italiana, mexicana, asiática, etc.), y los métodos de cocción.
+**Instrucción CRÍTICA:** ¡La variedad y el detalle son la clave absoluta! Cada vez que generes un plan, DEBE ser significativamente diferente a cualquier plan anterior. Varía constantemente los tipos de platos y los métodos de cocción.
 
 **Preferencias del Usuario:**
 - **Ingredientes disponibles:** {{{ingredients}}}
 - **Preferencias dietéticas:** {{#if dietaryPreferences}}{{{dietaryPreferences}}}{{else}}Ninguna{{/if}}
+- **Tipo de Cocina:** {{#if cuisine}}{{{cuisine}}}{{else}}Variada / Aleatoria{{/if}}
 - **Número de días:** {{{numberOfDays}}}
 - **Personas a servir:** {{{numberOfPeople}}}
 
 **Instrucciones de Formato DETALLADO:**
 1.  Crea un plan que cubra desayuno, almuerzo (comida ligera), comida (plato principal) y cena para cada uno de los \`{{{numberOfDays}}}\` días.
-2.  La respuesta DEBE ser un objeto JSON válido.
-3.  El objeto JSON debe contener una clave de nivel superior llamada \`weeklyMealPlan\`, que es un ARRAY de objetos de día.
-4.  Cada objeto de día debe tener las claves: \`day\`, \`breakfast\`, \`lunch\`, \`comida\`, y \`dinner\`.
-5.  Para cada comida (\`breakfast\`, \`lunch\`, \`comida\`, \`dinner\`), proporciona un objeto con las siguientes claves:
+2.  Si se especifica un tipo de cocina (y no es "Aleatoria"), todas las recetas deben pertenecer a esa cocina.
+3.  Si el tipo de cocina es "Aleatoria" o no se especifica, crea un plan variado con diferentes cocinas del mundo (italiana, mexicana, asiática, etc.) a lo largo de la semana.
+4.  La respuesta DEBE ser un objeto JSON válido.
+5.  El objeto JSON debe contener una clave de nivel superior llamada \`weeklyMealPlan\`, que es un ARRAY de objetos de día.
+6.  Cada objeto de día debe tener las claves: \`day\`, \`breakfast\`, \`lunch\`, \`comida\`, y \`dinner\`.
+7.  Para cada comida (\`breakfast\`, \`lunch\`, \`comida\`, \`dinner\`), proporciona un objeto con las siguientes claves:
     - \`name\`: El nombre de la receta (ej: "Salmón al horno con espárragos").
     - \`ingredients\`: Un **ARRAY de strings**. Cada string debe ser un ingrediente individual con su cantidad (ej: ["1 filete de salmón de 150g", "1 manojo de espárragos", "1 cucharada de aceite de oliva", "Sal y pimienta al gusto"]).
     - \`instructions\`: Un **ARRAY de strings**. Cada string debe ser un paso de preparación claro y **numerado** (ej: ["1. Precalentar el horno a 200°C.", "2. Colocar el salmón y los espárragos en una bandeja.", "3. Rociar con aceite, sal y pimienta."]).
     - \`benefits\`: (Opcional) Un string con una breve descripción de los beneficios de esta comida específica.
     - \`nutritionalTable\`: (Opcional) Un **OBJETO** con información nutricional estimada por porción. Debe contener las claves: \`calories\`, \`protein\`, \`carbs\`, y \`fats\`. (ej: { "calories": "450kcal", "protein": "40g", "carbs": "30g", "fats": "15g" }).
-6.  Utiliza los ingredientes disponibles como base, pero añade otros ingredientes comunes si es necesario para crear recetas completas.
-7.  Respeta estrictamente las preferencias dietéticas.
-8.  **Instrucción de Idioma:** Toda la respuesta y el contenido DEBE estar en español.
+8.  Utiliza los ingredientes disponibles como base, pero añade otros ingredientes comunes si es necesario para crear recetas completas.
+9.  Respeta estrictamente las preferencias dietéticas.
+10. **Instrucción de Idioma:** Toda la respuesta y el contenido DEBE estar en español.
 `,
   config: {
     temperature: 1.0,
