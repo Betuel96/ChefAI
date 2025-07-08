@@ -1,31 +1,27 @@
-
+// src/app/layout.tsx
 
 import { ReactNode } from 'react';
-import { Inter } from 'next/font/google';
 import './globals.css';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
+import { AuthProvider } from '@/hooks/use-auth';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
+// This is a top-level root layout. It should not contain any client-side specific logic
+// or providers that are already in the [locale] layout. Its main purpose is to provide
+// a basic HTML structure and global providers like AuthProvider and Toaster.
 
 export default function RootLayout({ children }: { children: ReactNode }) {
-  // This layout is a fallback for routes that don't have their own
-  // root layout (like 404 pages) and provides the essential HTML structure.
   return (
-    <html lang="es">
+    <html lang="es" suppressHydrationWarning>
       <head>
-        <meta name="theme-color" content="#F7A849" />
-        <link rel="manifest" href="/manifest.json" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400..900;1,400..900&family=Belleza&display=swap" rel="stylesheet" />
+        {/* Basic head elements can go here if needed */}
       </head>
-      <body className={cn('font-body antialiased bg-background text-foreground', inter.variable)}>
-        {children}
-        <Toaster />
+      <body className={cn('antialiased bg-background text-foreground')}>
+        <AuthProvider>
+            <Toaster />
+            {children}
+        </AuthProvider>
       </body>
     </html>
   );
 }
-
-    

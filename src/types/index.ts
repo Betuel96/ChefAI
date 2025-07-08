@@ -57,12 +57,13 @@ export interface ShoppingListCategory {
 }
 
 export interface UserAccount {
+    id: string; // Firebase UID
     name:string;
     username?: string;
     email: string | null;
     photoURL: string | null;
     isPremium: boolean;
-    subscriptionTier?: 'pro' | 'voice+';
+    subscriptionTier?: 'pro' | 'voice+' | 'lifetime';
     createdAt: string; 
     profileType: 'public' | 'private';
     notificationSettings?: {

@@ -1,4 +1,3 @@
-
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
@@ -35,6 +34,11 @@ export function middleware(request: NextRequest) {
     pathname.includes('.')
   ) {
     return;
+  }
+  
+  // Do not redirect admin routes
+  if (pathname.startsWith('/admin')) {
+      return NextResponse.next();
   }
 
   const pathnameIsMissingLocale = i18n.locales.every(
