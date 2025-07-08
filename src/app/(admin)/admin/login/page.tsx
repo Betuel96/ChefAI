@@ -55,7 +55,7 @@ export default function AdminLoginPage() {
             title: '¡Sesión Iniciada!',
             description: 'Bienvenido al panel de administración.',
           });
-          router.push('/admin');
+          router.replace('/admin');
       } else {
         await signOut(auth);
         toast({
