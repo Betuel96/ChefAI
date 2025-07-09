@@ -79,6 +79,7 @@ export interface UserAccount {
     // Monetization fields
     stripeConnectAccountId?: string | null;
     canMonetize?: boolean;
+    verificationRequestStatus?: 'pending' | null;
 }
 
 export type AppUser = (User & Partial<UserAccount>) | null;
@@ -188,4 +189,15 @@ export interface StoryGroup {
     publisherName: string;
     publisherPhotoURL: string | null;
     stories: Story[];
+}
+
+export interface VerificationRequest {
+    id: string; // doc id
+    userId: string;
+    userName: string;
+    userEmail: string | null;
+    reason: string;
+    link: string;
+    status: 'pending';
+    createdAt: string;
 }

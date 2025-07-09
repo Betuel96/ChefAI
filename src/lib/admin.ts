@@ -15,7 +15,7 @@ import {
   deleteDoc,
 } from 'firebase/firestore';
 import { db, storage } from './firebase';
-import type { UserAccount, PublishedPost } from '@/types';
+import type { UserAccount, PublishedPost, VerificationRequest } from '@/types';
 import { ref, deleteObject } from 'firebase/storage';
 
 // En un entorno de producción, esta lista estaría vacía y la verificación se haría
@@ -201,4 +201,54 @@ export async function deleteUserAndContent(userId: string): Promise<void> {
         console.error("Error durante el proceso de eliminación del usuario:", error);
         throw new Error("No se pudo eliminar completamente al usuario y su contenido.");
     }
+}
+
+
+export async function getVerificationRequests(): Promise<VerificationRequest[]> {
+    if (!db) throw new Error('Firestore is not initialized.');
+    
+    const requestsRef = collection(db, 'verification_requests');
+    const q = query(requestsRef, where('status', '==', 'pending'), orderBy('createdAt', 'asc'));
+    const snapshot = await getDocs(q);
+
+    return snapshot.docs.map(doc => {
+        const data = doc.data();
+        const createdAtTimestamp = data.createdAt as Timestamp;
+        return {
+            id: doc.id,
+            userId: data.userId,
+            userName: data.userName,
+            userEmail: data.userEmail,
+            reason: data.reason,
+            link: data.link,
+            status: 'pending',
+            createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
+        } as VerificationRequest;
+    });
+}
+
+export async function approveVerificationRequest(requestId: string, userId: string): Promise<void> {
+    if (!db) throw new Error('Firestore is not initialized.');
+    
+    const requestRef = doc(db, 'verification_requests', requestId);
+    const userRef = doc(db, 'users', userId);
+
+    const batch = writeBatch(db);
+    batch.update(userRef, { isVerified: true, verificationRequestStatus: null });
+    batch.delete(requestRef);
+    
+    await batch.commit();
+}
+
+export async function declineVerificationRequest(requestId: string, userId: string): Promise<void> {
+    if (!db) throw new Error('Firestore is not initialized.');
+
+    const requestRef = doc(db, 'verification_requests', requestId);
+    const userRef = doc(db, 'users', userId);
+
+    const batch = writeBatch(db);
+    batch.update(userRef, { verificationRequestStatus: null });
+    batch.delete(requestRef);
+
+    await batch.commit();
 }

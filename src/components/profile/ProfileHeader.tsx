@@ -1,4 +1,3 @@
-
 // src/components/profile/ProfileHeader.tsx
 'use client';
 
@@ -7,7 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { UserCircle, CalendarIcon, UserPlus, UserCheck, Settings, Check, Clock, ChefHat } from 'lucide-react';
+import { UserCircle, CalendarIcon, UserPlus, UserCheck, Settings, Check, Clock, ChefHat, Award, Handshake, FlaskConical, BadgeIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +17,12 @@ interface ProfileHeaderProps {
     onFollowToggle: () => void;
     isCurrentUser: boolean;
 }
+
+const badgeIcons: { [key: string]: React.ReactElement } = {
+    colaborador: <Handshake className="h-3 w-3" />,
+    'beta-tester': <FlaskConical className="h-3 w-3" />,
+    fundador: <Award className="h-3 w-3" />,
+};
 
 export const ProfileHeader = ({ profile, followStatus, onFollowToggle, isCurrentUser }: ProfileHeaderProps) => {
     const joinedDate = profile.createdAt ? new Date(profile.createdAt) : null;
@@ -80,7 +85,10 @@ export const ProfileHeader = ({ profile, followStatus, onFollowToggle, isCurrent
                 {profile.badges && profile.badges.length > 0 && (
                     <div className="flex justify-center sm:justify-start gap-2 flex-wrap">
                     {profile.badges.map(badge => (
-                        <Badge key={badge} variant="outline" className="border-primary/50 text-primary">{badge}</Badge>
+                        <Badge key={badge} variant="outline" className="border-primary/50 text-primary flex items-center gap-1.5">
+                            {badgeIcons[badge.toLowerCase()] || <BadgeIcon className="h-3 w-3" />}
+                            {badge}
+                        </Badge>
                     ))}
                     </div>
                 )}

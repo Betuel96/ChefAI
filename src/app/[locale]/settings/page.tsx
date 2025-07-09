@@ -1,10 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { getProfileData } from '@/lib/community';
-import { resendVerificationEmail, updateProfileSettings, updateNotificationPreferences } from '@/lib/users';
+import { resendVerificationEmail, updateProfileSettings, updateNotificationPreferences, submitVerificationRequest } from '@/lib/users';
 import type { ProfileData, UserAccount, Locale } from '@/types';
 import Link from 'next/link';
 import { useRouter, useSearchParams, useParams } from 'next/navigation';
@@ -16,9 +19,139 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { EditProfileForm } from '@/components/profile/EditProfileForm';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { ArrowLeft, CheckCircle, Gem, LogIn, Mail, VenetianMask, Terminal, ShieldQuestion, BellRing, Sparkles, Banknote, Loader2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Gem, LogIn, Mail, VenetianMask, Terminal, ShieldQuestion, BellRing, Sparkles, Banknote, Loader2, UserCheck, Send } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+
+
+const verificationSchema = z.object({
+  reason: z.string().min(20, 'Por favor, proporciona una razón más detallada (mín. 20 caracteres).'),
+  link: z.string().url('Por favor, introduce una URL válida (ej. https://ejemplo.com).'),
+});
+
+const VerificationCard = ({ profile, onProfileUpdate }: { profile: ProfileData, onProfileUpdate: (newData: Partial<UserAccount>) => void }) => {
+    const { toast } = useToast();
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    
+    const form = useForm<z.infer<typeof verificationSchema>>({
+        resolver: zodResolver(verificationSchema),
+        defaultValues: { reason: '', link: '' },
+    });
+
+    const onSubmit = async (values: z.infer<typeof verificationSchema>) => {
+        setIsSubmitting(true);
+        try {
+            await submitVerificationRequest(profile.id, values);
+            toast({
+                title: '¡Solicitud Enviada!',
+                description: 'Hemos recibido tu solicitud de verificación. La revisaremos pronto.',
+            });
+            onProfileUpdate({ verificationRequestStatus: 'pending' });
+        } catch (error: any) {
+            toast({
+                title: 'Error al Enviar',
+                description: error.message || 'No se pudo enviar tu solicitud. Inténtalo de nuevo.',
+                variant: 'destructive',
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+    
+    if (profile.isVerified) {
+        return (
+             <Card>
+                <CardHeader>
+                    <CardTitle className="font-headline flex items-center gap-2">
+                        <UserCheck className="text-blue-500"/>
+                        Cuenta Verificada
+                    </CardTitle>
+                </CardHeader>
+                 <CardContent>
+                    <Alert variant="default" className="border-green-500">
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                        <AlertTitle>¡Felicidades!</AlertTitle>
+                        <AlertDescription>
+                            Esta cuenta ha sido verificada por el equipo de ChefAI.
+                        </AlertDescription>
+                    </Alert>
+                </CardContent>
+            </Card>
+        )
+    }
+
+    if (profile.verificationRequestStatus === 'pending') {
+         return (
+             <Card>
+                <CardHeader>
+                    <CardTitle className="font-headline">Solicitud de Verificación</CardTitle>
+                </CardHeader>
+                <CardContent>
+                     <Alert>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <AlertTitle>Solicitud Pendiente</AlertTitle>
+                        <AlertDescription>
+                           Tu solicitud de verificación está siendo revisada por nuestro equipo. Te notificaremos cuando haya una actualización.
+                        </AlertDescription>
+                    </Alert>
+                </CardContent>
+            </Card>
+        )
+    }
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="font-headline">Solicitar Verificación</CardTitle>
+                <CardDescription>
+                    Si eres una figura pública, marca o chef notable, puedes solicitar la verificación de tu cuenta.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                 <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                        <FormField
+                            control={form.control}
+                            name="reason"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Razón de la solicitud</FormLabel>
+                                    <FormControl>
+                                        <Textarea placeholder="Explica por qué tu cuenta debería ser verificada..." {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="link"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Enlace oficial</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="https://tu-sitio-web.com" {...field} />
+                                    </FormControl>
+                                    <FormDescription>
+                                        Enlace a tu sitio web, red social principal u otra referencia.
+                                    </FormDescription>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <Button type="submit" className="w-full" disabled={isSubmitting}>
+                            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                            {isSubmitting ? 'Enviando...' : 'Enviar Solicitud'}
+                        </Button>
+                    </form>
+                 </Form>
+            </CardContent>
+        </Card>
+    );
+};
 
 
 const proFeatures = [
@@ -229,6 +362,8 @@ const AccountSettings = ({ profile, onProfileUpdate }: { profile: ProfileData, o
                     )}
                 </CardContent>
             </Card>
+
+            <VerificationCard profile={profile} onProfileUpdate={onProfileUpdate} />
 
             <Card>
                 <CardHeader>

@@ -9,7 +9,7 @@ import {
   TooltipTrigger,
   TooltipProvider,
 } from "@/components/ui/tooltip"
-import { ChefHat, Home, Users, Newspaper, LogOut } from 'lucide-react'
+import { ChefHat, Home, Users, Newspaper, LogOut, UserCheck } from 'lucide-react'
 import { signOut } from 'firebase/auth'
 import { auth } from '@/lib/firebase'
 import { useRouter } from 'next/navigation'
@@ -19,6 +19,7 @@ const navItems = [
     { href: "/admin", icon: Home, label: "Panel Principal" },
     { href: "/admin/users", icon: Users, label: "Usuarios" },
     { href: "/admin/content", icon: Newspaper, label: "Contenido" },
+    { href: "/admin/requests", icon: UserCheck, label: "Solicitudes" },
 ]
 
 export function AdminSidebar() {

@@ -63,6 +63,7 @@ export async function createUserDocument(userId: string, name: string, username:
     },
     stripeConnectAccountId: null,
     canMonetize: false,
+    verificationRequestStatus: null,
   });
 
   batch.set(usernameDocRef, { userId });
@@ -297,4 +298,43 @@ export async function updateLastVisitedTimestamp(
     } catch (error) {
         console.error("Failed to update last visited timestamp:", error);
     }
+}
+
+
+/**
+ * Submits a verification request for a user.
+ * @param userId The ID of the user requesting verification.
+ * @param data The verification request data.
+ */
+export async function submitVerificationRequest(userId: string, data: { reason: string; link: string }): Promise<void> {
+    if (!db || !auth?.currentUser || auth.currentUser.uid !== userId) {
+        throw new Error('No autorizado.');
+    }
+
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
+    if (!userSnap.exists() || userSnap.data().verificationRequestStatus === 'pending') {
+        throw new Error('Ya tienes una solicitud de verificación pendiente.');
+    }
+    
+    if (userSnap.data().isVerified) {
+        throw new Error('Tu cuenta ya está verificada.');
+    }
+
+    const requestRef = doc(collection(db, 'verification_requests'));
+    const batch = writeBatch(db);
+
+    batch.set(requestRef, {
+        userId,
+        userName: auth.currentUser.displayName,
+        userEmail: auth.currentUser.email,
+        reason: data.reason,
+        link: data.link,
+        status: 'pending',
+        createdAt: serverTimestamp(),
+    });
+
+    batch.update(userRef, { verificationRequestStatus: 'pending' });
+    
+    await batch.commit();
 }
