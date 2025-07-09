@@ -4,16 +4,18 @@
 # Server-side environment variables. These are not visible to the client.
 # You MUST replace the placeholder values with your actual secrets.
 env:
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    secret: FIREBASE_API_KEY
   - variable: GOOGLE_API_KEY
-    value: "your_google_api_key" # Replace with your actual Google AI API Key
+    secret: GOOGLE_API_KEY # Replace with your actual Google AI API Key
   - variable: STRIPE_SECRET_KEY
-    value: "your_stripe_secret_key" # Replace with your actual Stripe Secret Key
+    secret: STRIPE_SECRET_KEY # Replace with your actual Stripe Secret Key
   - variable: STRIPE_WEBHOOK_SECRET
-    value: "your_stripe_webhook_secret" # Replace with your actual Stripe Webhook Secret
+    secret: STRIPE_WEBHOOK_SECRET # Replace with your actual Stripe Webhook Secret
   - variable: NEXT_PUBLIC_STRIPE_PRO_PRICE_ID
     value: "your_pro_price_id" # Replace with your Stripe "Pro" Price ID
   - variable: NEXT_PUBLIC_STRIPE_VOICE_PLUS_PRICE_ID
-    value: "your_voice_plus_price_id" # Replace with your Stripe "Voice+" Price ID
+    value: "your_voice_plus_id" # Replace with your Stripe "Voice+" Price ID
 
 # Optional settings for the server that runs your app.
 runConfig:
