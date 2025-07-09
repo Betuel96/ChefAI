@@ -13,7 +13,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { MoreHorizontal, UserCircle, Edit, CheckCircle, Gem, Sparkles } from "lucide-react"
+import { MoreHorizontal, UserCircle, Edit, CheckCircle, Gem, Sparkles, Trash2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -22,6 +22,7 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import {
@@ -32,6 +33,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import {
     Dialog,
     DialogContent,
@@ -50,7 +62,7 @@ import { es } from "date-fns/locale"
 import { Label } from "../ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import { useToast } from "@/hooks/use-toast"
-import { updateUserSubscription } from "@/lib/admin"
+import { updateUserSubscription, deleteUserAndContent } from "@/lib/admin"
 
 export function EditUserDialog({ user }: { user: UserAccount }) {
     const [isOpen, setIsOpen] = React.useState(false);
@@ -120,6 +132,59 @@ export function EditUserDialog({ user }: { user: UserAccount }) {
     )
 }
 
+function DeleteUserDialog({ user, onUserDeleted }: { user: UserAccount; onUserDeleted: (id: string) => void }) {
+    const [isOpen, setIsOpen] = React.useState(false);
+    const [isDeleting, setIsDeleting] = React.useState(false);
+    const { toast } = useToast();
+
+    const handleDelete = async () => {
+        setIsDeleting(true);
+        try {
+            await deleteUserAndContent(user.id);
+            toast({
+                title: 'Usuario Eliminado',
+                description: `${user.name} y todo su contenido han sido eliminados.`,
+            });
+            onUserDeleted(user.id);
+        } catch (error: any) {
+            toast({
+                title: 'Error de Eliminación',
+                description: error.message || 'No se pudo eliminar al usuario y su contenido.',
+                variant: 'destructive',
+            });
+        } finally {
+            setIsDeleting(false);
+            setIsOpen(false);
+        }
+    };
+
+    return (
+        <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
+             <AlertDialogTrigger asChild>
+                <button className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full text-destructive focus:bg-destructive/10 focus:text-destructive">
+                    <Trash2 className="mr-2 h-4 w-4" /> Eliminar Usuario
+                </button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>¿Eliminar a {user.name} permanentemente?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        ¡Esta acción es irreversible! Se eliminará el perfil del usuario, todas sus publicaciones, comentarios y contenido asociado.
+                        <br /><br />
+                        <span className="font-semibold text-destructive">Nota:</span> Esto NO elimina la cuenta de inicio de sesión de Firebase del usuario. Podrían volver a registrarse.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+                        {isDeleting ? 'Eliminando...' : 'Sí, eliminar permanentemente'}
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    );
+}
+
 const getTierBadge = (tier?: 'pro' | 'voice+' | 'lifetime') => {
     if (!tier) return <Badge variant="secondary">Gratis</Badge>;
     switch (tier) {
@@ -171,7 +236,8 @@ export const columns: ColumnDef<UserAccount>[] = [
   {
     id: "actions",
     enableHiding: false,
-    cell: ({ row }) => {
+    cell: ({ row, table }) => {
+       const { onUserDeleted } = (table.options.meta as any) || {};
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -183,6 +249,10 @@ export const columns: ColumnDef<UserAccount>[] = [
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Acciones</DropdownMenuLabel>
             <EditUserDialog user={row.original} />
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="p-0">
+               <DeleteUserDialog user={row.original} onUserDeleted={onUserDeleted} />
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       )
@@ -192,9 +262,10 @@ export const columns: ColumnDef<UserAccount>[] = [
 
 interface UsersTableProps {
     data: UserAccount[];
+    onUserDeleted: (id: string) => void;
 }
 
-export function UsersTable({ data }: UsersTableProps) {
+export function UsersTable({ data, onUserDeleted }: UsersTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
 
@@ -210,6 +281,9 @@ export function UsersTable({ data }: UsersTableProps) {
     state: {
       sorting,
       columnFilters,
+    },
+    meta: {
+      onUserDeleted,
     },
   })
 

@@ -25,6 +25,10 @@ export default function AdminUsersPage() {
     fetchUsers();
   }, []);
 
+  const handleUserDeleted = (userId: string) => {
+    setUsers(currentUsers => currentUsers.filter(u => u.id !== userId));
+  };
+
   if (isLoading) {
     return (
         <div className="space-y-4">
@@ -40,7 +44,7 @@ export default function AdminUsersPage() {
         <h1 className="text-3xl font-bold tracking-tight">Gestión de Usuarios</h1>
         <p className="text-muted-foreground">Visualiza, busca y gestiona todos los usuarios de la plataforma.</p>
       </header>
-      <UsersTable data={users} />
+      <UsersTable data={users} onUserDeleted={handleUserDeleted} />
     </div>
   );
 }

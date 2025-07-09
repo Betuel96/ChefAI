@@ -10,9 +10,13 @@ import {
   Timestamp,
   query,
   orderBy,
+  where,
+  writeBatch,
+  deleteDoc,
 } from 'firebase/firestore';
-import { db } from './firebase';
+import { db, storage } from './firebase';
 import type { UserAccount, PublishedPost } from '@/types';
+import { ref, deleteObject } from 'firebase/storage';
 
 // En un entorno de producción, esta lista estaría vacía y la verificación se haría
 // únicamente contra la colección 'admins' en Firestore para máxima seguridad.
@@ -115,4 +119,77 @@ export async function getAllPublishedContent(): Promise<PublishedPost[]> {
             createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
         } as PublishedPost;
     });
+}
+
+
+/**
+ * Deletes a user's account data from Firestore and their content from Storage.
+ * This is a destructive action and does NOT delete the Firebase Auth user.
+ * @param userId The ID of the user to delete.
+ */
+export async function deleteUserAndContent(userId: string): Promise<void> {
+    if (!db) {
+        throw new Error('Firestore no está inicializado.');
+    }
+
+    const batch = writeBatch(db);
+    const deleteMediaPromises: Promise<void>[] = [];
+
+    // 1. Get user data to find username
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
+    if (!userSnap.exists()) {
+        // If user doc doesn't exist, they are already "deleted" from our app's POV.
+        // We can still try to clean up content if any is orphaned.
+        console.warn(`El documento del usuario ${userId} no fue encontrado. Se procederá a eliminar su contenido si existe.`);
+    }
+    const userData = userSnap.data();
+
+    // 2. Delete user's published content and associated media
+    const postsCollection = collection(db, 'published_recipes');
+    const postsQuery = query(postsCollection, where('publisherId', '==', userId));
+    const postsSnapshot = await getDocs(postsQuery);
+
+    postsSnapshot.forEach(postDoc => {
+        const postData = postDoc.data();
+        if (postData.mediaUrl && storage) {
+            try {
+                // IMPORTANT: This assumes mediaUrl is the full gs:// or https:// URL.
+                // We must use the full URL to create the ref.
+                const mediaRef = ref(storage, postData.mediaUrl);
+                deleteMediaPromises.push(deleteObject(mediaRef).catch(err => {
+                    if (err.code !== 'storage/object-not-found') {
+                        console.error(`No se pudo eliminar el medio para el post ${postDoc.id}:`, err);
+                    }
+                }));
+            } catch (e) {
+                 console.error(`URL de medio inválida para el post ${postDoc.id}:`, e);
+            }
+        }
+        batch.delete(postDoc.ref);
+    });
+    
+    // Note: A more robust solution would also delete stories, comments, likes, etc.
+    // This is a complex cascading delete problem best handled by a Cloud Function for production.
+    // For this prototype, deleting the user profile and their main posts is a strong moderation action.
+
+    // 3. Delete user document from /users
+    if (userSnap.exists()) {
+        batch.delete(userRef);
+    }
+
+    // 4. Delete username document from /usernames to free it up
+    if (userData && userData.username) {
+        const usernameRef = doc(db, 'usernames', userData.username);
+        batch.delete(usernameRef);
+    }
+    
+    // 5. Execute all batched writes and media deletions
+    try {
+        await Promise.all(deleteMediaPromises);
+        await batch.commit();
+    } catch (error) {
+        console.error("Error durante el proceso de eliminación del usuario:", error);
+        throw new Error("No se pudo eliminar completamente al usuario y su contenido.");
+    }
 }
