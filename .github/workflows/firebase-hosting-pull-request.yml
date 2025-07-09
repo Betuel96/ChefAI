@@ -1,0 +1,33 @@
+# Este flujo de trabajo de GitHub se activa en las solicitudes de extracción y despliega una URL de vista previa en App Hosting
+# Para más información, consulta: https://firebase.google.com/docs/hosting/pull-request-previews
+
+name: Deploy to Firebase App Hosting on PR
+'on': pull_request
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  build_and_preview:
+    if: '${{ github.event.pull_request.head.repo.full_name == github.repository }}'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Create .env file
+        run: |
+          echo "GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}" >> .env
+          echo "STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY }}" >> .env
+          echo "STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET }}" >> .env
+          echo "NEXT_PUBLIC_STRIPE_PRO_PRICE_ID=${{ vars.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID }}" >> .env
+          echo "NEXT_PUBLIC_STRIPE_VOICE_PLUS_PRICE_ID=${{ vars.NEXT_PUBLIC_STRIPE_VOICE_PLUS_PRICE_ID }}" >> .env
+      - run: npm run build
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_APP_BASIC_8BBCF }}'
+          projectId: app-basic-8bbcf
+          expires: 30d
