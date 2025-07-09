@@ -57,3 +57,12 @@ Creemos en la transparencia total con nuestra comunidad. Como en todo proyecto a
     *   **Nuestro Plan:** El prototipo actual demuestra que la integración es viable y robusta. Los fondos de esta campaña nos permitirán contratar al talento necesario para asegurar que la arquitectura no solo funcione, sino que sea segura y escalable para millones de usuarios.
 
 Somos un equipo preparado y apasionado, consciente de los obstáculos, pero con una visión clara de cómo superarlos. Tu apoyo es la pieza clave para convertir estos desafíos en éxitos.
+
+---
+### Próximos Pasos: Lanzamiento Oficial
+
+Una vez financiada la campaña de Kickstarter, el siguiente paso crucial es el lanzamiento oficial de ChefAI con una marca profesional.
+
+*   **Dominio Personalizado:** La URL oficial de la aplicación será un dominio personalizado que adquiriremos, como por ejemplo `chefai.app` o `getchef.ai`. Este dominio se conectará directamente a nuestra infraestructura en Firebase Hosting. La URL actual (`https://app-basic-8bbcf.web.app`) seguirá activa para fines de desarrollo.
+*   **Marketing y Comunidad:** Invertiremos en dar a conocer ChefAI para construir una comunidad vibrante de cocineros y creadores desde el primer día.
+*   **Desarrollo Continuo:** Los fondos nos permitirán expandir el equipo y acelerar el desarrollo de las funcionalidades premium y, lo más importante, dar los primeros pasos en nuestra misión de asistencia médica.
