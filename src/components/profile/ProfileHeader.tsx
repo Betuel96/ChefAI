@@ -7,9 +7,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { UserCircle, CalendarIcon, UserPlus, UserCheck, Settings, Check, Clock } from 'lucide-react';
+import { UserCircle, CalendarIcon, UserPlus, UserCheck, Settings, Check, Clock, ChefHat } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { Badge } from '@/components/ui/badge';
 
 interface ProfileHeaderProps {
     profile: ProfileData;
@@ -65,9 +66,24 @@ export const ProfileHeader = ({ profile, followStatus, onFollowToggle, isCurrent
             </Avatar>
             <div className="flex-grow space-y-3 text-center sm:text-left">
                 <div>
-                    <h1 className="font-headline text-4xl font-bold">{profile.name}</h1>
+                    <h1 className="font-headline text-4xl font-bold flex items-center justify-center sm:justify-start gap-2">
+                        {profile.name}
+                        {profile.isVerified && (
+                             <div className="relative text-blue-500 flex-shrink-0" title="Cuenta Verificada">
+                                <ChefHat className="w-6 h-6" />
+                                <Check className="w-3 h-3 absolute -bottom-0.5 -right-0.5 bg-blue-500 text-white rounded-full p-0.5" />
+                            </div>
+                        )}
+                    </h1>
                     <p className="text-muted-foreground text-lg">@{profile.username}</p>
                 </div>
+                {profile.badges && profile.badges.length > 0 && (
+                    <div className="flex justify-center sm:justify-start gap-2 flex-wrap">
+                    {profile.badges.map(badge => (
+                        <Badge key={badge} variant="outline" className="border-primary/50 text-primary">{badge}</Badge>
+                    ))}
+                    </div>
+                )}
                 <div className="flex justify-center sm:justify-start gap-6 text-muted-foreground">
                     <Link href={`/profile/${profile.id}/followers`} className="text-center hover:text-primary transition-colors">
                         <span className="font-bold text-lg text-foreground">{profile.followersCount}</span>

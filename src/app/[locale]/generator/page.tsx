@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Sparkles, ChefHat, Save, Loader2, Info, Beef, Gem, Tv } from 'lucide-react';
+import { Sparkles, ChefHat, Save, Loader2, Info, Beef, Gem, Tv, Film } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter, useParams } from 'next/navigation';
@@ -22,6 +22,8 @@ import { NutritionalInfo } from '@/types';
 import { getDictionary } from '@/lib/get-dictionary';
 import { Locale, localeToAILanguage } from '@/i18n.config';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+
 
 const formSchema = z.object({
   ingredients: z.string().min(10, 'Por favor, enumera al menos algunos ingredientes.'),
@@ -46,6 +48,9 @@ export default function RecipeGeneratorPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [generatedRecipe, setGeneratedRecipe] = useState<GeneratedRecipeWithImage | null>(null);
   const [dict, setDict] = useState<any>(null);
+
+  const [showAdDialog, setShowAdDialog] = useState(false);
+  const [pendingValues, setPendingValues] = useState<z.infer<typeof formSchema> | null>(null);
 
   useEffect(() => {
     if (locale) {
@@ -108,13 +113,40 @@ export default function RecipeGeneratorPage() {
   };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const cuisine = values.cuisineSelection === 'otra' ? values.customCuisine : (values.cuisineSelection === 'aleatoria' ? '' : values.cuisineSelection);
+    if (user && !user.isPremium) {
+      setPendingValues(values);
+      setShowAdDialog(true);
+    } else {
+      const cuisine = values.cuisineSelection === 'otra' ? values.customCuisine : (values.cuisineSelection === 'aleatoria' ? '' : values.cuisineSelection);
+      await runGeneration({
+        ingredients: values.ingredients,
+        servings: values.servings,
+        cuisine: cuisine || undefined,
+      });
+    }
+  }
+
+  const handleWatchAdAndGenerate = async () => {
+    if (!pendingValues) return;
+
+    const valuesToGenerate = { ...pendingValues };
+    setPendingValues(null);
+    setShowAdDialog(false);
+
+    toast({
+        title: "Viendo Anuncio...",
+        description: "Gracias por apoyar a ChefAI. Tu receta se generará en breve.",
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 2500));
+
+    const cuisine = valuesToGenerate.cuisineSelection === 'otra' ? valuesToGenerate.customCuisine : (valuesToGenerate.cuisineSelection === 'aleatoria' ? '' : valuesToGenerate.cuisineSelection);
     await runGeneration({
-      ingredients: values.ingredients,
-      servings: values.servings,
+      ingredients: valuesToGenerate.ingredients,
+      servings: valuesToGenerate.servings,
       cuisine: cuisine || undefined,
     });
-  }
+  };
 
   const runSave = async () => {
     if (!user) {
@@ -335,6 +367,26 @@ export default function RecipeGeneratorPage() {
         </Card>
       </div>
     </div>
+    
+    <AlertDialog open={showAdDialog} onOpenChange={setShowAdDialog}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle className="flex items-center gap-2">
+                    <Film className="w-5 h-5 text-primary" />
+                    Ver un Anuncio para Continuar
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                    Para mantener nuestras funciones de IA gratuitas, necesitamos mostrar un anuncio. ¡Gracias por tu apoyo!
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleWatchAdAndGenerate}>
+                    Ver Anuncio
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 }
