@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pide Ayuda - ChefAI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400..900;1,400..900&family=Belleza&display=swap" rel="stylesheet">
+    <style>
+        @media print {
+            .no-print { display: none; }
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        headline: ['Belleza', 'sans-serif'],
+                        body: ['Alegreya', 'serif'],
+                    },
+                    colors: {
+                        primary: { DEFAULT: 'hsl(39, 92%, 60%)' },
+                        background: 'hsl(30, 75%, 97%)',
+                        foreground: 'hsl(25, 11%, 30%)',
+                        muted: {
+                            DEFAULT: 'hsl(30, 25%, 90%)',
+                            foreground: 'hsl(25, 11%, 45%)',
+                        },
+                        destructive: { DEFAULT: 'hsl(0, 84.2%, 60.2%)' },
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background font-body text-foreground antialiased">
+    <div class="relative min-h-screen flex flex-col items-center justify-center p-4 sm:p-6">
+        <div class="absolute top-4 right-4 no-print">
+            <a href="https://www.google.com" class="inline-block px-4 py-2 bg-gray-200 text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-300 transition-colors shadow">
+                Salir Rápido &rarr;
+            </a>
+        </div>
+        <main class="max-w-2xl w-full mx-auto text-center space-y-8">
+            <header>
+                <h1 class="font-headline text-4xl sm:text-5xl font-bold text-primary">No estás sola.</h1>
+                <p class="mt-4 text-lg text-muted-foreground">La violencia nunca es tu culpa. Hay personas que quieren y pueden ayudarte.</p>
+            </header>
+            <div class="bg-white/50 p-6 sm:p-8 rounded-lg shadow-lg text-left space-y-6">
+                <h2 class="text-2xl font-headline font-semibold text-center text-destructive">Líneas de Ayuda y Emergencia</h2>
+                <p class="text-center text-sm text-muted-foreground">Si estás en peligro inmediato, llama al número de emergencia de tu país. Si necesitas hablar o buscar apoyo, estas líneas son gratuitas, confidenciales y están disponibles 24/7.</p>
+                <ul class="space-y-4">
+                    <li class="flex items-start gap-4">
+                        <div class="flex-shrink-0 pt-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                        </div>
+                        <div>
+                            <h3 class="font-bold">México</h3>
+                            <p class="text-muted-foreground">Llama al <span class="font-semibold text-foreground">911</span> (Emergencias) o a la Línea Nacional contra la Violencia de Género.</p>
+                        </div>
+                    </li>
+                     <li class="flex items-start gap-4">
+                        <div class="flex-shrink-0 pt-1">
+                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                        </div>
+                        <div>
+                            <h3 class="font-bold">Colombia</h3>
+                            <p class="text-muted-foreground">Llama al <span class="font-semibold text-foreground">155</span> (Orientación a Mujeres Víctimas de Violencia).</p>
+                        </div>
+                    </li>
+                     <li class="flex items-start gap-4">
+                        <div class="flex-shrink-0 pt-1">
+                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                        </div>
+                        <div>
+                            <h3 class="font-bold">Argentina</h3>
+                            <p class="text-muted-foreground">Llama al <span class="font-semibold text-foreground">144</span> (Atención a Mujeres en Situación de Violencia).</p>
+                        </div>
+                    </li>
+                     <li class="flex items-start gap-4">
+                        <div class="flex-shrink-0 pt-1">
+                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                        </div>
+                        <div>
+                            <h3 class="font-bold">España</h3>
+                            <p class="text-muted-foreground">Llama al <span class="font-semibold text-foreground">016</span> (Atención a Víctimas de Malos Tratos por Violencia de Género).</p>
+                        </div>
+                    </li>
+                </ul>
+                <div class="pt-4 border-t border-muted">
+                    <p class="text-sm text-center text-muted-foreground">Recuerda: no estás sola en esto. Dar el primer paso es de valientes. Mereces vivir una vida libre de miedo.</p>
+                </div>
+            </div>
+            <footer class="text-xs text-muted-foreground">
+                <p>&copy; 2024 ChefAI. Tu seguridad es nuestra prioridad.</p>
+            </footer>
+        </main>
+    </div>
+</body>
+</html>
