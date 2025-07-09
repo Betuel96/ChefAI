@@ -19,12 +19,17 @@ env:
 
 # Optional settings for the server that runs your app.
 runConfig:
-  # The amount of CPU to allocate to your app.
-  # Valid values are '1' or '2'.
   cpu: 1
-  # The amount of memory in MiB to allocate to your app.
-  # Valid values are 512, 1024, 2048, or 4096.
   memoryMiB: 1024
-  # Increase this value to automatically spin up more instances
-  # in response to increased traffic.
   maxInstances: 10
+  vpcAccess:
+    egress: PRIVATE_RANGES_ONLY
+    secrets:
+      - secret: FIREBASE_API_KEY
+      - secret: GOOGLE_API_KEY
+      - secret: STRIPE_SECRET_KEY
+      - secret: STRIPE_WEBHOOK_SECRET
+
+# The name of the backend resource.
+# This must be the same as the backend ID you chose in the Firebase console.
+name: chefai-backend
