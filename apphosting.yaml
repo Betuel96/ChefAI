@@ -16,19 +16,6 @@ env:
   - variable: NEXT_PUBLIC_STRIPE_VOICE_PLUS_PRICE_ID
     value: "your_voice_plus_id" # Replace with your Stripe "Voice+" Price ID
 
-# Optional settings for the server that runs your app.
-runConfig:
-  cpu: 1
-  memoryMiB: 1024
-  maxInstances: 10
-  vpcAccess:
-    egress: PRIVATE_RANGES_ONLY
-    secrets:
-      - secret: FIREBASE_API_KEY
-      - secret: GOOGLE_API_KEY
-      - secret: STRIPE_SECRET_KEY
-      - secret: STRIPE_WEBHOOK_SECRET
-
 # The name of the backend resource.
 # This must be the same as the backend ID you chose in the Firebase console.
 name: chefai-backend
