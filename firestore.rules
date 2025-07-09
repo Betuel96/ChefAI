@@ -1,11 +1,88 @@
 rules_version = '2';
-
-// Allow read/write access to all users under development
-// WARNING: Do not use these rules in production!
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if true;
+    
+    // Usernames must be unique
+    match /usernames/{username} {
+      allow read;
+      allow create: if request.auth != null;
+      allow delete: if request.auth.uid == resource.data.userId;
+    }
+
+    // Users can read/update their own profile, but not create/delete
+    match /users/{userId} {
+      allow get: if request.auth.uid == userId || resource.data.profileType == 'public';
+      allow update: if request.auth.uid == userId;
+      // Admin can update any user
+      allow update: if get(/databases/$(database)/documents/admins/$(request.auth.uid)).exists() == true;
+      allow list; // for friend suggestions, search
+      
+      // Subcollections
+      match /recipes/{recipeId} {
+        allow read, write, delete: if request.auth.uid == userId;
+      }
+      match /menus/{menuId} {
+        allow read, write, delete: if request.auth.uid == userId;
+      }
+       match /savedPosts/{postId} {
+        allow read, write, delete: if request.auth.uid == userId;
+      }
+      
+      // Notifications & Followers
+      match /followers/{followerId} {
+        allow read, list;
+        allow create, delete: if request.auth.uid == followerId;
+      }
+      match /following/{followingId} {
+        allow read, list;
+        allow create, delete: if request.auth.uid == userId;
+      }
+      match /notifications/{notificationId} {
+         allow read, write, delete, list: if request.auth.uid == userId;
+      }
+    }
+    
+    // Published recipes/posts
+    match /published_recipes/{postId} {
+      allow read;
+      // Allow create if user is authenticated OR if the post is being created for the official ChefAI account
+      allow create: if request.auth != null || request.resource.data.publisherId == "D0U6N4IEPaYKfDwy2WdMnOUHOTu2";
+      allow update, delete: if request.auth.uid == resource.data.publisherId || get(/databases/$(database)/documents/admins/$(request.auth.uid)).exists() == true;
+      
+      // Likes & comments
+      match /likes/{userId} {
+        allow read;
+        allow create, delete: if request.auth.uid == userId;
+      }
+      match /comments/{commentId} {
+        allow read;
+        allow create: if request.auth != null;
+        allow update, delete: if request.auth.uid == resource.data.userId;
+        
+         match /likes/{userId} {
+           allow read;
+           allow create, delete: if request.auth.uid == userId;
+         }
+      }
+    }
+    
+    // Admins collection
+    match /admins/{adminId} {
+      allow get: if request.auth.uid == adminId;
+    }
+
+    // Stories collection
+    match /stories/{storyId} {
+       // Stories are public for 24 hours. Let's assume anyone can read for now.
+       // Deletion might be handled by a Cloud Function TTL policy.
+       allow read;
+       allow create: if request.auth.uid == request.resource.data.publisherId;
+    }
+
+     // Verification requests
+    match /verification_requests/{requestId} {
+      allow read: if get(/databases/$(database)/documents/admins/$(request.auth.uid)).exists() == true;
+      allow create: if request.auth.uid == request.resource.data.userId;
     }
   }
 }
