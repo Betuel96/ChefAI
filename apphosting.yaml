@@ -1,7 +1,12 @@
 # Settings to manage and configure a Firebase App Hosting backend.
 # https://firebase.google.com/docs/app-hosting/configure
 
+# The name of the backend resource.
+# This must be the same as the backend ID you chose in the Firebase console.
+name: chefai-backend
+
 # Server-side environment variables. These are not visible to the client.
+# Secrets are automatically granted access during deployment.
 env:
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
     secret: FIREBASE_API_KEY
@@ -15,7 +20,3 @@ env:
     value: "your_pro_price_id" # Replace with your Stripe "Pro" Price ID
   - variable: NEXT_PUBLIC_STRIPE_VOICE_PLUS_PRICE_ID
     value: "your_voice_plus_id" # Replace with your Stripe "Voice+" Price ID
-
-# The name of the backend resource.
-# This must be the same as the backend ID you chose in the Firebase console.
-name: chefai-backend
