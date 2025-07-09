@@ -14,7 +14,7 @@ import { createPost } from '@/lib/community';
 import type { UserAccount } from '@/types';
 
 // The UID of the official ChefAI account, taken from the provided screenshot URL.
-const OFFICIAL_ACCOUNT_UID = "D0U6N4IEPaYKfDwy2";
+const OFFICIAL_ACCOUNT_UID = "D0U6N4IEPaYKfDwy2WdMnOUHOTu2";
 
 const GenerateAdminPostInputSchema = z.object({
   topic: z.string().min(5, 'El tema debe tener al menos 5 caracteres.').describe('The topic for the recipe post, e.g., "a healthy chicken salad".'),
