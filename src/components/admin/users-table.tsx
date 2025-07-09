@@ -61,22 +61,30 @@ import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { Label } from "../ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
+import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/hooks/use-toast"
-import { updateUserSubscription, deleteUserAndContent } from "@/lib/admin"
+import { updateUserFromAdmin, deleteUserAndContent } from "@/lib/admin"
 
 export function EditUserDialog({ user }: { user: UserAccount }) {
     const [isOpen, setIsOpen] = React.useState(false);
     const [isSaving, setIsSaving] = React.useState(false);
     const [selectedTier, setSelectedTier] = React.useState<string>(user.subscriptionTier || 'none');
+    const [isVerified, setIsVerified] = React.useState<boolean>(user.isVerified || false);
+    const [badges, setBadges] = React.useState<string>((user.badges || []).join(', '));
     const { toast } = useToast();
 
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            await updateUserSubscription(user.id, selectedTier === 'none' ? null : selectedTier);
+            const badgesArray = badges.split(',').map(b => b.trim()).filter(Boolean);
+            await updateUserFromAdmin(user.id, {
+                subscriptionTier: selectedTier === 'none' ? null : selectedTier,
+                isVerified: isVerified,
+                badges: badgesArray
+            });
             toast({
                 title: 'Usuario Actualizado',
-                description: `El plan de ${user.name} ha sido actualizado.`,
+                description: `El perfil de ${user.name} ha sido actualizado.`,
             });
             // TODO: Idealmente, la tabla debería actualizarse sin recargar la página.
             // Para este MVP, se requiere recargar.
@@ -121,6 +129,23 @@ export function EditUserDialog({ user }: { user: UserAccount }) {
                                 <SelectItem value="lifetime">Lifetime</SelectItem>
                             </SelectContent>
                         </Select>
+                    </div>
+                    <div className="grid gap-2">
+                        <Label>Configuración Especial</Label>
+                        <div className="flex items-center space-x-2 rounded-md border p-4">
+                            <Switch id="verified-switch" checked={isVerified} onCheckedChange={setIsVerified} />
+                            <Label htmlFor="verified-switch">Cuenta Verificada</Label>
+                        </div>
+                    </div>
+                     <div className="grid gap-2">
+                        <Label htmlFor="badges">Insignias Especiales</Label>
+                        <Input
+                            id="badges"
+                            placeholder="ej: colaborador, beta-tester"
+                            value={badges}
+                            onChange={(e) => setBadges(e.target.value)}
+                        />
+                        <p className="text-xs text-muted-foreground">Separar por comas. Se mostrarán en el perfil del usuario.</p>
                     </div>
                 </div>
                 <DialogFooter>
@@ -224,6 +249,14 @@ export const columns: ColumnDef<UserAccount>[] = [
     accessorKey: "subscriptionTier",
     header: "Suscripción",
     cell: ({ row }) => getTierBadge(row.getValue("subscriptionTier"))
+  },
+  {
+    accessorKey: "isVerified",
+    header: () => <div className="text-center">Verificado</div>,
+    cell: ({ row }) => {
+        const isVerified = row.getValue("isVerified") as boolean;
+        return isVerified ? <CheckCircle className="h-5 w-5 text-blue-500 mx-auto" /> : null;
+    },
   },
   {
     accessorKey: "createdAt",

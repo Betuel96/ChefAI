@@ -66,6 +66,8 @@ export interface UserAccount {
     subscriptionTier?: 'pro' | 'voice+' | 'lifetime';
     createdAt: string; 
     profileType: 'public' | 'private';
+    isVerified?: boolean;
+    badges?: string[];
     notificationSettings?: {
         publicFeed: boolean;
         followingFeed: boolean;

@@ -1,4 +1,3 @@
-
 import {
   doc,
   setDoc,
@@ -51,6 +50,8 @@ export async function createUserDocument(userId: string, name: string, username:
     photoURL,
     isPremium: false,
     profileType: 'public', // Default to public profile
+    isVerified: false,
+    badges: [],
     createdAt: serverTimestamp(),
     notificationSettings: {
         publicFeed: true,

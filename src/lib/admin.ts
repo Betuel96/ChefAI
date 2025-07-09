@@ -72,21 +72,30 @@ export async function getAllUsers(): Promise<UserAccount[]> {
 }
 
 /**
- * Updates a user's subscription tier.
+ * Updates a user's subscription tier, verification status, and badges from the admin panel.
  * @param userId The ID of the user to update.
- * @param tier The new subscription tier ('pro', 'voice+', 'lifetime', or null for free).
+ * @param data An object containing the new data for the user.
  */
-export async function updateUserSubscription(userId: string, tier: string | null): Promise<void> {
+export async function updateUserFromAdmin(
+    userId: string,
+    data: {
+        subscriptionTier: string | null;
+        isVerified: boolean;
+        badges: string[];
+    }
+): Promise<void> {
     if (!db) {
         throw new Error('Firestore is not initialized.');
     }
     const userDocRef = doc(db, 'users', userId);
     
-    const isPremium = tier === 'pro' || tier === 'voice+' || tier === 'lifetime';
+    const isPremium = data.subscriptionTier === 'pro' || data.subscriptionTier === 'voice+' || data.subscriptionTier === 'lifetime';
     
     await updateDoc(userDocRef, {
         isPremium: isPremium,
-        subscriptionTier: tier,
+        subscriptionTier: data.subscriptionTier,
+        isVerified: data.isVerified,
+        badges: data.badges,
     });
 }
 
