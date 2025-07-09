@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -200,6 +201,16 @@ const AccountSettings = ({ profile, onProfileUpdate }: { profile: ProfileData, o
 
 
   const handleUpgradeClick = (priceId: string) => {
+    const placeholderIds = ["your_pro_price_id", "your_voice_plus_price_id"];
+    if (!priceId || placeholderIds.includes(priceId)) {
+        toast({
+            title: 'Configuración de Stripe Incompleta',
+            description: "Para activar las suscripciones, primero debes crear los productos en tu panel de Stripe y luego añadir los 'Price IDs' correspondientes en el archivo apphosting.yaml.",
+            variant: 'destructive',
+            duration: 9000,
+        });
+        return;
+    }
     setIsAgreed(false);
     setAgreementDialog({ type: 'subscription', priceId });
   };
