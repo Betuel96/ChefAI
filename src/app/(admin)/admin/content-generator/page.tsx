@@ -16,7 +16,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Wand2, Loader2, CheckCircle, Link as LinkIcon } from 'lucide-react';
 
 const formSchema = z.object({
-  topic: z.string().min(10, 'El tema debe tener al menos 10 caracteres.'),
+  topic: z.string().min(5, 'El tema debe tener al menos 5 caracteres.'),
 });
 
 export default function ContentGeneratorPage() {
