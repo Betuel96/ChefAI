@@ -1,20 +1,16 @@
-
 rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Permite la lectura pública de todas las imágenes de los posts
-    match /users/{userId}/posts/{postId} {
+    // Allow reads from anyone. This is safe for public content like profile pictures and post media.
+    match /{allPaths=**} {
       allow read;
-      // Permite la escritura (crear, actualizar, eliminar) solo si el usuario
-      // está autenticado y es el propietario de la carpeta.
-      allow write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Permite la escritura de recetas guardadas solo para el propietario
-    match /users/{userId}/recipes/{recipeId} {
-        allow read;
-        allow write: if request.auth != null && request.auth.uid == userId;
+    // Allow an authenticated user to write to their own directory.
+    // This covers profile pictures, posts, stories, recipes, etc.
+    match /users/{userId}/{allPaths=**} {
+      allow write: if request.auth != null && request.auth.uid == userId;
     }
   }
 }
