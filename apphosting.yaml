@@ -2,16 +2,15 @@
 # https://firebase.google.com/docs/app-hosting/configure
 
 # Server-side environment variables. These are not visible to the client.
-# You MUST replace the placeholder values with your actual secrets.
 env:
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
     secret: FIREBASE_API_KEY
   - variable: GOOGLE_API_KEY
-    secret: GOOGLE_API_KEY # Replace with your actual Google AI API Key
+    secret: GOOGLE_API_KEY
   - variable: STRIPE_SECRET_KEY
-    secret: STRIPE_SECRET_KEY # Replace with your actual Stripe Secret Key
+    secret: STRIPE_SECRET_KEY
   - variable: STRIPE_WEBHOOK_SECRET
-    secret: STRIPE_WEBHOOK_SECRET # Replace with your actual Stripe Webhook Secret
+    secret: STRIPE_WEBHOOK_SECRET
   - variable: NEXT_PUBLIC_STRIPE_PRO_PRICE_ID
     value: "your_pro_price_id" # Replace with your Stripe "Pro" Price ID
   - variable: NEXT_PUBLIC_STRIPE_VOICE_PLUS_PRICE_ID
