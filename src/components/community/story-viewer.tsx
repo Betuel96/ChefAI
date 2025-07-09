@@ -33,6 +33,25 @@ export function StoryViewer({ groups, startIndex, onClose }: StoryViewerProps) {
 
   const currentGroup = groups[currentGroupIndex];
   const currentStory = currentGroup?.stories[currentStoryIndex];
+  
+  // Inject keyframes for story progress animation safely on the client
+  useEffect(() => {
+    const keyframes = `
+      @keyframes story-progress {
+        from { width: 0%; }
+        to { width: 100%; }
+      }
+    `;
+    const styleSheet = document.createElement("style");
+    styleSheet.innerText = keyframes;
+    document.head.appendChild(styleSheet);
+    
+    // Cleanup on component unmount
+    return () => {
+      document.head.removeChild(styleSheet);
+    };
+  }, []); // Empty dependency array ensures this runs only once when the component mounts
+
 
   const goToNextStory = useCallback(() => {
     if (currentGroup && currentStoryIndex < currentGroup.stories.length - 1) {
@@ -206,25 +225,4 @@ export function StoryViewer({ groups, startIndex, onClose }: StoryViewerProps) {
         </DialogContent>
     </Dialog>
   );
-}
-
-// Custom CSS for text shadow - add to globals.css if needed, or use a utility
-const textShadowStyle = {
-    textShadow: '0 1px 3px rgba(0,0,0,0.5)'
-}
-
-// Add keyframes for progress to globals.css
-const keyframes = `
-@keyframes story-progress {
-  from { width: 0%; }
-  to { width: 100%; }
-}
-`;
-
-// Inject keyframes into the document head
-if (typeof document !== 'undefined') {
-  const styleSheet = document.createElement("style");
-  styleSheet.type = "text/css";
-  styleSheet.innerText = keyframes;
-  document.head.appendChild(styleSheet);
 }
