@@ -5,9 +5,9 @@ import { getStorage, FirebaseStorage } from 'firebase/storage';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: "app-basic-8bbcf.firebaseapp.com",
-  projectId: "app-basic-8bbcf",
-  storageBucket: "app-basic-8bbcf.appspot.com",
+  authDomain: "chefai-cfo4t.firebaseapp.com",
+  projectId: "chefai-cfo4t",
+  storageBucket: "chefai-cfo4t.appspot.com",
   messagingSenderId: "929391221066",
   appId: "1:929391221066:web:f0f0f8d24e428c1b22c9b3"
 };
