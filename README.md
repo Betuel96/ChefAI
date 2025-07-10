@@ -1,6 +1,4 @@
-git add .
-git commit -m "Fix: Configurar permisos de secretos en apphosting.yaml"
-git push# ChefAI: Inteligencia Artificial para la Vida Real
+# ChefAI: Inteligencia Artificial para la Vida Real
 
 **Menos estrés en la cocina. Más tiempo para vivir. Y una misión que va más allá de la comida.**
 
