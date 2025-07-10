@@ -110,7 +110,21 @@ const generateRecipeFlow = ai.defineFlow(
     outputSchema: GenerateRecipeOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    return output!;
+    try {
+      const {output} = await prompt(input);
+      if (!output) {
+          throw new Error('La IA no pudo generar una receta. Por favor, intenta de nuevo.');
+      }
+      return output;
+    } catch (error: any) {
+        console.error("[generateRecipeFlow Error]", error);
+        if (error.message && (error.message.includes('API key not valid') || error.message.includes('permission denied') || error.message.includes('PERMISSION_DENIED'))) {
+             throw new Error("ERROR DE CONFIGURACIÓN DE IA: Tu clave de API no es válida o la API necesaria no está habilitada. Por favor, ve a la Consola de Google Cloud de tu proyecto, busca y habilita la 'Vertex AI API'.");
+        }
+        if (error.message && error.message.includes('billing')) {
+            throw new Error("ERROR DE FACTURACIÓN DE IA: Has excedido la cuota gratuita. Por favor, asegúrate de que la facturación esté habilitada para tu proyecto de Google Cloud para continuar.");
+        }
+        throw new Error('El generador de recetas de IA no pudo responder. Revisa la consola del servidor para ver el error detallado.');
+    }
   }
 );
