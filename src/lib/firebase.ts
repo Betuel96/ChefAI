@@ -15,6 +15,7 @@ const firebaseConfig = {
   appId: "1:50145465999:web:1b842c2e50a4da7f9e02fa"
 };
 
+
 export const isFirebaseConfigured = !!firebaseConfig.apiKey;
 
 let app: FirebaseApp;
