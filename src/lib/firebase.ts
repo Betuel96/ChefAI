@@ -4,10 +4,11 @@ import { getAuth, Auth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 
-// Hardcoded configuration for the correct project: chefai-cfo4t
-// This configuration ensures the app always connects to the correct Firebase project.
+// This configuration uses environment variables.
+// The values are securely provided by Firebase App Hosting during the build and deployment process.
+// NEVER hardcode API keys or other secrets in your code.
 const firebaseConfig = {
-  apiKey: "AIzaSyCcQfmMqyXJbke-kfDIwFdI25jRGa6PItw",
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: "chefai-cfo4t.firebaseapp.com",
   projectId: "chefai-cfo4t",
   storageBucket: "chefai-cfo4t.appspot.com",
