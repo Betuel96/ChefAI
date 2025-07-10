@@ -7,15 +7,18 @@ name: chefai-backend
 # Server-side environment variables. These are not visible to the client.
 # Secrets are automatically granted access during deployment.
 env:
-  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
-    secret: FIREBASE_API_KEY
-  - variable: GOOGLE_API_KEY
-    secret: GOOGLE_API_KEY
-  - variable: STRIPE_SECRET_KEY
-    secret: STRIPE_SECRET_KEY
-  - variable: STRIPE_WEBHOOK_SECRET
-    secret: STRIPE_WEBHOOK_SECRET
   - variable: NEXT_PUBLIC_STRIPE_PRO_PRICE_ID
     value: "your_pro_price_id" # Replace with your Stripe "Pro" Price ID
   - variable: NEXT_PUBLIC_STRIPE_VOICE_PLUS_PRICE_ID
     value: "your_voice_plus_id" # Replace with your Stripe "Voice+" Price ID
+
+# To re-enable secret-based keys in the future:
+# 1. Go to Google Cloud Secret Manager for your project.
+# 2. Create secrets with the appropriate names (e.g., GOOGLE_API_KEY).
+# 3. Uncomment the lines below.
+#  - variable: GOOGLE_API_KEY
+#    secret: GOOGLE_API_KEY
+#  - variable: STRIPE_SECRET_KEY
+#    secret: STRIPE_SECRET_KEY
+#  - variable: STRIPE_WEBHOOK_SECRET
+#    secret: STRIPE_WEBHOOK_SECRET
