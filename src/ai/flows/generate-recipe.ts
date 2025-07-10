@@ -111,7 +111,9 @@ const generateRecipeFlow = ai.defineFlow(
   },
   async input => {
     try {
-      const {output} = await prompt(input);
+      // Ensure language is set, default to Spanish if not provided.
+      const finalInput = { ...input, language: input.language || 'Spanish' };
+      const {output} = await prompt(finalInput);
       if (!output) {
           throw new Error('La IA no pudo generar una receta. Por favor, intenta de nuevo.');
       }
@@ -128,3 +130,5 @@ const generateRecipeFlow = ai.defineFlow(
     }
   }
 );
+
+    

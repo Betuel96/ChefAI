@@ -79,7 +79,12 @@ export default function RecipeGeneratorPage() {
       const language = localeToAILanguage[locale] || 'Spanish';
 
       const [recipeResult, imageResult] = await Promise.all([
-        generateRecipe({...values, language }),
+        generateRecipe({
+          ingredients: values.ingredients,
+          servings: values.servings,
+          cuisine: values.cuisine,
+          language: language 
+        }),
         generateRecipeImage({ recipeName: recipeNameGuess }),
       ]);
 
@@ -390,3 +395,5 @@ export default function RecipeGeneratorPage() {
     </>
   );
 }
+
+    
