@@ -5,8 +5,9 @@ import { getFirestore, Firestore } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 
 // Hardcoded configuration for the correct project: chefai-cfo4t
+// This configuration ensures the app always connects to the correct Firebase project.
 const firebaseConfig = {
-  apiKey: "AIzaSyCcQfmMqyXJbke-kfDIwFdl25jRGa6PItw",
+  apiKey: "AIzaSyCcQfmMqyXJbke-kfDIwFdI25jRGa6PItw",
   authDomain: "chefai-cfo4t.firebaseapp.com",
   projectId: "chefai-cfo4t",
   storageBucket: "chefai-cfo4t.appspot.com",
@@ -23,8 +24,7 @@ let storage: FirebaseStorage;
 let googleProvider: GoogleAuthProvider;
 
 if (isFirebaseConfigured) {
-    // Ensure we are initializing the correct app, especially in environments where multiple apps might be configured.
-    // The name "chefai-cfo4t" ensures we get or create the instance specifically for this project.
+    // Ensures we get or create the instance specifically for this project.
     app = getApps().find(app => app.name === "chefai-cfo4t") || initializeApp(firebaseConfig, "chefai-cfo4t");
     auth = getAuth(app);
     db = getFirestore(app);
