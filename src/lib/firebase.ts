@@ -18,17 +18,21 @@ let db: Firestore | null = null;
 let storage: FirebaseStorage | null = null;
 let googleProvider: GoogleAuthProvider | null = null;
 
-// Firebase is always considered configured when hardcoded.
-export const isFirebaseConfigured = true;
+export const isFirebaseConfigured = !!firebaseConfig.apiKey;
 
-try {
-  app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-  auth = getAuth(app);
-  db = getFirestore(app);
-  storage = getStorage(app);
-  googleProvider = new GoogleAuthProvider();
-} catch (e) {
-  console.error('Failed to initialize Firebase', e);
+if (isFirebaseConfigured) {
+    try {
+        app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+        auth = getAuth(app);
+        db = getFirestore(app);
+        storage = getStorage(app);
+        googleProvider = new GoogleAuthProvider();
+    } catch (e) {
+        console.error('Failed to initialize Firebase', e);
+    }
+} else {
+    console.warn("Firebase configuration is missing or incomplete. Some features may not work.");
 }
+
 
 export { app, auth, db, storage, googleProvider };
