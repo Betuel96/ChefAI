@@ -1,8 +1,7 @@
-
-
+// src/app/[locale]/settings/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -590,6 +589,14 @@ const AccountSettings = ({ profile, onProfileUpdate }: { profile: ProfileData, o
 
 
 export default function SettingsPage() {
+    return (
+        <Suspense fallback={<SettingsPageSkeleton />}>
+            <SettingsPageContent />
+        </Suspense>
+    )
+}
+
+function SettingsPageContent() {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
