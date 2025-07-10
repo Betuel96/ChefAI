@@ -4,11 +4,10 @@ import { getAuth, Auth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 
-// This configuration uses environment variables.
-// The values are securely provided by Firebase App Hosting during the build and deployment process.
-// NEVER hardcode API keys or other secrets in your code.
+// This configuration is now hardcoded with the correct values for chefai-cfo4t
+// to ensure the application always connects to the right project.
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  apiKey: "AIzaSyCcQfmMqyXJbke-kfDIwFdI25jRGa6PItw",
   authDomain: "chefai-cfo4t.firebaseapp.com",
   projectId: "chefai-cfo4t",
   storageBucket: "chefai-cfo4t.appspot.com",
@@ -26,8 +25,7 @@ let storage: FirebaseStorage;
 let googleProvider: GoogleAuthProvider;
 
 if (isFirebaseConfigured) {
-    // Ensures we get or create the instance specifically for this project.
-    app = getApps().find(app => app.name === "chefai-cfo4t") || initializeApp(firebaseConfig, "chefai-cfo4t");
+    app = getApps().length ? getApp() : initializeApp(firebaseConfig);
     auth = getAuth(app);
     db = getFirestore(app);
     storage = getStorage(app);
