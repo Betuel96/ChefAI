@@ -6,12 +6,12 @@ import { getStorage, FirebaseStorage } from 'firebase/storage';
 
 // Hardcoded configuration for the correct project: chefai-cfo4t
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  apiKey: "AIzaSyCcQfmMqyXJbke-kfDIwFdl25jRGa6PItw",
   authDomain: "chefai-cfo4t.firebaseapp.com",
   projectId: "chefai-cfo4t",
   storageBucket: "chefai-cfo4t.appspot.com",
-  messagingSenderId: "929391221066",
-  appId: "1:929391221066:web:f0f0f8d24e428c1b22c9b3"
+  messagingSenderId: "50145465999",
+  appId: "1:50145465999:web:1b842c2e50a4da7f9e02fa"
 };
 
 export const isFirebaseConfigured = !!firebaseConfig.apiKey;
