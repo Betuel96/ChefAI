@@ -13,24 +13,20 @@ const firebaseConfig = {
   appId: "1:929391221066:web:f0f0f8d24e428c1b22c9b3"
 };
 
-let app: FirebaseApp | null = null;
-let auth: Auth | null = null;
-let db: Firestore | null = null;
-let storage: FirebaseStorage | null = null;
-let googleProvider: GoogleAuthProvider | null = null;
-
 export const isFirebaseConfigured = !!firebaseConfig.apiKey;
 
+let app: FirebaseApp;
+let auth: Auth;
+let db: Firestore;
+let storage: FirebaseStorage;
+let googleProvider: GoogleAuthProvider;
+
 if (isFirebaseConfigured) {
-    try {
-        app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-        auth = getAuth(app);
-        db = getFirestore(app);
-        storage = getStorage(app);
-        googleProvider = new GoogleAuthProvider();
-    } catch (e) {
-        console.error('Failed to initialize Firebase', e);
-    }
+    app = getApps().length === 0 ? initializeApp(firebaseConfig, "chefai-cfo4t") : getApp("chefai-cfo4t");
+    auth = getAuth(app);
+    db = getFirestore(app);
+    storage = getStorage(app);
+    googleProvider = new GoogleAuthProvider();
 } else {
     console.warn("Firebase configuration is missing or incomplete. Some features may not work.");
 }
