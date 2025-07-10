@@ -201,7 +201,7 @@ const AccountSettings = ({ profile, onProfileUpdate }: { profile: ProfileData, o
 
 
   const handleUpgradeClick = (priceId: string) => {
-    const placeholderIds = ["your_pro_price_id", "your_voice_plus_price_id"];
+    const placeholderIds = ["your_pro_price_id", "your_voice_plus_id"];
     if (!priceId || placeholderIds.includes(priceId)) {
         toast({
             title: 'Configuración de Stripe Incompleta',
