@@ -101,17 +101,18 @@ export default function RecipeGeneratorPage() {
       });
 
     } catch (error: any) {
-      let description = dict.error_messages.generation_error_description;
-      if (error.message && (error.message.includes('API key not valid') || error.message.includes('API key is invalid') || error.message.includes('PERMISSION_DENIED'))) {
-        description = dict.error_messages.api_key_error;
-      } else if (error.message && error.message.includes('billing')) {
-        description = dict.error_messages.billing_error;
-      }
-      toast({
-        title: dict.error_messages.generation_error_title,
-        description: description,
-        variant: 'destructive',
-      });
+        let description = dict.error_messages.generation_error_description;
+        if (error.message && (error.message.includes('API key not valid') || error.message.includes('permission denied') || error.message.includes('PERMISSION_DENIED'))) {
+            description = dict.error_messages.api_key_error;
+        } else if (error.message && error.message.includes('billing')) {
+            description = dict.error_messages.billing_error;
+        }
+        toast({
+            title: dict.error_messages.generation_error_title,
+            description: description,
+            variant: 'destructive',
+            duration: 9000,
+        });
     } finally {
       setIsLoading(false);
     }
@@ -395,5 +396,3 @@ export default function RecipeGeneratorPage() {
     </>
   );
 }
-
-    
