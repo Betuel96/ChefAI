@@ -31,17 +31,12 @@ export function middleware(request: NextRequest) {
     pathname.startsWith('/api/') ||
     pathname.startsWith('/static/') ||
     pathname.startsWith('/_next/') ||
-    pathname.includes('.')
+    pathname.includes('.') ||
+    pathname.startsWith('/admin') // Exclude all admin routes
   ) {
     return NextResponse.next();
   }
 
-  // Handle root path redirection to landing page
-  if (pathname === '/') {
-    const locale = getLocale(request) || i18n.defaultLocale;
-    return NextResponse.redirect(new URL(`/${locale}/landing`, request.url));
-  }
-  
   const pathnameIsMissingLocale = i18n.locales.every(
     (locale) => !pathname.startsWith(`/${locale}/`) && pathname !== `/${locale}`
   );
@@ -50,9 +45,19 @@ export function middleware(request: NextRequest) {
   if (pathnameIsMissingLocale) {
     const locale = getLocale(request);
     
+    // If root path, redirect to landing page
+    if (pathname === '/') {
+        return NextResponse.redirect(new URL(`/${locale}/landing`, request.url));
+    }
+    
     return NextResponse.redirect(
       new URL(`/${locale}${pathname.startsWith('/') ? '' : '/'}${pathname}`, request.url)
     );
+  }
+  
+  // If the user visits /es, /en, etc., redirect them to the main dashboard for that locale.
+  if (i18n.locales.some(locale => pathname === `/${locale}`)) {
+    return NextResponse.redirect(new URL(`${pathname}/dashboard`, request.url));
   }
   
   return NextResponse.next();
