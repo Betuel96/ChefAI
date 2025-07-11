@@ -9,7 +9,7 @@ import { FeedStatusProvider } from '@/hooks/use-feed-status';
 import { AppFooter } from '@/components/layout/app-footer';
 import { BottomNavBar } from '@/components/layout/bottom-nav-bar';
 import { getDictionary } from '@/lib/get-dictionary';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 
@@ -21,15 +21,16 @@ export default function LocaleLayout({
   children: React.ReactNode;
   params: { locale: string };
 }>) {
+  const resolvedParams = React.use(params);
   const [dict, setDict] = useState<any>(null);
   const pathname = usePathname();
 
   useEffect(() => {
-    getDictionary(params.locale as any).then(setDict);
-  }, [params.locale]);
+    getDictionary(resolvedParams.locale as any).then(setDict);
+  }, [resolvedParams.locale]);
 
   // If the path is for the landing page, return only the children without the main app layout.
-  if (pathname === `/${params.locale}/landing`) {
+  if (pathname === `/${resolvedParams.locale}/landing`) {
     return <>{children}</>;
   }
 
