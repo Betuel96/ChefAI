@@ -38,7 +38,7 @@ export function middleware(request: NextRequest) {
 
   // Handle root path redirection to landing page
   if (pathname === '/') {
-    const locale = getLocale(request);
+    const locale = getLocale(request) || i18n.defaultLocale;
     return NextResponse.redirect(new URL(`/${locale}/landing`, request.url));
   }
   
@@ -50,22 +50,11 @@ export function middleware(request: NextRequest) {
   if (pathnameIsMissingLocale) {
     const locale = getLocale(request);
     
-    // If the path was intended to be root, redirect to landing
-    if (pathname === '') {
-       return NextResponse.redirect(new URL(`/${locale}/landing`, request.url));
-    }
-
     return NextResponse.redirect(
-      new URL(`/${locale}${pathname}`, request.url)
+      new URL(`/${locale}${pathname.startsWith('/') ? '' : '/'}${pathname}`, request.url)
     );
   }
   
-  // If user tries to access old root, redirect them to the dashboard
-  const locale = pathname.split('/')[1];
-  if (i18n.locales.includes(locale as any) && (pathname === `/${locale}` || pathname === `/${locale}/`)) {
-     return NextResponse.redirect(new URL(`/${locale}/dashboard`, request.url));
-  }
-
   return NextResponse.next();
 }
 
