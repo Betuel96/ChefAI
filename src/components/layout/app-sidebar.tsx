@@ -15,6 +15,7 @@ import {
   PlusSquare,
   Bell,
   Settings,
+  Rocket,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -155,6 +156,15 @@ export function AppSidebar({ dict }: { dict: any }) {
                 <SidebarMenuButton isActive={getIsActive('/')} tooltip={dict.sidebar.dashboard}>
                   <Home />
                   <span>{dict.sidebar.dashboard}</span>
+                </SidebarMenuButton>
+              </Link>
+          </SidebarMenuItem>
+
+          <SidebarMenuItem>
+              <Link href="/landing" target="_blank">
+                <SidebarMenuButton tooltip="Nuestra Misión">
+                  <Rocket />
+                  <span>Nuestra Misión</span>
                 </SidebarMenuButton>
               </Link>
           </SidebarMenuItem>
