@@ -25,34 +25,51 @@ function getLocale(request: NextRequest): string | undefined {
 
 export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  
-  // This check is now mostly redundant due to the matcher, but acts as a safeguard.
+
+  // Let static files and API routes pass through
   if (
     pathname.startsWith('/api/') ||
     pathname.startsWith('/static/') ||
     pathname.startsWith('/_next/') ||
     pathname.includes('.')
   ) {
-    return;
+    return NextResponse.next();
   }
 
+  // Handle root path redirection to landing page
+  if (pathname === '/') {
+    const locale = getLocale(request);
+    return NextResponse.redirect(new URL(`/${locale}/landing`, request.url));
+  }
+  
   const pathnameIsMissingLocale = i18n.locales.every(
-    locale => !pathname.startsWith(`/${locale}/`) && pathname !== `/${locale}`
+    (locale) => !pathname.startsWith(`/${locale}/`) && pathname !== `/${locale}`
   );
 
   // Redirect if there is no locale
   if (pathnameIsMissingLocale) {
     const locale = getLocale(request);
+    
+    // If the path was intended to be root, redirect to landing
+    if (pathname === '') {
+       return NextResponse.redirect(new URL(`/${locale}/landing`, request.url));
+    }
+
     return NextResponse.redirect(
-      new URL(
-        `/${locale}${pathname.startsWith('/') ? '' : '/'}${pathname}`,
-        request.url
-      )
+      new URL(`/${locale}${pathname}`, request.url)
     );
   }
+  
+  // If user tries to access old root, redirect them to the dashboard
+  const locale = pathname.split('/')[1];
+  if (i18n.locales.includes(locale as any) && (pathname === `/${locale}` || pathname === `/${locale}/`)) {
+     return NextResponse.redirect(new URL(`/${locale}/dashboard`, request.url));
+  }
+
+  return NextResponse.next();
 }
 
 export const config = {
-  // Matcher ignoring `/api/`, `/_next/`, static files, and now `/admin/` routes.
-  matcher: ['/((?!api|admin|_next/static|_next/image|assets|favicon.ico|sw.js|landing).*)'],
+  // Matcher ignoring `/api/`, `/_next/`, static files, and admin routes.
+  matcher: ['/((?!api|admin|_next/static|_next/image|assets|favicon.ico|sw.js).*)'],
 };

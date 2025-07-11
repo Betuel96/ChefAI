@@ -2,14 +2,15 @@
 'use client';
 
 import { useState } from 'react';
-import { ChefHat, Sparkles, CalendarDays, Mic } from 'lucide-react';
+import { ChefHat, Sparkles, CalendarDays, Mic, HeartHandshake, Zap, BrainCircuit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
+import Link from 'next/link';
 
 const FeatureCard = ({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) => (
-    <div className="flex flex-col items-center p-6 text-center bg-background/50 rounded-lg">
+    <div className="flex flex-col items-center p-6 text-center bg-background/50 rounded-lg shadow-lg border">
         <div className="p-3 mb-4 text-primary bg-primary/10 rounded-full">
             {icon}
         </div>
@@ -26,7 +27,7 @@ export default function LandingPage() {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (email) {
-            // En una implementación real, esto se enviaría a un servicio de email marketing.
+            // In a real implementation, this would be sent to an email marketing service.
             console.log('Email submitted:', email);
             toast({
                 title: '¡Gracias por unirte a la misión!',
@@ -38,43 +39,57 @@ export default function LandingPage() {
 
     return (
         <div className="bg-background text-foreground">
-            <header className="py-4 px-6 md:px-12 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <ChefHat className="w-8 h-8 text-primary" />
-                    <h1 className="font-headline text-2xl font-bold">ChefAI</h1>
+            <header className="py-4 px-6 md:px-12 flex items-center justify-between sticky top-0 bg-background/80 backdrop-blur-sm z-50 border-b">
+                 <div className="flex items-center gap-2">
+                    {/* Replace this with your actual logo file in the /public folder */}
+                    <Image 
+                        src="https://placehold.co/150x40/000000/FFFFFF.PNG?text=ChefAI" 
+                        alt="ChefAI Logo"
+                        width={120}
+                        height={32}
+                        priority
+                        data-ai-hint="logo"
+                    />
                 </div>
+                 <Button asChild>
+                    <Link href="/es/dashboard">Ir al Prototipo</Link>
+                </Button>
             </header>
 
             <main>
                 {/* Hero Section */}
                 <section className="py-20 px-6 text-center bg-secondary/30">
                     <h2 className="text-4xl md:text-6xl font-bold font-headline text-primary">Inteligencia Artificial para la Vida Real</h2>
-                    <p className="mt-4 max-w-2xl mx-auto text-lg md:text-xl text-muted-foreground">
+                    <p className="mt-4 max-w-3xl mx-auto text-lg md:text-xl text-muted-foreground">
                         ChefAI es nuestro primer paso para crear tecnología que realmente importa. Un asistente de cocina que elimina el estrés para que tú disfrutes de lo esencial: cocinar, comer, vivir.
                     </p>
                     <div className="mt-8 flex justify-center">
-                        <Button size="lg" asChild>
-                            <a href="#kickstarter-signup">Apoya la Misión</a>
+                        <Button size="lg" asChild className="text-lg h-14 px-10">
+                            <a href="#kickstarter-signup">Apoya Nuestra Misión</a>
                         </Button>
                     </div>
                 </section>
                 
-                {/* Image/Video Placeholder */}
-                <section className="px-6 md:px-12 -mt-12">
-                     <div className="relative aspect-video max-w-4xl mx-auto rounded-lg shadow-2xl overflow-hidden bg-muted">
+                 {/* Image/Video Placeholder */}
+                <section className="px-6 md:px-12 -mt-16">
+                     <div className="relative aspect-video max-w-5xl mx-auto rounded-lg shadow-2xl overflow-hidden bg-muted border-4 border-background">
                         <Image 
-                            src="https://placehold.co/1280x720/f7a849/333333.png" 
+                            src="https://placehold.co/1280x720/fdf8f3/594d43.png" 
                             alt="Una persona cocinando en una cocina moderna con la ayuda de ChefAI"
                             layout="fill"
                             objectFit="cover"
-                            data-ai-hint="modern kitchen"
+                            data-ai-hint="modern kitchen cooking"
                          />
                      </div>
                 </section>
 
                 {/* Features Section */}
-                <section className="py-20 px-6">
-                    <div className="max-w-5xl mx-auto grid md:grid-cols-3 gap-8">
+                <section className="py-24 px-6">
+                    <div className="text-center mb-12">
+                         <h2 className="text-3xl font-bold font-headline">Un Prototipo Funcional y Robusto</h2>
+                         <p className="mt-2 text-muted-foreground max-w-2xl mx-auto">ChefAI ya es una herramienta poderosa. Esto es lo que puedes hacer hoy mismo:</p>
+                    </div>
+                    <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-8">
                         <FeatureCard 
                             icon={<Sparkles className="w-8 h-8" />}
                             title="Genera Recetas al Instante"
@@ -94,17 +109,28 @@ export default function LandingPage() {
                 </section>
 
                 {/* Kickstarter Signup Section */}
-                <section id="kickstarter-signup" className="py-20 px-6 bg-secondary/30">
-                    <div className="max-w-2xl mx-auto text-center">
-                        <h3 className="text-3xl md:text-4xl font-bold font-headline text-primary">Apoya una Revolución Tecnológica Centrada en el Ser Humano</h3>
-                        <p className="mt-4 text-muted-foreground text-lg">
-                           ChefAI es mucho más que una app de cocina. Es la primera prueba de que la Inteligencia Artificial puede ser una herramienta empática, una que resuelve problemas reales y cotidianos para mejorar nuestras vidas.
+                <section id="kickstarter-signup" className="py-24 px-6 bg-secondary/30">
+                    <div className="max-w-3xl mx-auto text-center">
+                        <h3 className="text-4xl md:text-5xl font-bold font-headline text-primary">Más Allá de la Cocina</h3>
+                        <p className="mt-6 text-muted-foreground text-lg leading-relaxed">
+                           ChefAI es mucho más que una app. Es la prueba de que la Inteligencia Artificial puede ser una herramienta empática para resolver problemas cotidianos. El éxito de este proyecto es el combustible que nos permitirá crecer y financiar la investigación y el desarrollo de nuevas tecnologías con impacto social.
                         </p>
-                         <p className="mt-4 text-muted-foreground text-lg">
-                           El éxito de ChefAI es el combustible para nuestra siguiente misión: una aplicación de asistencia médica capaz de realizar diagnósticos preliminares mediante la cámara de tu teléfono, ofreciendo una primera línea de ayuda vital cuando más se necesita.
-                        </p>
-                        <p className="mt-6 text-foreground font-semibold text-xl">
-                           Al apoyarnos hoy, no estás comprando una suscripción. Estás invirtiendo en un futuro donde la tecnología nos cuida. Únete a nuestra lista de espera y sé el primero en saber cuándo lanzaremos nuestra campaña en Kickstarter.
+                         <div className="mt-10 grid sm:grid-cols-3 gap-8 text-primary">
+                            <div className="flex flex-col items-center gap-2">
+                                <BrainCircuit className="w-10 h-10" />
+                                <span className="font-semibold">Avances en IA</span>
+                            </div>
+                            <div className="flex flex-col items-center gap-2">
+                                <HeartHandshake className="w-10 h-10" />
+                                <span className="font-semibold">Salud Accesible</span>
+                            </div>
+                            <div className="flex flex-col items-center gap-2">
+                                <Zap className="w-10 h-10" />
+                                <span className="font-semibold">Energías Limpias</span>
+                            </div>
+                        </div>
+                        <p className="mt-10 text-foreground font-semibold text-xl">
+                           Al apoyarnos, no estás comprando una suscripción. Estás invirtiendo en un futuro donde la tecnología nos cuida. Únete a nuestra lista de espera y sé el primero en saber cuándo lanzaremos nuestra campaña.
                         </p>
                         <form onSubmit={handleSubmit} className="mt-8 flex flex-col sm:flex-row gap-2 max-w-md mx-auto">
                             <Input 
@@ -115,13 +141,13 @@ export default function LandingPage() {
                                 required
                                 className="h-12 text-base"
                             />
-                            <Button type="submit" size="lg" className="h-12">Quiero Ser Parte del Futuro</Button>
+                            <Button type="submit" size="lg" className="h-12 text-base">Quiero Ser Parte del Futuro</Button>
                         </form>
                     </div>
                 </section>
             </main>
 
-            <footer className="py-6 px-6 text-center text-sm text-muted-foreground">
+            <footer className="py-8 px-6 text-center text-sm text-muted-foreground border-t">
                 <p>&copy; {new Date().getFullYear()} ChefAI. Todos los derechos reservados.</p>
             </footer>
         </div>

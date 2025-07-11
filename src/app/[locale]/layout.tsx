@@ -1,5 +1,6 @@
 
-import type { Metadata } from 'next';
+'use client';
+
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/layout/app-sidebar';
 import { MobileHeader } from '@/components/layout/mobile-header';
@@ -7,27 +8,39 @@ import { NotificationProvider } from '@/hooks/use-notifications';
 import { FeedStatusProvider } from '@/hooks/use-feed-status';
 import { AppFooter } from '@/components/layout/app-footer';
 import { BottomNavBar } from '@/components/layout/bottom-nav-bar';
-import { i18n } from '@/i18n.config';
 import { getDictionary } from '@/lib/get-dictionary';
+import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 
 
-export async function generateStaticParams() {
-  return i18n.locales.map(locale => ({ locale }));
-}
-
-export const metadata: Metadata = {
-  title: 'ChefAI',
-  description: 'Tu asistente de cocina personal con IA',
-};
-
-export default async function LocaleLayout({
+export default function LocaleLayout({
   children,
   params
 }: Readonly<{
   children: React.ReactNode;
   params: { locale: string };
 }>) {
-  const dict = await getDictionary(params.locale as any);
+  const [dict, setDict] = useState<any>(null);
+  const pathname = usePathname();
+
+  useEffect(() => {
+    getDictionary(params.locale as any).then(setDict);
+  }, [params.locale]);
+
+  // If the path is for the landing page, return only the children without the main app layout.
+  if (pathname === `/${params.locale}/landing`) {
+    return <>{children}</>;
+  }
+
+  if (!dict) {
+    return (
+        <div className="flex items-center justify-center h-screen">
+            <Loader2 className="w-8 h-8 animate-spin" />
+        </div>
+    )
+  }
+
   return (
     <NotificationProvider>
       <FeedStatusProvider>
