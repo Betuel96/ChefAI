@@ -19,97 +19,53 @@ const AuthContext = createContext<AuthContextType>({
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AppUser>(null);
-  const [loading, setLoading] = useState(true); // Start as true
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!isFirebaseConfigured || !auth || !db) {
+    // This effect should only run on the client side where Firebase is available.
+    if (!isFirebaseConfigured || typeof window === 'undefined') {
       setLoading(false);
       return;
     }
 
-    // This listener handles auth state changes (login/logout)
-    const unsubscribeAuth = onAuthStateChanged(auth, async (authUser: User | null) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (authUser: User | null) => {
       if (authUser) {
-        try {
-            // User is authenticated. Force a reload to get the latest user data (e.g., emailVerified).
-            await authUser.reload();
-            // The `auth.currentUser` is now the freshest user object.
-            const freshUser = auth.currentUser;
-            
-            if (!freshUser) {
-              setUser(null);
-              setLoading(false);
-              return;
-            }
-
-            // Now get their profile from Firestore.
-            const userDocRef = doc(db, 'users', freshUser.uid);
-            
-            // This listener handles profile data changes (e.g., becoming premium)
-            const unsubscribeSnapshot = onSnapshot(userDocRef, (docSnapshot) => {
-              if (docSnapshot.exists()) {
-                const docData = docSnapshot.data();
-                
-                // Manually convert Firestore Timestamp to a serializable ISO string
-                const createdAtTimestamp = docData.createdAt as Timestamp;
-                const serializableAccountData: UserAccount = {
-                    name: docData.name,
-                    username: docData.username,
-                    email: docData.email,
-                    photoURL: docData.photoURL,
-                    isPremium: docData.isPremium,
-                    subscriptionTier: docData.subscriptionTier,
-                    profileType: docData.profileType || 'public',
-                    notificationSettings: docData.notificationSettings || { publicFeed: true, followingFeed: true },
-                    lastVisitedFeeds: docData.lastVisitedFeeds || null,
-                    createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
-                };
-
-                setUser({ ...freshUser, ...serializableAccountData });
-              } else {
-                // This can happen if the user document hasn't been created yet during signup.
-                // We'll treat them as logged in, but without extra profile data for now.
-                // The createUserDocument function will soon create the doc, and this listener will re-run.
-                setUser(freshUser as AppUser);
-              }
-              // We have the full user state (or know it's pending creation), so loading is done.
-              setLoading(false);
-            }, (error) => {
-                // Handle errors fetching the document
-                console.error(
-                  `[use-auth.tsx > onSnapshot] ¡ERROR DE PERMISOS DE FIRESTORE!
-----------------------------------------------------------------------
-No se pudo leer el perfil del usuario (UID: ${freshUser.uid}).
-Esto casi siempre significa que las REGLAS DE SEGURIDAD de Cloud Firestore no se han publicado correctamente.
-
-Causa probable: Las reglas predeterminadas están en "modo de producción", que bloquea todas las lecturas, o las reglas personalizadas no permiten que un usuario lea su propio documento en la colección '/users'.
-
-Solución:
-1. Ve a la Consola de Firebase -> Cloud Firestore -> Pestaña "Reglas".
-2. Pega el contenido del archivo 'firestore.rules' del proyecto. La regla clave que necesitas es:
-   match /users/{userId} {
-     allow get: if request.auth.uid == userId;
-     // ... otras reglas
-   }
-3. Haz clic en "Publicar".
-
-Error original:`,
-                  error
-                );
-                setUser(freshUser as AppUser); // Fallback to authUser only
-                setLoading(false);
-            });
-
-            // This is a cleanup function. It will be called when the user logs out.
-            return () => {
-              unsubscribeSnapshot();
+        // User is logged in. Get their profile from Firestore.
+        const userDocRef = doc(db, 'users', authUser.uid);
+        
+        const unsubscribeSnapshot = onSnapshot(userDocRef, (docSnapshot) => {
+          if (docSnapshot.exists()) {
+            const docData = docSnapshot.data();
+            const createdAtTimestamp = docData.createdAt as Timestamp;
+            const serializableAccountData: UserAccount = {
+                name: docData.name,
+                username: docData.username,
+                email: docData.email,
+                photoURL: docData.photoURL,
+                isPremium: docData.isPremium,
+                subscriptionTier: docData.subscriptionTier,
+                profileType: docData.profileType || 'public',
+                isVerified: docData.isVerified,
+                badges: docData.badges || [],
+                notificationSettings: docData.notificationSettings || { publicFeed: true, followingFeed: true },
+                lastVisitedFeeds: docData.lastVisitedFeeds || null,
+                canMonetize: docData.canMonetize || false,
+                stripeConnectAccountId: docData.stripeConnectAccountId || null,
+                verificationRequestStatus: docData.verificationRequestStatus || null,
+                createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
             };
-        } catch (error) {
-            console.error("[useAuth] Error reloading user or setting up snapshot:", error);
-            // If something goes wrong, at least show the basic user info and stop loading.
-            setUser(authUser as AppUser); // Use the original authUser as a fallback
-            setLoading(false);
-        }
+            setUser({ ...authUser, ...serializableAccountData });
+          } else {
+            setUser(authUser as AppUser);
+          }
+          setLoading(false);
+        }, (error) => {
+          console.error("Error fetching user profile:", error);
+          setUser(authUser as AppUser);
+          setLoading(false);
+        });
+
+        return () => unsubscribeSnapshot();
       } else {
         // User is logged out.
         setUser(null);
@@ -117,7 +73,6 @@ Error original:`,
       }
     });
 
-    // Cleanup the main auth listener on component unmount
     return () => unsubscribeAuth();
   }, []);
 
