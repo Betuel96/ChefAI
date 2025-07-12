@@ -7,14 +7,6 @@
   "storage": {
     "rules": "storage.rules"
   },
-  "hosting": {
-    "public": "out",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ]
-  },
+  "hosting": {},
   "project": "chefai-cfo4t"
 }
-
