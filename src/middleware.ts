@@ -28,7 +28,7 @@ export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const searchParams = request.nextUrl.search;
 
-  // Let static files, API routes, and admin panel pass through
+  // Step 1: Ignore specific technical paths
   if (
     pathname.startsWith('/api/') ||
     pathname.startsWith('/static/') ||
@@ -39,38 +39,42 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
   
-  // Ignore the Firebase auth handler path completely to let it do its work.
+  // CRITICAL: Ignore the Firebase auth handler path completely to let it do its work.
+  // This prevents the "accounts.google.com rejected connection" error.
   if (pathname.startsWith('/__/auth/')) {
     return NextResponse.next();
   }
-  
+
+  // Step 2: Check if the pathname is missing a locale
   const pathnameIsMissingLocale = i18n.locales.every(
     (locale) => !pathname.startsWith(`/${locale}/`) && pathname !== `/${locale}`
   );
 
-  // If the path is missing a locale, we need to add it.
   if (pathnameIsMissingLocale) {
     const locale = getLocale(request);
     
-    // Redirect to the dashboard if a user is returning after a successful login.
+    // If a user is returning from a successful Google sign-in, redirect them to the dashboard.
     // The presence of auth-related query params is a strong indicator.
     if (searchParams.includes('code=') && searchParams.includes('scope=')) {
         return NextResponse.redirect(new URL(`/${locale}/dashboard`, request.url));
     }
     
-    // For regular new visitors, send them to the landing page.
-    return NextResponse.redirect(new URL(`/${locale}/landing${pathname}`, request.url));
+    // For all other cases (e.g., a new visitor), redirect to the landing page with the detected locale.
+    return NextResponse.redirect(new URL(`/${locale}/landing${pathname === '/' ? '' : pathname}`, request.url));
   }
   
-  // If the user visits a root locale path like /es or /en, send them to the landing page.
+  // Step 3: Handle root locale paths (e.g., /es or /en)
+  // If the user visits a root locale path, send them to the landing page for that locale.
   if (i18n.locales.some(locale => pathname === `/${locale}`)) {
     return NextResponse.redirect(new URL(`${pathname}/landing`, request.url));
   }
 
+  // Step 4: If all checks pass, continue to the requested page
   return NextResponse.next();
 }
 
 export const config = {
   // Matcher ignoring `/api/`, `/_next/`, static files, and admin routes.
+  // It MUST NOT ignore /__/auth/handler, so we let the middleware logic handle it.
   matcher: ['/((?!api|admin|_next/static|_next/image|assets|favicon.ico|sw.js).*)'],
 };
