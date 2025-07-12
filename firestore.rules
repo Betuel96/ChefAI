@@ -4,7 +4,8 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function isSignedIn() {
+    // --- Funciones de Ayuda ---
+    function isAuthenticated() {
       return request.auth != null;
     }
 
@@ -12,48 +13,98 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
 
+    function isProfilePublic(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data.profileType == 'public';
+    }
+
+    function isFollowing(userId) {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid)/following/$(userId));
+    }
+
+    function canReadProfileContent(userId) {
+      return isOwner(userId) || isProfilePublic(userId) || isFollowing(userId);
+    }
+    
+    function isAdmin() {
+      return exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+    
+    // --- Reglas para Colecciones ---
+
+    // Colección de administradores
+    match /admins/{userId} {
+      allow read: if isAdmin();
+      allow write: if false; // Solo se gestiona desde la consola de Firebase
+    }
+
+    // Colección para asegurar nombres de usuario únicos
     match /usernames/{username} {
-      allow read;
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated(); // El ID del documento es el nombre de usuario
       allow update, delete: if false;
     }
 
+    // Colección principal de usuarios
     match /users/{userId} {
-      // Any signed-in user can view any profile.
-      allow get, list: if isSignedIn();
-      
-      // A user can create and update their own profile.
-      allow create, update: if isOwner(userId);
-      allow delete: if false; // Typically only admins should delete users.
+      allow read: if isAuthenticated() || isAdmin();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) || isAdmin(); // El admin puede editar perfiles
+      allow delete: if isAdmin();
 
-      // Subcollections are private to the owner.
-      match /{subcollection}/{docId} {
+      // Subcolecciones del usuario (recetas, menús, etc.)
+      match /recipes/{recipeId} {
         allow read, write: if isOwner(userId);
       }
+      match /menus/{menuId} {
+        allow read, write: if isOwner(userId);
+      }
+      match /savedPosts/{postId} {
+        allow read, write: if isOwner(userId);
+      }
+      match /followers/{followerId} {
+        allow read: if isAuthenticated();
+        allow write: if isAuthenticated() && request.auth.uid == followerId; // Te puedes añadir como seguidor
+        allow delete: if isOwner(userId) || request.auth.uid == followerId; // El dueño o tú pueden eliminar el seguimiento
+      }
+      match /following/{followingId} {
+        allow read: if isAuthenticated();
+        allow write, delete: if isOwner(userId);
+      }
+      match /notifications/{notificationId} {
+        allow read, write, delete: if isOwner(userId);
+      }
+    }
+    
+    // Colección de solicitudes de verificación
+    match /verification_requests/{requestId} {
+      allow read, write: if isAdmin();
+      allow create: if isAuthenticated();
+    }
+    
+    // Historias (visibles por 24h, borrado gestionado por Cloud Functions o manualmente)
+    match /stories/{storyId} {
+      allow read: if isAuthenticated();
+      allow create: if isOwner(resource.data.publisherId);
+      allow update, delete: if isOwner(resource.data.publisherId) || isAdmin();
     }
 
+    // Colección de publicaciones (recetas, menús, texto)
     match /published_recipes/{postId} {
-      function isPublicPost() {
-        return resource.data.profileType == 'public';
-      }
-      function isFollower(publisherId) {
-        return exists(/databases/$(database)/documents/users/$(publisherId)/followers/$(request.auth.uid));
-      }
+      allow read: if isAuthenticated() && canReadProfileContent(resource.data.publisherId);
+      allow create: if isAuthenticated() && isOwner(resource.data.publisherId);
+      allow update: if isAuthenticated() && isOwner(resource.data.publisherId);
+      allow delete: if isAuthenticated() && (isOwner(resource.data.publisherId) || isAdmin());
 
-      // Allow read if: public post, or owner, or follower of private profile.
-      allow get: if isPublicPost() || (isSignedIn() && (isOwner(resource.data.publisherId) || isFollower(resource.data.publisherId)));
-      // Allow listing of public posts.
-      allow list: if isSignedIn();
+      // Subcolecciones de las publicaciones
+      match /comments/{commentId} {
+        allow read: if isAuthenticated() && canReadProfileContent(get(/databases/$(database)/documents/published_recipes/$(postId)).data.publisherId);
+        allow create: if isAuthenticated();
+        allow update, delete: if isAuthenticated() && isOwner(resource.data.userId);
+      }
       
-      allow create: if isSignedIn() && request.resource.data.publisherId == request.auth.uid;
-      allow update: if isSignedIn() && isOwner(resource.data.publisherId);
-      allow delete: if isSignedIn() && isOwner(resource.data.publisherId);
-
-      // Comments and Likes
-      match /{subcollection}/{docId} {
-        allow read: if isPublicPost() || (isSignedIn() && (isOwner(resource.data.publisherId) || isFollower(resource.data.publisherId)));
-        allow create: if isSignedIn();
-        allow update, delete: if isSignedIn() && isOwner(request.resource.data.userId);
+      match /likes/{likeId} {
+        allow read: if isAuthenticated();
+        allow create, delete: if isAuthenticated() && request.auth.uid == likeId;
       }
     }
   }
