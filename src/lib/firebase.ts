@@ -30,19 +30,20 @@ if (isFirebaseConfigured) {
   googleProvider = new GoogleAuthProvider();
 
   if (typeof window !== 'undefined') {
-    // Set the debug token only if it's explicitly provided.
-    // This token is specifically for local development.
-    const debugToken = "7C711501-6E87-4B5E-B529-E99E5EA3D40C";
+    // Set the debug token only if it's explicitly provided for local development.
+    const debugToken = process.env.NEXT_PUBLIC_APPCHECK_DEBUG_TOKEN;
     if (debugToken) {
        (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = debugToken;
     }
 
-    const siteKey = "6Lefzn8rAAAAAA1LnheasK4kl9wJ4ljPlU7Fui9x";
-    if (siteKey) {
+    const reCaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+    if (reCaptchaSiteKey) {
       initializeAppCheck(app, {
-        provider: new ReCaptchaV3Provider(siteKey),
+        provider: new ReCaptchaV3Provider(reCaptchaSiteKey),
         isTokenAutoRefreshEnabled: true
       });
+    } else {
+        console.warn("reCAPTCHA site key not found. App Check will not be initialized.");
     }
   }
 }
