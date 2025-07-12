@@ -10,27 +10,29 @@ import { AppFooter } from '@/components/layout/app-footer';
 import { BottomNavBar } from '@/components/layout/bottom-nav-bar';
 import { getDictionary } from '@/lib/get-dictionary';
 import React, { useEffect, useState } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import type { Locale } from '@/i18n.config';
 
 
 export default function LocaleLayout({
   children,
-  params
 }: Readonly<{
   children: React.ReactNode;
-  params: { locale: Locale };
 }>) {
   const [dict, setDict] = useState<any>(null);
   const pathname = usePathname();
+  const params = useParams();
+  const locale = params.locale as Locale;
 
   useEffect(() => {
-    getDictionary(params.locale).then(setDict);
-  }, [params.locale]);
+    if (locale) {
+      getDictionary(locale).then(setDict);
+    }
+  }, [locale]);
 
   // If the path is for the landing page, return only the children without the main app layout.
-  if (pathname === `/${params.locale}/landing`) {
+  if (pathname === `/${locale}/landing`) {
     return <>{children}</>;
   }
 
