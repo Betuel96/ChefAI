@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getAuth, Auth, GoogleAuthProvider, initializeAuth, browserLocalPersistence } from 'firebase/auth';
+import { getAuth, Auth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
@@ -23,17 +23,13 @@ let googleProvider: GoogleAuthProvider;
 
 if (isFirebaseConfigured) {
   app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-  // Correct initialization for redirect persistence
-  auth = initializeAuth(app, {
-    persistence: browserLocalPersistence
-  });
+  auth = getAuth(app);
   db = getFirestore(app);
   storage = getStorage(app);
   googleProvider = new GoogleAuthProvider();
 
   if (typeof window !== 'undefined') {
     // This token is for local development only.
-    // It should be generated in the browser console on first run and added here.
     (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = "1f7f1210-522e-44af-b882-6c3ab85ec0e5";
     
     // The reCAPTCHA v3 site key for your project.

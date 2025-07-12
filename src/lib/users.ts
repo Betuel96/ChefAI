@@ -1,4 +1,3 @@
-
 import {
   doc,
   setDoc,
@@ -18,6 +17,8 @@ import {
   type UserCredential,
   signInWithRedirect,
   getRedirectResult,
+  setPersistence,
+  browserLocalPersistence,
 } from 'firebase/auth';
 import { db, auth, googleProvider, storage } from './firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -192,6 +193,7 @@ export async function signInWithGoogleRedirect(): Promise<void> {
     if (!auth || !googleProvider) {
         throw new Error('Firebase Auth no está configurado.');
     }
+    await setPersistence(auth, browserLocalPersistence);
     await signInWithRedirect(auth, googleProvider);
 }
 
