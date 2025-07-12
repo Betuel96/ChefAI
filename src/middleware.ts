@@ -25,42 +25,49 @@ function getLocale(request: NextRequest): string | undefined {
 
 export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+  const searchParams = request.nextUrl.search;
 
-  // Let static files and API routes pass through
+  // Let static files, API routes, and admin panel pass through
   if (
     pathname.startsWith('/api/') ||
     pathname.startsWith('/static/') ||
     pathname.startsWith('/_next/') ||
     pathname.includes('.') ||
-    pathname.startsWith('/admin') // Exclude all admin routes
+    pathname.startsWith('/admin')
   ) {
     return NextResponse.next();
   }
+  
+  // Check if it's a redirect back from Firebase Auth
+  const isFirebaseAuthRedirect = searchParams.includes('code=') && searchParams.includes('state=');
 
   const pathnameIsMissingLocale = i18n.locales.every(
     (locale) => !pathname.startsWith(`/${locale}/`) && pathname !== `/${locale}`
   );
 
-  // Redirect if there is no locale
+  // If the path is missing a locale, we need to add it.
   if (pathnameIsMissingLocale) {
     const locale = getLocale(request);
+    let newPath = `/${locale}${pathname}`;
     
-    // If root path, redirect to landing page
-    if (pathname === '/') {
-        return NextResponse.redirect(new URL(`/${locale}/landing`, request.url));
+    // CRITICAL FIX: If this is a Firebase auth redirect, it MUST go to the dashboard
+    // to be processed by the AuthProvider, not the landing page.
+    if (isFirebaseAuthRedirect) {
+        newPath = `/${locale}/dashboard`;
+    } else if (pathname === '/') {
+        // For regular new visitors, send them to the landing page.
+        newPath = `/${locale}/landing`;
     }
-    
-    return NextResponse.redirect(
-      new URL(`/${locale}${pathname.startsWith('/') ? '' : '/'}${pathname}`, request.url)
-    );
+
+    return NextResponse.redirect(new URL(newPath, request.url));
   }
   
-  // If the user visits /es, /en, etc., redirect them to the main dashboard for that locale.
-  // This also correctly handles the post-login redirect from Firebase.
+  // If the user visits a root locale path like /es or /en (often happens after login redirect),
+  // send them to the dashboard.
   if (i18n.locales.some(locale => pathname === `/${locale}`)) {
-    return NextResponse.redirect(new URL(`/${pathname}/dashboard`, request.url));
+    return NextResponse.redirect(new URL(`${pathname}/dashboard`, request.url));
   }
-  
+
   return NextResponse.next();
 }
 
