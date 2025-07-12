@@ -18,13 +18,8 @@ import { db, storage } from './firebase';
 import type { UserAccount, PublishedPost, VerificationRequest } from '@/types';
 import { ref, deleteObject } from 'firebase/storage';
 
-// En un entorno de producción, esta lista estaría vacía y la verificación se haría
-// únicamente contra la colección 'admins' en Firestore para máxima seguridad.
-// Para fines de demostración, puedes añadir tu UID de Firebase aquí para acceder al panel.
-const HARDCODED_ADMIN_UIDS: string[] = []; // Ejemplo: ['YOUR_FIREBASE_UID']
-
 /**
- * Checks if a user is an administrator.
+ * Checks if a user is an administrator by verifying their existence in the 'admins' collection.
  * @param userId The ID of the user to check.
  * @returns A promise that resolves to true if the user is an admin, false otherwise.
  */
@@ -32,16 +27,11 @@ export async function checkIsAdmin(userId: string): Promise<boolean> {
   if (!db) {
     throw new Error('Firestore is not initialized.');
   }
-  // Primero, comprueba si el UID está en la lista de administradores codificada.
-  if (HARDCODED_ADMIN_UIDS.includes(userId)) {
-    return true;
-  }
   
-  // Si no está en la lista codificada, comprueba la colección 'admins' en Firestore.
   const adminDocRef = doc(db, 'admins', userId);
   try {
     const docSnap = await getDoc(adminDocRef);
-    // El usuario es un administrador si el documento existe.
+    // The user is an administrator if the document exists.
     return docSnap.exists();
   } catch (error) {
     console.error("Error checking admin status:", error);
