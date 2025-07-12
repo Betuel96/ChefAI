@@ -31,22 +31,26 @@ export default function LocaleLayout({
       getDictionary(locale).then(setDict);
     }
   }, [locale]);
+  
+  // This useEffect handles redirection for the root locale path (e.g., /es -> /es/landing)
+  useEffect(() => {
+    if (pathname === `/${locale}`) {
+      router.replace(`/${locale}/landing`);
+    }
+  }, [pathname, locale, router]);
 
-  // If the path is for the landing page, return only the children without the main app layout.
-  if (pathname === `/${locale}/landing`) {
-    return <>{children}</>;
-  }
-
-  // Handle the root locale path (e.g., /es, /en) and redirect to landing
+  // If the path is for the root locale, show a loader while redirecting
   if (pathname === `/${locale}`) {
-      useEffect(() => {
-          router.replace(`/${locale}/landing`);
-      }, [locale, router]);
       return (
           <div className="flex items-center justify-center h-screen">
               <Loader2 className="w-8 h-8 animate-spin" />
           </div>
       );
+  }
+
+  // If the path is for the landing page, return only the children without the main app layout.
+  if (pathname === `/${locale}/landing`) {
+    return <>{children}</>;
   }
 
   if (!dict) {
