@@ -1,73 +1,101 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Regla de seguridad para la colección 'users'
-    match /users/{userId} {
-      // Permite a un usuario crear su propio perfil.
-      allow create: if request.auth.uid == userId;
-      // Permite a un usuario leer y actualizar su propio perfil.
-      allow read, update: if request.auth.uid == userId;
-      // Permite a cualquier usuario autenticado leer los perfiles de otros.
-      allow get: if request.auth != null;
+
+    // Helper function to check if a user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
     }
 
-    // Regla de seguridad para la colección 'usernames'
+    // Helper function to check if the user is the owner of a document
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // usernames collection: used for unique username checks
     match /usernames/{username} {
-      // Permite a cualquier usuario autenticado leer los nombres de usuario.
-      allow get: if request.auth != null;
-      // Solo permite crear un nombre de usuario si no existe.
-      allow create: if request.auth != null && !exists(path);
-    }
-    
-    // Reglas para subcolecciones dentro de 'users'
-    match /users/{userId}/{collectionId}/{docId} {
-        // Permite al propietario del perfil leer y escribir en sus propias subcolecciones
-        // (recetas, menús, posts guardados, etc.).
-        allow read, write: if request.auth.uid == userId;
+      allow read: if true;
+      allow create: if isAuthenticated();
+      allow update, delete: if false; // Prevent users from changing or deleting usernames directly
     }
 
-    // Reglas de seguridad para las publicaciones
+    // users collection: user profiles
+    match /users/{userId} {
+      allow read: if true; // Allow anyone to read user profiles
+      allow create: if isOwner(userId); // Allow a user to create their own profile
+      allow update: if isOwner(userId); // Allow a user to update their own profile
+      
+      // Subcollections for a user
+      match /recipes/{recipeId} {
+        allow read, write, delete: if isOwner(userId);
+      }
+      match /menus/{menuId} {
+        allow read, write, delete: if isOwner(userId);
+      }
+       match /savedPosts/{postId} {
+        allow read, write, delete: if isOwner(userId);
+      }
+      match /followers/{followerId} {
+        allow read: if true;
+        allow create, delete: if isAuthenticated();
+      }
+       match /following/{followingId} {
+        allow read: if true;
+        allow create, delete: if isOwner(userId);
+      }
+       match /notifications/{notificationId} {
+        allow read, write, delete: if isOwner(userId);
+      }
+    }
+
+    // published_recipes collection: public posts (recipes, menus, text)
     match /published_recipes/{postId} {
-        // Cualquiera puede leer posts públicos.
-        allow get: if resource.data.profileType == 'public';
-        // Solo el autor puede editarlo.
-        allow update: if request.auth.uid == resource.data.publisherId;
-        // Solo el autor puede eliminarlo.
-        allow delete: if request.auth.uid == resource.data.publisherId;
-        // Cualquier usuario autenticado puede crear un post.
-        allow create: if request.auth != null;
-    }
+      allow read: if true; // Anyone can read posts
+      allow create: if isAuthenticated(); // Authenticated users can create posts
+      allow update: if isAuthenticated() && isOwner(resource.data.publisherId); // Only the owner can update their post
+      allow delete: if isAuthenticated() && isOwner(resource.data.publisherId); // Only the owner can delete their post
 
-    // Reglas para subcolecciones de publicaciones (comentarios, me gusta)
-    match /published_recipes/{postId}/{subcollection}/{docId} {
-        // Cualquier usuario autenticado puede leer y escribir (comentar, dar 'me gusta').
-        allow read, write: if request.auth != null;
-    }
-
-    // Reglas para la colección de administradores
-    match /admins/{userId} {
-      // Solo los usuarios autenticados pueden intentar leer. La existencia del
-      // documento determina si son administradores o no.
-      allow get: if request.auth != null;
+      // Subcollections for a post (comments, likes)
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if isAuthenticated();
+        allow update, delete: if isAuthenticated() && isOwner(resource.data.userId); // Only comment owner can edit/delete
+        
+        // Likes on comments
+        match /likes/{likeId} {
+            allow read: if true;
+            allow create, delete: if isAuthenticated() && isOwner(likeId);
+        }
+      }
+      match /likes/{userId} {
+        allow read: if true;
+        allow create, delete: if isOwner(userId);
+      }
     }
     
-    // Reglas para las solicitudes de verificación
-    match /verification_requests/{requestId} {
-      // Solo el usuario que la creó puede leer su propia solicitud.
-      allow get: if request.auth.uid == resource.data.userId;
-      // Cualquier usuario autenticado puede crear una.
-      allow create: if request.auth != null;
-    }
-
-    // Reglas para las historias
+    // stories collection
     match /stories/{storyId} {
-      // Los usuarios autenticados pueden crear historias.
-      allow create: if request.auth.uid == request.resource.data.publisherId;
-      // Cualquier usuario autenticado puede leer historias (la lógica del feed filtra quién ve qué).
-      allow read: if request.auth != null;
-      // Solo el autor puede eliminar su historia.
-      allow delete: if request.auth.uid == resource.data.publisherId;
+        // Anyone can read stories, but only for 24 hours (enforced by client/backend logic)
+        allow read: if true;
+        // Only authenticated users can create stories
+        allow create: if isAuthenticated();
+        // Only the owner can delete their story
+        allow delete: if isAuthenticated() && isOwner(resource.data.publisherId);
+        // Stories are immutable
+        allow update: if false;
+    }
+    
+    // admins collection: for admin panel access control
+    match /admins/{adminId} {
+        allow read: if isAuthenticated() && isOwner(adminId);
+    }
+    
+    // verification_requests collection
+    match /verification_requests/{requestId} {
+        allow create: if isAuthenticated(); // User can create their own request
+        allow read, write, delete: if exists(/databases/$(database)/documents/admins/$(request.auth.uid)); // Only admins can manage requests
     }
   }
 }
