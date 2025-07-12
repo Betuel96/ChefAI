@@ -56,8 +56,9 @@ export function middleware(request: NextRequest) {
   }
   
   // If the user visits /es, /en, etc., redirect them to the main dashboard for that locale.
+  // This also correctly handles the post-login redirect from Firebase.
   if (i18n.locales.some(locale => pathname === `/${locale}`)) {
-    return NextResponse.redirect(new URL(`${pathname}/dashboard`, request.url));
+    return NextResponse.redirect(new URL(`/${pathname}/dashboard`, request.url));
   }
   
   return NextResponse.next();
