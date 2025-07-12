@@ -1,4 +1,3 @@
-
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
@@ -30,23 +29,17 @@ if (isFirebaseConfigured) {
   googleProvider = new GoogleAuthProvider();
 
   if (typeof window !== 'undefined') {
-    // This token is for local development only and should not be exposed publicly.
-    const debugToken = process.env.NEXT_PUBLIC_APP_CHECK_DEBUG_TOKEN;
-    if (debugToken) {
-       (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = debugToken;
-    }
+    // This token is for local development only.
+    // It should be generated in the browser console on first run and added here.
+    (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
     
-    // Use the site key from environment variables.
-    const reCaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+    // The reCAPTCHA v3 site key for your project.
+    const reCaptchaSiteKey = "6LfxcH8rAAAAANML0gfeakQctNe98reY_Cl_UjMl";
 
-    if (reCaptchaSiteKey) {
-      initializeAppCheck(app, {
-        provider: new ReCaptchaV3Provider(reCaptchaSiteKey),
-        isTokenAutoRefreshEnabled: true
-      });
-    } else {
-        console.warn("reCAPTCHA site key not found. App Check will not be initialized.");
-    }
+    initializeAppCheck(app, {
+      provider: new ReCaptchaV3Provider(reCaptchaSiteKey),
+      isTokenAutoRefreshEnabled: true
+    });
   }
 }
 
