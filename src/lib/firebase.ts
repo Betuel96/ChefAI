@@ -30,14 +30,14 @@ if (isFirebaseConfigured) {
   googleProvider = new GoogleAuthProvider();
 
   if (typeof window !== 'undefined') {
-    // IMPORTANT: Replace this with your actual debug token
+    // This is the correct debug token you provided.
     const debugToken = "5CA5E83C-AD49-4D4F-9B26-CF9B63139DCC";
     if (debugToken) {
        (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = debugToken;
     }
     
-    // Use the key you provided.
-    const reCaptchaSiteKey = "6Lekdn8rAAAAAKwuG1myI0Jh8zPcAoU0plFoaieC";
+    // This is the correct site key you provided.
+    const reCaptchaSiteKey = "6Lefzn8rAAAAAA1LnheasK4kl9wJ4ljPlU7Fui9x";
 
     if (reCaptchaSiteKey) {
       initializeAppCheck(app, {
