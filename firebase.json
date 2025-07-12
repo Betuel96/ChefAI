@@ -10,6 +10,5 @@
   "database": {
     "rules": "realtimedb.rules.json"
   },
-  "hosting": {},
   "project": "chefai-cfo4t"
 }
