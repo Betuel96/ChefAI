@@ -3,7 +3,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useParams } from 'next/navigation';
 import {
   ChefHat,
   Home,
@@ -39,12 +39,15 @@ import { UserSearch } from './user-search';
 import { useNotifications } from '@/hooks/use-notifications';
 import { useFeedStatus } from '@/hooks/use-feed-status';
 import LanguageSwitcher from '../i18n/language-switcher';
+import type { Locale } from '@/i18n.config';
 
 export function AppSidebar({ dict }: { dict: any }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const params = useParams();
+  const locale = params.locale as Locale;
   const { isOpen } = useSidebar();
   const { user, loading } = useAuth();
-  const router = useRouter();
   const { toast } = useToast();
   const { unreadCount } = useNotifications();
   const { hasNewPublicPosts, hasNewFollowingPosts } = useFeedStatus();
@@ -57,7 +60,7 @@ export function AppSidebar({ dict }: { dict: any }) {
           title: 'Sesión Cerrada',
           description: 'Has cerrado sesión correctamente.',
         });
-        router.push('/login');
+        router.push(`/${locale}/login`);
       }
     } catch (error) {
       toast({
@@ -87,18 +90,21 @@ export function AppSidebar({ dict }: { dict: any }) {
     return <div className="h-2 w-2 rounded-full bg-primary" />;
   }, [unreadCount, isOpen]);
   
-  const removeLocaleFromPath = (path: string) => {
-    const segments = path.split('/');
-    if (segments.length > 2 && /^[a-z]{2}(-[A-Z]{2})?$/.test(segments[1])) {
-        return `/${segments.slice(2).join('/')}`;
-    }
-    return path;
-  }
-  const currentRoute = removeLocaleFromPath(pathname);
-
   const getIsActive = (href: string) => {
-    return href === '/' ? currentRoute === href : currentRoute.startsWith(href);
-  }
+    // Remove locale from the beginning of the path for comparison
+    const currentPathWithoutLocale = pathname.startsWith(`/${locale}`)
+      ? pathname.substring(locale.length + 1)
+      : pathname;
+    
+    // Ensure we handle the root path correctly
+    if (href === '/dashboard' && (currentPathWithoutLocale === '/dashboard' || currentPathWithoutLocale === '/')) {
+      return true;
+    }
+    if (href !== '/dashboard' && currentPathWithoutLocale.startsWith(href)) {
+      return true;
+    }
+    return false;
+  };
 
   const aiToolsItems = [
     { href: '/generator', label: dict.sidebar.recipe_generator, icon: Sparkles },
@@ -132,7 +138,7 @@ export function AppSidebar({ dict }: { dict: any }) {
           
           {user && isOpen && (
             <>
-              <Link href={`/profile/${user.uid}`} className="block w-full px-2">
+              <Link href={`/${locale}/profile/${user.uid}`} className="block w-full px-2">
                   <div className="flex flex-col items-start gap-2 p-2 rounded-md hover:bg-muted/50 transition-colors">
                     <Avatar>
                         <AvatarImage src={user.photoURL || undefined} />
@@ -152,8 +158,8 @@ export function AppSidebar({ dict }: { dict: any }) {
           )}
 
           <SidebarMenuItem>
-              <Link href="/">
-                <SidebarMenuButton isActive={getIsActive('/')} tooltip={dict.sidebar.dashboard}>
+              <Link href={`/${locale}/dashboard`}>
+                <SidebarMenuButton isActive={getIsActive('/dashboard')} tooltip={dict.sidebar.dashboard}>
                   <Home />
                   <span>{dict.sidebar.dashboard}</span>
                 </SidebarMenuButton>
@@ -161,7 +167,7 @@ export function AppSidebar({ dict }: { dict: any }) {
           </SidebarMenuItem>
 
           <SidebarMenuItem>
-              <Link href="/landing" target="_blank">
+              <Link href={`/${locale}/landing`} target="_blank">
                 <SidebarMenuButton tooltip="Nuestra Misión">
                   <Rocket />
                   <span>Nuestra Misión</span>
@@ -174,7 +180,7 @@ export function AppSidebar({ dict }: { dict: any }) {
           {isOpen && <h3 className="px-4 pt-2 pb-1 text-xs uppercase text-muted-foreground font-semibold tracking-wider">{dict.sidebar.ai_tools}</h3>}
           {aiToolsItems.map((item) => (
             <SidebarMenuItem key={item.href}>
-              <Link href={item.href}>
+              <Link href={`/${locale}${item.href}`}>
                 <SidebarMenuButton isActive={getIsActive(item.href)} tooltip={item.label}>
                   <item.icon />
                   <span>{item.label}</span>
@@ -188,7 +194,7 @@ export function AppSidebar({ dict }: { dict: any }) {
           {isOpen && <h3 className="px-4 pt-2 pb-1 text-xs uppercase text-muted-foreground font-semibold tracking-wider">{dict.sidebar.community}</h3>}
            {communityItems.map((item) => (
             <SidebarMenuItem key={item.href}>
-              <Link href={item.href}>
+              <Link href={`/${locale}${item.href}`}>
                 <SidebarMenuButton 
                   isActive={getIsActive(item.href)}
                   tooltip={item.label}
@@ -203,7 +209,7 @@ export function AppSidebar({ dict }: { dict: any }) {
           
            <Separator className="my-2" />
            <SidebarMenuItem>
-              <Link href="/settings">
+              <Link href={`/${locale}/settings`}>
                 <SidebarMenuButton isActive={getIsActive('/settings')} tooltip={dict.sidebar.settings}>
                   <Settings />
                   <span>{dict.sidebar.settings}</span>
@@ -223,7 +229,7 @@ export function AppSidebar({ dict }: { dict: any }) {
              </SidebarMenuItem>
           ) : !loading ? (
             <SidebarMenuItem>
-              <Link href="/login">
+              <Link href={`/${locale}/login`}>
                 <SidebarMenuButton
                   isActive={getIsActive('/login')}
                   tooltip={dict.sidebar.login}

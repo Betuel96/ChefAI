@@ -36,6 +36,19 @@ export default function LocaleLayout({
     return <>{children}</>;
   }
 
+  // Handle the root locale path (e.g., /es, /en) and redirect to landing
+  if (pathname === `/${locale}`) {
+      const { replace } = require('next/navigation');
+      useEffect(() => {
+          replace(`/${locale}/landing`);
+      }, [locale]);
+      return (
+          <div className="flex items-center justify-center h-screen">
+              <Loader2 className="w-8 h-8 animate-spin" />
+          </div>
+      );
+  }
+
   if (!dict) {
     return (
         <div className="flex items-center justify-center h-screen">
