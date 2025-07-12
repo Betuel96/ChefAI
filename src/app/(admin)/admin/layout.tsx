@@ -32,19 +32,22 @@ export default function AdminLayout({
       return;
     }
 
-    checkIsAdmin(user.uid)
-      .then((isAdminStatus) => {
-        setIsAdmin(isAdminStatus);
-        if (!isAdminStatus && pathname !== '/admin/login') {
-            router.push('/admin/login?error=unauthorized');
-        }
-      })
-      .catch(() => {
-        setIsAdmin(false);
-        if (pathname !== '/admin/login') {
-            router.push('/admin/login?error=unauthorized');
-        }
-      });
+    // This is a safe-guard for the checkIsAdmin call below
+    if (user.uid) {
+        checkIsAdmin(user.uid)
+        .then((isAdminStatus) => {
+            setIsAdmin(isAdminStatus);
+            if (!isAdminStatus && pathname !== '/admin/login') {
+                router.push('/admin/login?error=unauthorized');
+            }
+        })
+        .catch(() => {
+            setIsAdmin(false);
+            if (pathname !== '/admin/login') {
+                router.push('/admin/login?error=unauthorized');
+            }
+        });
+    }
   }, [user, authLoading, router, pathname]);
 
   const renderContent = () => {
