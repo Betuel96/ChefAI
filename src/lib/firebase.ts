@@ -31,7 +31,7 @@ if (isFirebaseConfigured) {
   if (typeof window !== 'undefined') {
     // This token is for local development only.
     // It should be generated in the browser console on first run and added here.
-    (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+    (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = "1f7f1210-522e-44af-b882-6c3ab85ec0e5";
     
     // The reCAPTCHA v3 site key for your project.
     const reCaptchaSiteKey = "6LfxcH8rAAAAANML0gfeakQctNe98reY_Cl_UjMl";
