@@ -76,8 +76,8 @@ export default function LandingPage() {
                         <Image 
                             src="https://placehold.co/1280x720/fdf8f3/594d43.png" 
                             alt="Una persona cocinando en una cocina moderna con la ayuda de ChefAI"
-                            layout="fill"
-                            objectFit="cover"
+                            fill
+                            className="object-cover"
                             data-ai-hint="modern kitchen cooking"
                          />
                      </div>
