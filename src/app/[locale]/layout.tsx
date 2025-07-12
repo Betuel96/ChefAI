@@ -12,6 +12,7 @@ import { getDictionary } from '@/lib/get-dictionary';
 import React, { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
+import type { Locale } from '@/i18n.config';
 
 
 export default function LocaleLayout({
@@ -19,18 +20,17 @@ export default function LocaleLayout({
   params
 }: Readonly<{
   children: React.ReactNode;
-  params: { locale: string };
+  params: { locale: Locale };
 }>) {
-  const resolvedParams = React.use(params);
   const [dict, setDict] = useState<any>(null);
   const pathname = usePathname();
 
   useEffect(() => {
-    getDictionary(resolvedParams.locale as any).then(setDict);
-  }, [resolvedParams.locale]);
+    getDictionary(params.locale).then(setDict);
+  }, [params.locale]);
 
   // If the path is for the landing page, return only the children without the main app layout.
-  if (pathname === `/${resolvedParams.locale}/landing`) {
+  if (pathname === `/${params.locale}/landing`) {
     return <>{children}</>;
   }
 
