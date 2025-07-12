@@ -5,8 +5,6 @@ import { getFirestore, Firestore } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
 
-// This configuration is now hardcoded with the correct values for chefai-cfo4t
-// to ensure the application always connects to the right project.
 const firebaseConfig = {
   apiKey: "AIzaSyCcQfmMqyXJbke-kfDIwFdI25jRGa6PItw",
   authDomain: "chefai-cfo4t.firebaseapp.com",
@@ -32,22 +30,23 @@ if (isFirebaseConfigured) {
     storage = getStorage(app);
     googleProvider = new GoogleAuthProvider();
 
-    // Initialize App Check
     if (typeof window !== 'undefined') {
         const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
         if (siteKey) {
-            initializeAppCheck(app, {
-                provider: new ReCaptchaV3Provider(siteKey),
-                isTokenAutoRefreshEnabled: true
-            });
+            try {
+                 initializeAppCheck(app, {
+                    provider: new ReCaptchaV3Provider(siteKey),
+                    isTokenAutoRefreshEnabled: true
+                });
+            } catch (e) {
+                console.error("Error initializing App Check", e);
+            }
         } else {
             console.warn("App Check: NEXT_PUBLIC_RECAPTCHA_SITE_KEY is not set. App Check will not be initialized.");
         }
     }
-
 } else {
     console.warn("Firebase configuration is missing or incomplete. Some features may not work.");
 }
-
 
 export { app, auth, db, storage, googleProvider };
