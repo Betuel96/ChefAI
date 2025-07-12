@@ -1,7 +1,7 @@
 // src/app/[locale]/landing/page.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChefHat, Sparkles, CalendarDays, Mic, HeartHandshake, Zap, BrainCircuit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,6 +28,11 @@ export default function LandingPage() {
     const [email, setEmail] = useState('');
     const params = useParams();
     const locale = params.locale as Locale;
+    const [hasMounted, setHasMounted] = useState(false);
+
+    useEffect(() => {
+        setHasMounted(true);
+    }, []);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -56,7 +61,7 @@ export default function LandingPage() {
                         data-ai-hint="logo"
                     />
                 </div>
-                 {locale && (
+                 {hasMounted && locale && (
                     <Button asChild>
                         <Link href={`/${locale}/dashboard`}>Ir al Prototipo</Link>
                     </Button>
@@ -81,7 +86,7 @@ export default function LandingPage() {
                 <section className="px-6 md:px-12 -mt-16">
                      <div className="relative aspect-video max-w-5xl mx-auto rounded-lg shadow-2xl overflow-hidden bg-muted border-4 border-background">
                         <Image 
-                            src="https://placehold.co/1280x720/fdf8f3/594d43.png" 
+                            src="https://placehold.co/1280x720.png" 
                             alt="Una persona cocinando en una cocina moderna con la ayuda de ChefAI"
                             fill
                             className="object-cover"
@@ -159,4 +164,4 @@ export default function LandingPage() {
             </footer>
         </div>
     );
-    
+}
