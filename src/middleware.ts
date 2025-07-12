@@ -26,6 +26,7 @@ function getLocale(request: NextRequest): string | undefined {
 
 export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+  const searchParams = request.nextUrl.search;
 
   // Let static files, API routes, and admin panel pass through
   if (
@@ -38,9 +39,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
   
-  // CRITICAL FIX: Ignore the Firebase auth handler path completely.
-  // This path is used by Firebase for the redirect sign-in flow.
-  // The AuthProvider on the client will handle the result.
+  // Ignore the Firebase auth handler path completely to let it do its work.
   if (pathname.startsWith('/__/auth/')) {
     return NextResponse.next();
   }
@@ -52,14 +51,15 @@ export function middleware(request: NextRequest) {
   // If the path is missing a locale, we need to add it.
   if (pathnameIsMissingLocale) {
     const locale = getLocale(request);
-    let newPath = `/${locale}${pathname}`;
+    
+    // Redirect to the dashboard if a user is returning after a successful login.
+    // The presence of auth-related query params is a strong indicator.
+    if (searchParams.includes('code=') && searchParams.includes('scope=')) {
+        return NextResponse.redirect(new URL(`/${locale}/dashboard`, request.url));
+    }
     
     // For regular new visitors, send them to the landing page.
-    if (pathname === '/') {
-        newPath = `/${locale}/landing`;
-    }
-
-    return NextResponse.redirect(new URL(newPath, request.url));
+    return NextResponse.redirect(new URL(`/${locale}/landing${pathname}`, request.url));
   }
   
   // If the user visits a root locale path like /es or /en, send them to the dashboard.
@@ -72,6 +72,5 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   // Matcher ignoring `/api/`, `/_next/`, static files, and admin routes.
-  // It will now correctly process /__/auth/handler
   matcher: ['/((?!api|admin|_next/static|_next/image|assets|favicon.ico|sw.js).*)'],
 };
