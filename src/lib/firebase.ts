@@ -23,32 +23,28 @@ let storage: FirebaseStorage;
 let googleProvider: GoogleAuthProvider;
 
 if (isFirebaseConfigured) {
-  try {
-    app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-    auth = getAuth(app);
-    db = getFirestore(app);
-    storage = getStorage(app);
-    googleProvider = new GoogleAuthProvider();
+  app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  db = getFirestore(app);
+  storage = getStorage(app);
+  googleProvider = new GoogleAuthProvider();
 
-    if (typeof window !== 'undefined') {
-      // IMPORTANT: This is for local development only.
-      // In a real app, you would manage this through environment variables
-      // and not commit debug tokens to version control.
-      (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = "7C711501-6E87-4B5E-B529-E99E5EA3D40C";
-
-      const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
-      if (siteKey) {
-        initializeAppCheck(app, {
-          provider: new ReCaptchaV3Provider(siteKey),
-          isTokenAutoRefreshEnabled: true
-        });
-      }
+  if (typeof window !== 'undefined') {
+    // Set the debug token only if it's explicitly provided.
+    // This token is specifically for local development.
+    const debugToken = "7C711501-6E87-4B5E-B529-E99E5EA3D40C";
+    if (debugToken) {
+       (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = debugToken;
     }
-  } catch (e) {
-    console.error("Error initializing Firebase:", e);
+
+    const siteKey = "6Lefzn8rAAAAAA1LnheasK4kl9wJ4ljPlU7Fui9x";
+    if (siteKey) {
+      initializeAppCheck(app, {
+        provider: new ReCaptchaV3Provider(siteKey),
+        isTokenAutoRefreshEnabled: true
+      });
+    }
   }
-} else {
-  console.warn("Firebase configuration is missing or incomplete. Some features may not work.");
 }
 
 export { app, auth, db, storage, googleProvider };
