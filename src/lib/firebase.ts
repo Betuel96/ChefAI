@@ -30,13 +30,13 @@ if (isFirebaseConfigured) {
   googleProvider = new GoogleAuthProvider();
 
   if (typeof window !== 'undefined') {
-    // Set the debug token only if it's explicitly provided for local development.
-    const debugToken = process.env.NEXT_PUBLIC_APPCHECK_DEBUG_TOKEN;
+    // IMPORTANT: Replace this with your actual debug token
+    const debugToken = "5CA5E83C-AD49-4D4F-9B26-CF9B63139DCC";
     if (debugToken) {
        (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = debugToken;
     }
     
-    // IMPORTANT: Use the key you provided.
+    // Use the key you provided.
     const reCaptchaSiteKey = "6Lekdn8rAAAAAKwuG1myI0Jh8zPcAoU0plFoaieC";
 
     if (reCaptchaSiteKey) {
