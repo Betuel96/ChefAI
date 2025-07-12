@@ -1,74 +1,102 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-  
-    // Helper function to check for admin role
+    // Helper Functions
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
     function isAdmin() {
+      // path() is the correct syntax for referencing document paths.
       return exists(path(/databases/$(database)/documents/admins/$(request.auth.uid)));
     }
 
-    // Admins collection: only other admins can read/write
-    match /admins/{userId} {
-      allow read, write: if isAdmin();
-    }
-    
-    // Usernames: Ensure uniqueness
-    match /usernames/{username} {
-      allow read;
-      allow create: if request.auth.uid == request.resource.data.userId;
-      allow delete: if request.auth.uid == resource.data.userId;
-    }
-    
-    // Users: Public data readable by anyone, private data only by the user themselves
+    // Rules
     match /users/{userId} {
-      allow get; // Allow reading single user profiles
-      allow list: if request.auth != null; // Allow listing users for suggestions/search if logged in
-      allow create: if request.auth.uid == userId; // Allow user to create their own profile
-      allow update: if request.auth.uid == userId || isAdmin(); // Allow user to update their own profile, or admin to update it
-      
-      // Recipes and Menus subcollections
-      match /{subcollection}/{docId} {
-        allow read, write: if request.auth.uid == userId;
-      }
+      // Any authenticated user can create their own user document.
+      allow create: if request.auth.uid == userId;
+      // A user can read, update their own document. Admins can do anything.
+      allow read, update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
 
-      // Notifications: only readable/writable by the owner
+      // Rules for subcollections
+      match /recipes/{recipeId} {
+        allow read, write, delete: if isOwner(userId);
+      }
+      match /menus/{menuId} {
+        allow read, write, delete: if isOwner(userId);
+      }
+      match /following/{followedId} {
+        allow read, write, delete: if isOwner(userId);
+      }
+      match /followers/{followerId} {
+        allow read: if true; // Allow anyone to read who follows a user
+        allow write, delete: if isOwner(userId) || request.auth.uid == followerId;
+      }
       match /notifications/{notificationId} {
-        allow read, write, delete: if request.auth.uid == userId;
+        allow read, write, delete: if isOwner(userId);
+      }
+      match /savedPosts/{postId} {
+          allow read, write, delete: if isOwner(userId);
+      }
+    }
+
+    match /usernames/{username} {
+      // Anyone can read a username to check for availability.
+      allow get;
+      // Only the associated user can create their username document.
+      // This is handled during signup in a transaction.
+      allow create: if request.auth.uid == resource.data.userId;
+      allow delete: if isAdmin();
+    }
+    
+    match /stories/{storyId} {
+      // Users can only create stories for themselves.
+      allow create: if isOwner(request.resource.data.publisherId);
+      // Anyone can read any story. The app logic will filter by followers.
+      allow read: if request.auth != null;
+      // Users can delete their own stories.
+      allow delete: if isOwner(resource.data.publisherId);
+    }
+
+    match /published_recipes/{postId} {
+      // Anyone can read public posts. Authenticated users can read private posts if they follow the publisher.
+      allow read: if resource.data.profileType == 'public' || 
+                   (request.auth != null && exists(/databases/$(database)/documents/users/$(resource.data.publisherId)/followers/$(request.auth.uid)));
+      // A user can create posts for themselves.
+      allow create: if isOwner(request.resource.data.publisherId);
+      // A user can update their own posts. Admins can update any post.
+      allow update: if isOwner(resource.data.publisherId) || isAdmin();
+      // A user can delete their own posts. Admins can delete any post.
+      allow delete: if isOwner(resource.data.publisherId) || isAdmin();
+
+      // Subcollection rules
+      match /comments/{commentId} {
+          allow read: if true;
+          allow create: if request.auth != null;
+          allow update, delete: if isOwner(resource.data.userId) || isAdmin();
+
+          match /likes/{likeId} {
+            allow read: if true;
+            allow create, delete: if request.auth.uid == likeId;
+          }
+      }
+       match /likes/{likeId} {
+          allow read: if true;
+          allow create, delete: if request.auth.uid == likeId;
       }
     }
     
-    // Published Content (Recipes/Posts)
-    match /published_recipes/{postId} {
-      allow read;
-      allow create: if request.auth.uid == request.resource.data.publisherId;
-      allow update: if request.auth.uid == resource.data.publisherId || isAdmin();
-      allow delete: if request.auth.uid == resource.data.publisherId || isAdmin();
-      
-      // Comments and Likes on posts
-      match /{subcollection}/{subDocId} {
-      	allow read;
-        allow write: if request.auth != null;
-        
-        // Likes on comments
-        match /likes/{likeId} {
-            allow read;
-            allow write: if request.auth != null;
-        }
-      }
-    }
-
-    // Stories collection
-    match /stories/{storyId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth.uid == request.resource.data.publisherId;
-      allow delete: if request.auth.uid == resource.data.publisherId;
-    }
-
-    // Verification Requests
     match /verification_requests/{requestId} {
-      allow create: if request.auth.uid == request.resource.data.userId;
-      allow read, write: if isAdmin();
+        allow create: if request.auth.uid == request.resource.data.userId;
+        allow read, write, delete: if isAdmin();
+    }
+
+    // Rules for the admins collection itself
+    match /admins/{adminId} {
+      allow read, write, delete: if isAdmin();
     }
   }
 }
