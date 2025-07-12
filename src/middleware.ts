@@ -1,3 +1,4 @@
+
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
@@ -25,7 +26,6 @@ function getLocale(request: NextRequest): string | undefined {
 
 export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  const searchParams = request.nextUrl.search;
 
   // Let static files, API routes, and admin panel pass through
   if (
@@ -38,9 +38,13 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
   
-  // Check if it's a redirect back from Firebase Auth
-  const isFirebaseAuthRedirect = searchParams.includes('code=') && searchParams.includes('state=');
-
+  // CRITICAL FIX: Ignore the Firebase auth handler path completely.
+  // This path is used by Firebase for the redirect sign-in flow.
+  // The AuthProvider on the client will handle the result.
+  if (pathname.startsWith('/__/auth/')) {
+    return NextResponse.next();
+  }
+  
   const pathnameIsMissingLocale = i18n.locales.every(
     (locale) => !pathname.startsWith(`/${locale}/`) && pathname !== `/${locale}`
   );
@@ -50,20 +54,15 @@ export function middleware(request: NextRequest) {
     const locale = getLocale(request);
     let newPath = `/${locale}${pathname}`;
     
-    // CRITICAL FIX: If this is a Firebase auth redirect, it MUST go to the dashboard
-    // to be processed by the AuthProvider, not the landing page.
-    if (isFirebaseAuthRedirect) {
-        newPath = `/${locale}/dashboard`;
-    } else if (pathname === '/') {
-        // For regular new visitors, send them to the landing page.
+    // For regular new visitors, send them to the landing page.
+    if (pathname === '/') {
         newPath = `/${locale}/landing`;
     }
 
     return NextResponse.redirect(new URL(newPath, request.url));
   }
   
-  // If the user visits a root locale path like /es or /en (often happens after login redirect),
-  // send them to the dashboard.
+  // If the user visits a root locale path like /es or /en, send them to the dashboard.
   if (i18n.locales.some(locale => pathname === `/${locale}`)) {
     return NextResponse.redirect(new URL(`${pathname}/dashboard`, request.url));
   }
@@ -73,5 +72,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   // Matcher ignoring `/api/`, `/_next/`, static files, and admin routes.
+  // It will now correctly process /__/auth/handler
   matcher: ['/((?!api|admin|_next/static|_next/image|assets|favicon.ico|sw.js).*)'],
 };
