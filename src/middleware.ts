@@ -62,9 +62,9 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(`/${locale}/landing${pathname}`, request.url));
   }
   
-  // If the user visits a root locale path like /es or /en, send them to the dashboard.
+  // If the user visits a root locale path like /es or /en, send them to the landing page.
   if (i18n.locales.some(locale => pathname === `/${locale}`)) {
-    return NextResponse.redirect(new URL(`${pathname}/dashboard`, request.url));
+    return NextResponse.redirect(new URL(`${pathname}/landing`, request.url));
   }
 
   return NextResponse.next();
