@@ -10,7 +10,7 @@ import { AppFooter } from '@/components/layout/app-footer';
 import { BottomNavBar } from '@/components/layout/bottom-nav-bar';
 import { getDictionary } from '@/lib/get-dictionary';
 import React, { useEffect, useState } from 'react';
-import { usePathname, useParams } from 'next/navigation';
+import { usePathname, useParams, useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import type { Locale } from '@/i18n.config';
 
@@ -23,6 +23,7 @@ export default function LocaleLayout({
   const [dict, setDict] = useState<any>(null);
   const pathname = usePathname();
   const params = useParams();
+  const router = useRouter();
   const locale = params.locale as Locale;
 
   useEffect(() => {
@@ -38,10 +39,9 @@ export default function LocaleLayout({
 
   // Handle the root locale path (e.g., /es, /en) and redirect to landing
   if (pathname === `/${locale}`) {
-      const { replace } = require('next/navigation');
       useEffect(() => {
-          replace(`/${locale}/landing`);
-      }, [locale]);
+          router.replace(`/${locale}/landing`);
+      }, [locale, router]);
       return (
           <div className="flex items-center justify-center h-screen">
               <Loader2 className="w-8 h-8 animate-spin" />
