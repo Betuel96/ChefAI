@@ -31,9 +31,9 @@ if (isFirebaseConfigured) {
     googleProvider = new GoogleAuthProvider();
 
     if (typeof window !== 'undefined') {
-      // Pass the debug token to the provider.
-      // In a real app, you would get this token from the browser console and add it to your .env.local file
-      // self.FIREBASE_APPCHECK_DEBUG_TOKEN = process.env.NEXT_PUBLIC_APPCHECK_DEBUG_TOKEN;
+      // IMPORTANT: This is for local development only.
+      // In a real app, you would manage this through environment variables
+      // and not commit debug tokens to version control.
       (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = "7C711501-6E87-4B5E-B529-E99E5EA3D40C";
 
       const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
