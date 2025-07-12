@@ -35,8 +35,10 @@ if (isFirebaseConfigured) {
     if (debugToken) {
        (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = debugToken;
     }
+    
+    // IMPORTANT: Use the key you provided.
+    const reCaptchaSiteKey = "6Lekdn8rAAAAAKwuG1myI0Jh8zPcAoU0plFoaieC";
 
-    const reCaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
     if (reCaptchaSiteKey) {
       initializeAppCheck(app, {
         provider: new ReCaptchaV3Provider(reCaptchaSiteKey),
