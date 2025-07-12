@@ -1,98 +1,71 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Admins Collection: Only other admins can manage this collection.
-    match /admins/{userId} {
-      allow read, write: if request.auth != null && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    // Helper function to check for admin status
+    function isAdmin() {
+      // Use path() to correctly reference the document path
+      return exists(path(/databases/$(database)/documents/admins/request.auth.uid));
     }
-
-    // Usernames Collection: Ensures usernames are unique.
+    
+    // Admins: Only other admins can read/write the list of admins.
+    match /admins/{userId} {
+      allow read, write: if isAdmin();
+    }
+    
+    // Usernames: Ensure unique usernames.
     match /usernames/{username} {
       allow read;
-      allow create: if request.auth != null;
-      // Prevent users from changing the userId associated with a username.
-      allow update, delete: if false; 
+      allow create: if !exists(path(/databases/$(database)/documents/usernames/username));
+      allow delete: if request.auth.uid == get(path(/databases/$(database)/documents/usernames/username)).data.userId;
     }
 
-    // Users Collection: Manages user profile data.
+    // Users: Users can read public profiles and their own. They can only update their own profile.
     match /users/{userId} {
-      // Anyone can read a user's profile
-      allow get;
-      // Logged-in users can list profiles (for search, suggestions)
-      allow list: if request.auth != null;
-      // Users can only create and update their own profile.
-      allow create, update: if request.auth != null && request.auth.uid == userId;
-
+      allow get: if request.auth.uid != null; // Any authenticated user can get a profile
+      allow list: if request.auth.uid != null; // Allow listing users for search/suggestions
+      allow create, update: if request.auth.uid == userId;
+      
       // Subcollections for a user
-      match /recipes/{recipeId} {
-        allow read, write, delete: if request.auth != null && request.auth.uid == userId;
-      }
-      match /menus/{menuId} {
-        allow read, write, delete: if request.auth != null && request.auth.uid == userId;
-      }
-      match /following/{followedId} {
-         allow read, write, delete: if request.auth != null && request.auth.uid == userId;
-      }
-      match /followers/{followerId} {
-         allow read: if request.auth != null;
-         // No one can directly write to the followers list. It's managed via the follow/unfollow process.
-         allow write, delete: if false;
-      }
-       match /notifications/{notificationId} {
-        allow read, write, delete: if request.auth != null && request.auth.uid == userId;
-      }
-      match /savedPosts/{postId} {
-        allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+      match /{subcollection}/{docId} {
+        allow read, write: if request.auth.uid == userId;
       }
     }
     
-    // Verification Requests: Users can create, admins can read/delete
-    match /verification_requests/{requestId} {
-        allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-        allow read, delete: if request.auth != null && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
-        allow update: if false;
-    }
+    // Published Content (Recipes, Menus, Text Posts)
+    match /published_recipes/{postId} {
+      // Anyone can read a post if it's public, or if they are the author.
+      allow get: if resource.data.profileType == 'public' || request.auth.uid == resource.data.publisherId;
+      // Authenticated users can create posts.
+      allow create: if request.auth.uid != null;
+      // Only the author can update or delete their own post.
+      allow update, delete: if request.auth.uid == resource.data.publisherId;
 
-    // Published Recipes (Community Posts)
-    match /published_recipes/{recipeId} {
-      // Anyone can read posts.
-      allow get;
-      // Logged-in users can list posts.
-      allow list: if request.auth != null;
-      // Logged-in users can create posts.
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.publisherId;
-      // Users can only update/delete their own posts.
-      allow update, delete: if request.auth != null && request.auth.uid == resource.data.publisherId;
-
-      // Comments subcollection
-      match /comments/{commentId} {
-        allow read, create: if request.auth != null;
-        allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
-
-        // Likes on comments
-        match /likes/{userId} {
-          allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Comments and Likes subcollections for posts
+      match /{subcollection}/{docId} {
+        allow read, create, update, delete: if request.auth.uid != null;
+        
+        // Likes within a comment
+        match /likes/{likeId} {
+          allow read, create, delete: if request.auth.uid != null;
         }
       }
-
-      // Likes on posts
-      match /likes/{userId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
-      }
     }
     
-    // Stories Collection
+    // Stories: Can be read by anyone, but only created/deleted by the publisher.
+    // Logic for "only followers" would be more complex and require reading user profiles.
     match /stories/{storyId} {
-      // Allow read only for authenticated users (logic is handled in backend)
-      allow get: if request.auth != null;
-      // Logged-in users can create their own stories
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.publisherId;
-      // Users can only delete their own stories
-      allow delete: if request.auth != null && request.auth.uid == resource.data.publisherId;
-      // Stories are immutable
-      allow update: if false;
+      allow read;
+      allow create: if request.auth.uid == request.resource.data.publisherId;
+      allow delete: if request.auth.uid == resource.data.publisherId;
+    }
+
+    // Verification Requests
+    match /verification_requests/{requestId} {
+      allow create: if request.auth.uid == request.resource.data.userId;
+      allow read, write: if isAdmin(); // Only admins can manage requests
     }
   }
 }
