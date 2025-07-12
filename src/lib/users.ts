@@ -16,6 +16,8 @@ import {
   sendEmailVerification,
   updateProfile,
   type UserCredential,
+  signInWithRedirect,
+  getRedirectResult,
 } from 'firebase/auth';
 import { db, auth, googleProvider, storage } from './firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -181,6 +183,33 @@ export async function signInWithGooglePopup(): Promise<UserCredential> {
         throw new Error('Firebase Auth no está configurado.');
     }
     return signInWithPopup(auth, googleProvider);
+}
+
+/**
+ * Initiates the Google Sign-In redirect flow.
+ */
+export async function signInWithGoogleRedirect(): Promise<void> {
+    if (!auth || !googleProvider) {
+        throw new Error('Firebase Auth no está configurado.');
+    }
+    await signInWithRedirect(auth, googleProvider);
+}
+
+/**
+ * Checks for a redirect result from Google Sign-In.
+ * To be called on app initialization.
+ */
+export async function checkRedirectResult(): Promise<UserCredential | null> {
+    if (!auth) {
+        return null;
+    }
+    try {
+        const result = await getRedirectResult(auth);
+        return result;
+    } catch (error) {
+        console.error("Error getting redirect result:", error);
+        return null;
+    }
 }
 
 

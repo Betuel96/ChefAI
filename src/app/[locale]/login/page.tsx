@@ -1,11 +1,14 @@
+
 'use client';
+import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { isFirebaseConfigured } from '@/lib/firebase';
-import { signInWithGooglePopup, onSignInSuccess } from '@/lib/users';
+import { signInWithGoogleRedirect } from '@/lib/users';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import type { Locale } from '@/i18n.config';
+import { Loader2 } from 'lucide-react';
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" {...props}>
@@ -18,6 +21,7 @@ export default function LoginPage() {
   const params = useParams();
   const locale = params.locale as Locale;
   const { toast } = useToast();
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   async function handleGoogleSignIn() {
     if (!isFirebaseConfigured) {
@@ -28,29 +32,19 @@ export default function LoginPage() {
         });
         return;
     }
+    setIsRedirecting(true);
     try {
-      // Step 1: Trigger the popup and get the result
-      const userCredential = await signInWithGooglePopup();
-
-      // Step 2: Handle post-sign-in logic (like creating a user document)
-      await onSignInSuccess(userCredential);
-
-      toast({
-        title: '¡Sesión Iniciada!',
-        description: 'Bienvenido/a de nuevo.',
-      });
-      router.push(`/${locale}/dashboard`);
+      await signInWithGoogleRedirect();
+      // Note: The page will redirect to Google. Code below this point
+      // may not execute if the redirect is successful. The redirect result
+      // is handled by the AuthProvider.
     } catch (error: any) {
-      if (error.code === 'auth/popup-closed-by-user') {
-          // This is a user action, not an error. Don't show a toast.
-          console.log('El usuario cerró la ventana de inicio de sesión.');
-          return;
-      }
       toast({
         title: 'Error de inicio de sesión',
         description: error.message || 'No se pudo iniciar sesión con Google.',
         variant: 'destructive',
       });
+      setIsRedirecting(false);
     }
   }
   
@@ -64,9 +58,18 @@ export default function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={!isFirebaseConfigured}>
-            <GoogleIcon className="mr-2 h-4 w-4"/>
-             Continuar con Google
+          <Button 
+            variant="outline" 
+            className="w-full" 
+            onClick={handleGoogleSignIn} 
+            disabled={!isFirebaseConfigured || isRedirecting}
+          >
+            {isRedirecting ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <GoogleIcon className="mr-2 h-4 w-4"/>
+            )}
+             {isRedirecting ? 'Redirigiendo...' : 'Continuar con Google'}
           </Button>
         </CardContent>
       </Card>
