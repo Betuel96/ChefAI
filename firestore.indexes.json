@@ -1,7 +1,8 @@
+
 {
   "indexes": [
     {
-      "collectionId": "published_recipes",
+      "collectionGroup": "published_recipes",
       "queryScope": "COLLECTION",
       "fields": [
         {
@@ -15,7 +16,7 @@
       ]
     },
     {
-      "collectionId": "published_recipes",
+      "collectionGroup": "published_recipes",
       "queryScope": "COLLECTION",
       "fields": [
         {
@@ -29,7 +30,7 @@
       ]
     },
     {
-      "collectionId": "stories",
+      "collectionGroup": "stories",
       "queryScope": "COLLECTION",
       "fields": [
         {

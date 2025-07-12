@@ -2,104 +2,92 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-  
-    // Helper function to check if a user is authenticated
+
+    // Helper functions
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    // Helper function to check if the user is the owner of a document
     function isOwner(userId) {
       return request.auth.uid == userId;
     }
 
-    // Rules for the 'users' collection
-    match /users/{userId} {
-      // Any authenticated user can view a public profile
-      allow get: if isAuthenticated() && (isOwner(userId) || resource.data.profileType == 'public');
-      
-      // Only the owner can update their profile or create it
-      allow create, update: if isOwner(userId);
-      
-      // For this prototype, we don't allow users to delete their own accounts from the client.
-      allow delete: if false;
+    // Usernames: for unique username checks
+    match /usernames/{username} {
+      allow get;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
     }
     
-    // Rules for the 'usernames' collection to ensure uniqueness
-    match /usernames/{username} {
-      // Anyone can check if a username exists
-      allow get: if true;
-      // Allow creation only if the user is authenticated and the document doesn't exist yet
-      allow create: if isAuthenticated();
-      // Don't allow updates or deletes from the client to prevent tampering
-      allow update, delete: if false;
+    // Admins: Only readable by other admins (or functions with elevated privileges)
+    match /admins/{userId} {
+      allow read, write: if false; // Should be managed from server/console
     }
 
-    // Rules for published content
-    match /published_recipes/{postId} {
-      // Any authenticated user can read any post
-      allow get: if isAuthenticated();
-      // Authenticated users can create posts
+    // Verification Requests: Writable by any authenticated user, readable only by admins.
+    match /verification_requests/{requestId} {
       allow create: if isAuthenticated();
-      // Only the owner of a post can update or delete it
-      allow update, delete: if isAuthenticated() && isOwner(resource.data.publisherId);
-      
-      // Rules for comments subcollection
-      match /comments/{commentId} {
-        // Any authenticated user can read and create comments
-        allow list, get, create: if isAuthenticated();
-        // Only comment owner can update or delete
-        allow update, delete: if isAuthenticated() && isOwner(resource.data.userId);
+      allow read, write, delete: if false; // Processed by admin functions
+    }
+    
+    // User profiles
+    match /users/{userId} {
+      // Anyone can view a profile
+      allow get;
+      // Only the owner can create or update their profile
+      allow create, update: if isOwner(userId);
+      // Users should not be able to delete their own accounts from the client
+      allow delete: if false;
 
-        // Rules for comment likes
+      // Subcollections for a user
+      match /recipes/{recipeId} {
+        allow read, write, delete: if isOwner(userId);
+      }
+      match /menus/{menuId} {
+        allow read, write, delete: if isOwner(userId);
+      }
+      match /followers/{followerId} {
+        allow read; // Anyone can see who follows a user
+        allow create, delete: if isAuthenticated(); // Any logged in user can follow/unfollow
+      }
+      match /following/{followingId} {
+        allow read; // Anyone can see who a user follows
+        allow create, delete: if isAuthenticated(); // Any logged in user can follow/unfollow
+      }
+       match /notifications/{notificationId} {
+        allow read, write, delete: if isOwner(userId);
+      }
+      match /savedPosts/{postId} {
+        allow read, write, delete: if isOwner(userId);
+      }
+    }
+
+    // Main content feed
+    match /published_recipes/{postId} {
+      // Anyone can read a published post
+      allow get;
+      // Only authenticated users can create posts
+      allow create: if isAuthenticated();
+      // Only the owner can update or delete their post
+      allow update, delete: if isAuthenticated() && isOwner(resource.data.publisherId);
+
+      // Comments subcollection
+      match /comments/{commentId} {
+        allow read, create: if isAuthenticated();
+        // Likes on comments
         match /likes/{userId} {
-           allow get, list: if isAuthenticated();
-           allow create, delete: if isOwner(userId);
+           allow read, create, delete: if isAuthenticated();
         }
       }
-      
-      // Rules for post likes
+      // Likes subcollection
       match /likes/{userId} {
-         allow get, list: if isAuthenticated();
-         allow create, delete: if isOwner(userId);
+        allow read, create, delete: if isAuthenticated();
       }
     }
 
-    // Rules for user-specific subcollections (recipes, menus, saved posts, etc.)
-    match /users/{userId}/{subcollection}/{docId} {
-       // Only the user themselves can access their private subcollections
-       allow read, write, delete: if isOwner(userId);
-    }
-
-    // Rules for user notifications and follow requests
-    match /users/{userId}/notifications/{notificationId} {
-      // Only the user can access their own notifications
-      allow read, list, update, delete: if isOwner(userId);
-      // Anyone authenticated can create a notification (e.g., for a follow request)
-      allow create: if isAuthenticated();
-    }
-    
-    // Rules for Stories
+    // Stories
     match /stories/{storyId} {
-        // Authenticated users can read stories.
-        // In a production app, you might add more complex logic (e.g., only followers).
-        allow get, list: if isAuthenticated();
-        // Authenticated users can create stories for themselves
-        allow create: if isAuthenticated() && isOwner(request.resource.data.publisherId);
-        // Users can delete their own stories
-        allow delete: if isAuthenticated() && isOwner(resource.data.publisherId);
-    }
-    
-    // Admin-only collections
-    match /admins/{adminId} {
-        allow read: if isAuthenticated(); // Allow checking for admin status
-        allow write: if false; // Disallow writing from client
-    }
-    
-    match /verification_requests/{requestId} {
-        allow get: if isAuthenticated(); // Let admins read
-        allow create: if isAuthenticated() && isOwner(request.resource.data.userId); // User can create own request
-        allow update, delete: if false; // Only admins from backend
+       allow read, create: if isAuthenticated();
+       allow delete: if isAuthenticated() && isOwner(resource.data.publisherId);
     }
   }
 }
