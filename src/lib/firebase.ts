@@ -3,6 +3,7 @@ import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
+import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
 
 // This configuration is now hardcoded with the correct values for chefai-cfo4t
 // to ensure the application always connects to the right project.
@@ -30,6 +31,15 @@ if (isFirebaseConfigured) {
     db = getFirestore(app);
     storage = getStorage(app);
     googleProvider = new GoogleAuthProvider();
+
+    // Initialize App Check
+    if (typeof window !== 'undefined') {
+        const appCheck = initializeAppCheck(app, {
+            provider: new ReCaptchaV3Provider(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!),
+            isTokenAutoRefreshEnabled: true
+        });
+    }
+
 } else {
     console.warn("Firebase configuration is missing or incomplete. Some features may not work.");
 }
