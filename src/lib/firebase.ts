@@ -34,10 +34,15 @@ if (isFirebaseConfigured) {
 
     // Initialize App Check
     if (typeof window !== 'undefined') {
-        const appCheck = initializeAppCheck(app, {
-            provider: new ReCaptchaV3Provider(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!),
-            isTokenAutoRefreshEnabled: true
-        });
+        const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+        if (siteKey) {
+            initializeAppCheck(app, {
+                provider: new ReCaptchaV3Provider(siteKey),
+                isTokenAutoRefreshEnabled: true
+            });
+        } else {
+            console.warn("App Check: NEXT_PUBLIC_RECAPTCHA_SITE_KEY is not set. App Check will not be initialized.");
+        }
     }
 
 } else {
