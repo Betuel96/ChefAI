@@ -1,18 +1,32 @@
-
 rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Regla general: Nadie puede leer o escribir por defecto.
-    match /{allPaths=**} {
-      allow read, write: if false;
+
+    // Las imágenes de perfil, publicaciones e historias son públicas para leer
+    match /users/{userId}/{path=**} {
+      allow read;
     }
 
-    // Permitir a los usuarios autenticados gestionar sus propios archivos.
-    // La ruta coincide con la estructura que usamos: users/{userId}/{...}
-    match /users/{userId}/{allPaths=**} {
-      // El usuario puede leer y escribir (subir, eliminar) en su propia carpeta.
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    // Solo el usuario autenticado puede escribir en su propia carpeta de perfil
+    match /users/{userId}/profile.png {
+      allow write: if request.auth != null && request.auth.uid == userId
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+
+    // Solo el usuario autenticado puede escribir en su propia carpeta de publicaciones
+    match /users/{userId}/posts/{postId} {
+      allow write: if request.auth != null && request.auth.uid == userId
+                   && request.resource.size < 10 * 1024 * 1024
+                   && (request.resource.contentType.matches('image/.*') || request.resource.contentType.matches('video/.*'));
+    }
+    
+    // Solo el usuario autenticado puede escribir en su propia carpeta de historias
+    match /users/{userId}/stories/{storyId} {
+        allow write: if request.auth != null && request.auth.uid == userId
+                   && request.resource.size < 10 * 1024 * 1024
+                   && (request.resource.contentType.matches('image/.*') || request.resource.contentType.matches('video/.*'));
     }
   }
 }

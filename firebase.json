@@ -7,6 +7,9 @@
   "storage": {
     "rules": "storage.rules"
   },
+  "database": {
+    "rules": "realtimedb.rules.json"
+  },
   "hosting": {},
   "project": "chefai-cfo4t"
 }
