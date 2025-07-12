@@ -56,9 +56,11 @@ export default function LandingPage() {
                         data-ai-hint="logo"
                     />
                 </div>
-                 <Button asChild>
-                    <Link href={`/${locale}/dashboard`}>Ir al Prototipo</Link>
-                </Button>
+                 {locale && (
+                    <Button asChild>
+                        <Link href={`/${locale}/dashboard`}>Ir al Prototipo</Link>
+                    </Button>
+                 )}
             </header>
 
             <main>
