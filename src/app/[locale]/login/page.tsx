@@ -1,7 +1,7 @@
 'use client';
 import { useRouter, useParams } from 'next/navigation';
 import { isFirebaseConfigured } from '@/lib/firebase';
-import { signInWithGoogle } from '@/lib/users';
+import { signInWithGooglePopup, onSignInSuccess } from '@/lib/users';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -29,13 +29,23 @@ export default function LoginPage() {
         return;
     }
     try {
-      await signInWithGoogle();
+      // Step 1: Trigger the popup and get the result
+      const userCredential = await signInWithGooglePopup();
+
+      // Step 2: Handle post-sign-in logic (like creating a user document)
+      await onSignInSuccess(userCredential);
+
       toast({
         title: '¡Sesión Iniciada!',
         description: 'Bienvenido/a de nuevo.',
       });
-      router.push(`/${locale}`);
+      router.push(`/${locale}/dashboard`);
     } catch (error: any) {
+      if (error.code === 'auth/popup-closed-by-user') {
+          // This is a user action, not an error. Don't show a toast.
+          console.log('El usuario cerró la ventana de inicio de sesión.');
+          return;
+      }
       toast({
         title: 'Error de inicio de sesión',
         description: error.message || 'No se pudo iniciar sesión con Google.',

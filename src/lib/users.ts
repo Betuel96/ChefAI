@@ -1,3 +1,4 @@
+
 import {
   doc,
   setDoc,
@@ -14,6 +15,7 @@ import {
   signInWithPopup,
   sendEmailVerification,
   updateProfile,
+  type UserCredential,
 } from 'firebase/auth';
 import { db, auth, googleProvider, storage } from './firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -142,56 +144,45 @@ export async function updateUserProfile(
 
 /**
  * Handles the Google Sign-In process, creating a user document if one doesn't exist.
+ * This function should be called from the client after a successful popup sign-in.
+ * @param userCredential The user credential from the sign-in result.
  */
-export async function signInWithGoogle(): Promise<void> {
-  if (!auth || !db || !googleProvider) {
+export async function onSignInSuccess(userCredential: UserCredential): Promise<void> {
+  if (!db) {
     throw new Error('Firebase no está configurado correctamente.');
   }
-  try {
-    const result = await signInWithPopup(auth, googleProvider);
-    const user = result.user;
+  
+  const user = userCredential.user;
 
-    // Check if user document already exists
+  try {
     const userDocRef = doc(db, 'users', user.uid);
     const docSnap = await getDoc(userDocRef);
 
-    // If not, create a new document for the user
     if (!docSnap.exists()) {
-      // Generate a default username from email, sanitized, with random numbers for uniqueness
       const sanitizedEmail = (user.email?.split('@')[0] || 'user').replace(/[^a-zA-Z0-9]/g, '');
       const defaultUsername = `${sanitizedEmail}${Math.floor(1000 + Math.random() * 9000)}`;
-
       await createUserDocument(user.uid, user.displayName || 'Usuario de Google', defaultUsername, user.email, user.photoURL);
     }
-    // If it exists, their data is already in Firestore. No action needed.
   } catch (error: any) {
-    // Handle the specific case where the user closes the popup.
-    // This is a user action, not a technical error, so we log it for info and stop.
-    if (error.code === 'auth/popup-closed-by-user') {
-      console.log('[users.ts > signInWithGoogle] El usuario cerró la ventana de inicio de sesión de Google.');
-      return;
+    console.error(`[users.ts > onSignInSuccess] Error creating/checking user document. Código: "${error.code}". Mensaje: "${error.message}"`);
+    if (error.code === 'unavailable' || (error.message && error.message.toLowerCase().includes('offline'))) {
+      throw new Error("Error de permisos de Firestore. No se pudo leer el perfil de usuario después de iniciar sesión. Por favor, revisa que tus reglas de Firestore (`firestore.rules`) permitan la lectura del documento del usuario (ej: /users/{userId}).");
     }
-    
-    // For all other errors, log them as critical errors and throw a helpful message.
-    console.error(`[users.ts > signInWithGoogle] Error durante el inicio de sesión con Google. Código: "${error.code}". Mensaje: "${error.message}"`);
-    
-    if (error.code === 'auth/unauthorized-domain') {
-      const domain = typeof window !== 'undefined' ? window.location.hostname : 'tu-dominio.com';
-      throw new Error(`Dominio no autorizado. Por favor, ve a tu Consola de Firebase -> Authentication -> Settings -> Authorized domains y añade el siguiente dominio: ${domain}`);
-    }
-    if (error.code === 'auth/account-exists-with-different-credential') {
-      throw new Error("Ya existe una cuenta con este correo, pero con un método de inicio de sesión diferente.");
-    }
-    if (error.code === 'auth/operation-not-allowed') {
-      throw new Error("Inicio de sesión con Google no habilitado. Ve a tu Consola de Firebase -> Authentication -> Sign-in method y habilítalo.");
-    }
-     if (error.code === 'unavailable' || (error.message && error.message.toLowerCase().includes('offline'))) {
-       throw new Error("Error de permisos de Firestore. No se pudo leer el perfil de usuario después de iniciar sesión. Por favor, revisa que tus reglas de Firestore (`firestore.rules`) permitan la lectura del documento del usuario (ej: /users/{userId}).");
-    }
-    
-    throw new Error("No se pudo iniciar sesión con Google. Inténtalo de nuevo.");
+    throw new Error("No se pudo configurar tu cuenta. Inténtalo de nuevo.");
   }
 }
+
+/**
+ * Initiates the Google Sign-In popup flow.
+ * @returns A promise that resolves with the UserCredential on success.
+ */
+export async function signInWithGooglePopup(): Promise<UserCredential> {
+    if (!auth || !googleProvider) {
+        throw new Error('Firebase Auth no está configurado.');
+    }
+    return signInWithPopup(auth, googleProvider);
+}
+
 
 /**
  * Resends the verification email to the currently signed-in user.
