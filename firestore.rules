@@ -3,107 +3,57 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper function to check if a user is authenticated and is the owner of a document.
-    function isOwner(userId) {
-      return request.auth != null && request.auth.uid == userId;
-    }
-    
-    // Helper function to check if a user is authenticated.
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    // Rules for the 'admins' collection. Only other admins should be able to see who is an admin.
-    match /admins/{userId} {
-      allow read: if isSignedIn() && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data != null;
-      // Write access should be managed from the Firebase console or a trusted server environment.
-      allow write: if false; 
-    }
-
-    // Rules for the main 'users' collection.
+    // Reglas de Usuario: Los usuarios pueden leer y escribir su propio documento.
+    // Nadie más puede leer los datos de otros usuarios.
     match /users/{userId} {
-      // Any signed-in user can read a profile (needed for viewing profiles).
-      allow read: if isSignedIn();
-      // Only the user themselves can create or update their own profile.
-      allow write: if isOwner(userId);
+      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null;
 
-      // Rules for user subcollections.
-      // These collections contain private data that only the owner should access.
-      match /recipes/{recipeId} {
-        allow read, write, delete: if isOwner(userId);
-      }
-      match /menus/{menuId} {
-        allow read, write, delete: if isOwner(userId);
-      }
-      match /savedPosts/{postId} {
-        allow read, write, delete: if isOwner(userId);
-      }
-      match /following/{followedId} {
-        allow read, write, delete: if isOwner(userId);
-      }
-      match /followers/{followerId} {
-        allow read: if isSignedIn();
-        // A user cannot add followers to themselves; this is handled via the 'following' collection.
-        allow write: if isOwner(followerId); // A user can remove themselves from someone's followers list (unfollow).
-      }
-      match /notifications/{notificationId} {
-        allow read, write, delete: if isOwner(userId);
+      // Subcolecciones de usuario (recetas, menús, etc.)
+      match /{collection}/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
       }
     }
-
-    // Rules for the 'usernames' collection, used for ensuring unique usernames.
+    
+    // Regla para Nombres de Usuario: Asegura que los nombres de usuario sean únicos.
+    // Solo se puede crear si el usuario está creando su perfil.
     match /usernames/{username} {
-      // Anyone can check if a username exists.
-      allow read: if true;
-      // Only an authenticated user can claim a username (create).
-      allow create: if isSignedIn();
-    }
-    
-    // Rules for verification requests
-    match /verification_requests/{requestId} {
-      allow create: if isSignedIn();
-      // Admin-only access should be handled by a trusted server/admin SDK, not client rules.
-      allow read, write, delete: if false;
+      allow read;
+      allow create: if request.auth != null;
     }
 
-    // Rules for published content (posts).
+    // Reglas de Contenido Público: Cualquiera puede leer, pero solo usuarios autenticados pueden crear.
     match /published_recipes/{postId} {
-      // Anyone can read a post.
-      allow read: if true;
-      // Only authenticated users can create posts.
-      allow create: if isSignedIn();
-      // Only the owner of the post can update or delete it.
-      allow update, delete: if isOwner(resource.data.publisherId);
+      allow read;
+      allow create, update: if request.auth != null;
+      // Solo el autor del post puede eliminarlo.
+      allow delete: if request.auth != null && request.auth.uid == resource.data.publisherId;
 
-      // Rules for post subcollections (comments and likes).
-      match /comments/{commentId} {
-        allow read: if true;
-        allow create: if isSignedIn();
-        allow update, delete: if isOwner(resource.data.userId); // Only the comment author can edit/delete.
-        
-        // Likes on comments
-        match /likes/{likeId} {
-            allow read: if true;
-            // A user can only like/unlike for themselves.
-            allow create, delete: if isOwner(likeId);
-        }
-      }
-      
-      match /likes/{likeId} {
-        allow read: if true;
-        // A user can only like/unlike for themselves.
-        allow create, delete: if isOwner(likeId);
+      // Subcolecciones de posts (comentarios, me gusta)
+      match /{collection}/{docId} {
+        allow read, write: if request.auth != null;
       }
     }
     
-    // Rules for stories
+    // Reglas de Historias (Stories)
     match /stories/{storyId} {
-        // Anyone can read stories
-        allow read: if true;
-        // Only authenticated users can create stories
-        allow create: if isSignedIn();
-        // Only the owner of the story can delete it
-        allow delete: if isOwner(resource.data.publisherId);
+      allow read; // Generalmente las historias son públicas o para seguidores
+      allow create: if request.auth != null;
+      allow delete: if request.auth != null && request.auth.uid == resource.data.publisherId;
+    }
+    
+    // Reglas para Administradores
+    match /admins/{adminId} {
+        allow read: if request.auth != null && request.auth.uid == adminId;
+        // En un caso real, la escritura podría estar limitada a una Cloud Function
+        allow write: if false; 
+    }
+    
+    // Reglas para Solicitudes de Verificación
+    match /verification_requests/{requestId} {
+        allow create: if request.auth != null;
+        // Solo los administradores (a través de una función de nube) pueden leer/eliminar
+        allow read, delete: if false;
     }
   }
 }
