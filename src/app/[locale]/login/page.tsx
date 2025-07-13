@@ -35,18 +35,22 @@ export default function LoginPage() {
     setIsSigningIn(true);
     try {
       await signInWithGoogle();
-      // The auth state listener in useAuth will handle the redirect.
       toast({
         title: '¡Sesión Iniciada!',
         description: 'Bienvenido/a a ChefAI.',
       });
       router.push(`/${locale}/dashboard`);
     } catch (error: any) {
-      toast({
-        title: 'Error de inicio de sesión',
-        description: error.message || 'No se pudo iniciar sesión con Google.',
-        variant: 'destructive',
-      });
+      if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+        // User closed the popup, this is not a critical error.
+        console.log('El usuario cerró el popup de inicio de sesión.');
+      } else {
+         toast({
+          title: 'Error de inicio de sesión',
+          description: error.message || 'No se pudo iniciar sesión con Google.',
+          variant: 'destructive',
+        });
+      }
     } finally {
         setIsSigningIn(false);
     }

@@ -63,7 +63,7 @@ export async function createUserDocument(userId: string, name: string, username:
     stripeConnectAccountId: null,
     canMonetize: false,
     verificationRequestStatus: null,
-  });
+  }, { merge: true });
 
   batch.set(usernameDocRef, { userId });
 
@@ -134,45 +134,38 @@ export async function updateUserProfile(
 }
 
 /**
- * Handles the Google Sign-In process, creating a user document if one doesn't exist.
- * This function should be called from the client after a successful popup sign-in.
- * @param userCredential The user credential from the sign-in result.
- */
-export async function onSignInSuccess(userCredential: UserCredential): Promise<void> {
-  if (!db) {
-    throw new Error('Firebase no está configurado correctamente.');
-  }
-  
-  const user = userCredential.user;
-
-  try {
-    const userDocRef = doc(db, 'users', user.uid);
-    const docSnap = await getDoc(userDocRef);
-
-    if (!docSnap.exists()) {
-      const sanitizedEmail = (user.email?.split('@')[0] || 'user').replace(/[^a-zA-Z0-9]/g, '');
-      const defaultUsername = `${sanitizedEmail}${Math.floor(1000 + Math.random() * 9000)}`;
-      await createUserDocument(user.uid, user.displayName || 'Usuario de Google', defaultUsername, user.email, user.photoURL);
-    }
-  } catch (error: any) {
-    console.error(`[users.ts > onSignInSuccess] Error creating/checking user document. Código: "${error.code}". Mensaje: "${error.message}"`);
-    if (error.code === 'unavailable' || (error.message && error.message.toLowerCase().includes('offline'))) {
-      throw new Error("Error de permisos de Firestore. No se pudo leer el perfil de usuario después de iniciar sesión. Por favor, revisa que tus reglas de Firestore (`firestore.rules`) permitan la lectura del documento del usuario (ej: /users/{userId}).");
-    }
-    throw new Error("No se pudo configurar tu cuenta. Inténtalo de nuevo.");
-  }
-}
-
-/**
  * Initiates the Google Sign-In popup flow and handles user document creation.
  */
 export async function signInWithGoogle(): Promise<UserCredential> {
-    if (!auth || !googleProvider) {
-        throw new Error('Firebase Auth no está configurado.');
+    if (!auth || !googleProvider || !db) {
+        throw new Error('Firebase no está configurado.');
     }
     const userCredential = await signInWithPopup(auth, googleProvider);
-    // After a successful sign-in, ensure the user document exists.
-    await onSignInSuccess(userCredential);
+    const user = userCredential.user;
+    
+    // Ensure the user document exists after sign-in.
+    try {
+        const userDocRef = doc(db, 'users', user.uid);
+        const docSnap = await getDoc(userDocRef);
+
+        if (!docSnap.exists()) {
+            const sanitizedEmail = (user.email?.split('@')[0] || 'user').replace(/[^a-zA-Z0-9]/g, '');
+            const defaultUsername = `${sanitizedEmail}${Math.floor(1000 + Math.random() * 9000)}`;
+            
+            // Using setDoc with merge: true to safely create or update the document.
+            await setDoc(userDocRef, {
+                name: user.displayName || 'Usuario de Google',
+                username: defaultUsername,
+                email: user.email,
+                photoURL: user.photoURL,
+                createdAt: serverTimestamp(),
+            }, { merge: true });
+        }
+    } catch (error: any) {
+        console.error("Error ensuring user document exists:", error);
+        throw new Error("No se pudo configurar tu cuenta. Por favor, revisa las reglas de Firestore.");
+    }
+
     return userCredential;
 }
 
