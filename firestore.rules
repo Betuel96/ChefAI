@@ -3,112 +3,78 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Helper function to check if a user is the owner of a document
-    function isOwner(userId) {
-      return request.auth.uid == userId;
+    
+    // Perfiles de Usuario: Los usuarios pueden leer cualquier perfil público,
+    // pero solo pueden crear y modificar su propio perfil.
+    match /users/{userId} {
+      allow read: if request.auth != null && (resource.data.profileType == 'public' || request.auth.uid == userId);
+      allow create, update: if request.auth != null && request.auth.uid == userId;
+      
+      // Reglas para subcolecciones de usuarios
+      match /recipes/{recipeId} {
+        allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+      }
+      match /menus/{menuId} {
+        allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+      }
+      match /savedPosts/{postId} {
+        allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+      }
+      match /notifications/{notificationId} {
+        allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+      }
+      match /followers/{followerId} {
+          allow read: if true; // Cualquiera puede ver quién sigue a quién
+          allow write, delete: if request.auth != null && (request.auth.uid == userId || request.auth.uid == followerId);
+      }
+       match /following/{followingId} {
+          allow read: if true;
+          allow write, delete: if request.auth != null && request.auth.uid == userId;
+      }
     }
 
-    // Usernames collection: Ensure usernames are unique
-    match /usernames/{username} {
-      allow read;
+    // Solicitudes de Verificación: Solo los usuarios autenticados pueden crear una.
+    // Nadie más puede leerlas o modificarlas (solo los administradores a través del backend).
+    match /verification_requests/{requestId} {
+        allow create: if request.auth != null;
+        allow read, update, delete: if false;
+    }
+    
+    // Publicaciones: Los usuarios autenticados pueden leer todo y crear/actualizar/eliminar sus propias publicaciones.
+    match /published_recipes/{postId} {
+      allow read: if request.auth != null;
       allow create: if request.auth != null;
+      allow update: if request.auth != null && resource.data.publisherId == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.publisherId == request.auth.uid;
+      
+      // Reglas para subcolecciones de publicaciones (comentarios, me gusta)
+      match /comments/{commentId} {
+        allow read, create: if request.auth != null;
+        match /likes/{likeId} {
+            allow read, create, delete: if request.auth != null && request.auth.uid == likeId;
+        }
+      }
+      match /likes/{likeId} {
+        allow read, create, delete: if request.auth != null && request.auth.uid == likeId;
+      }
+    }
+
+    // Historias: Los usuarios autenticados pueden leer/crear/eliminar las suyas.
+    match /stories/{storyId} {
+        allow read, create: if request.auth != null;
+        allow delete: if request.auth.uid == resource.data.publisherId;
+    }
+    
+    // Nombres de Usuario: Asegura la unicidad. Solo se pueden crear si el usuario es el dueño.
+    match /usernames/{username} {
+      allow read: if true;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
       allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
     
-    // Admins collection: Only readable/writable by other admins (or through Cloud Functions)
+    // Admins: Solo los administradores (desde el backend) pueden leer esta colección.
     match /admins/{adminId} {
-        allow read, write: if get(/databases/$(database)/documents/admins/$(request.auth.uid)).exists();
+        allow read, write: if false; // Proteger por defecto desde el cliente.
     }
-    
-    // Verification Requests: Writable by owner, readable by admin
-    match /verification_requests/{requestId} {
-        allow create: if request.auth != null;
-        allow read, delete: if get(/databases/$(database)/documents/admins/$(request.auth.uid)).exists();
-    }
-
-    // Users collection
-    match /users/{userId} {
-      allow read: if request.auth != null; // Allow any authenticated user to read profiles
-      allow create: if isOwner(userId); // Allow user to create their own profile
-      allow update: if isOwner(userId); // Allow user to update their own profile
-
-      // Recipes subcollection
-      match /recipes/{recipeId} {
-        allow read, write: if isOwner(userId);
-      }
-
-      // Menus subcollection
-      match /menus/{menuId} {
-        allow read, write: if isOwner(userId);
-      }
-      
-      // Saved posts subcollection
-      match /savedPosts/{postId} {
-        allow read, write: if isOwner(userId);
-      }
-      
-      // Following/Followers subcollections
-      match /following/{targetId} {
-        allow read, write: if isOwner(userId);
-      }
-      match /followers/{followerId} {
-        allow read: if request.auth != null;
-        allow write: if request.auth.uid == followerId; // Can only add yourself as a follower
-        allow delete: if isOwner(userId) || request.auth.uid == followerId; // Owner can remove, or user can unfollow
-      }
-
-      // Notifications subcollection
-      match /notifications/{notificationId} {
-        allow read, write: if isOwner(userId);
-        allow create: if request.auth != null; // Other users can create notifications (mentions, follow requests)
-      }
-    }
-
-    // Published content
-    match /published_recipes/{postId} {
-      // Helper function to check if the post is public or if the user is the owner or a follower
-      function canReadPost() {
-        let isPublic = resource.data.profileType == 'public';
-        let userIsOwner = isOwner(resource.data.publisherId);
-        // This is a simplified follower check. Production apps might use a more robust method.
-        // For now, we assume if the post isn't public, only the owner can see it in this rule context.
-        // The getFollowingPosts function handles the logic for followers.
-        return isPublic || userIsOwner;
-      }
-      
-      allow read: if canReadPost();
-      allow create: if request.auth != null;
-      allow update: if isOwner(resource.data.publisherId);
-      allow delete: if isOwner(resource.data.publisherId) || get(/databases/$(database)/documents/admins/$(request.auth.uid)).exists();
-
-      // Comments subcollection
-      match /comments/{commentId} {
-        allow read: if canReadPost();
-        allow create: if request.auth != null;
-        allow update, delete: if isOwner(resource.data.userId);
-
-        // Likes subcollection for comments
-        match /likes/{likeId} {
-          allow read: if canReadPost();
-          allow create, delete: if isOwner(likeId);
-        }
-      }
-
-      // Likes subcollection for posts
-      match /likes/{likeId} {
-        allow read: if canReadPost();
-        allow create, delete: if isOwner(likeId);
-      }
-    }
-    
-    // Stories collection
-    match /stories/{storyId} {
-      // Stories are only accessible via backend queries that filter by follower relationships
-      // Direct client access is restricted for security.
-      allow read, write: if false; 
-      allow create: if request.auth != null;
-    }
-
   }
 }

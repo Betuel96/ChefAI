@@ -1,32 +1,33 @@
+
 rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-
-    // Las imágenes de perfil, publicaciones e historias son públicas para leer
-    match /users/{userId}/{path=**} {
-      allow read;
-    }
-
-    // Solo el usuario autenticado puede escribir en su propia carpeta de perfil
+    // Reglas para las imágenes de perfil de los usuarios.
+    // Cualquiera puede leerlas. Solo el dueño puede subirlas/actualizarlas.
     match /users/{userId}/profile.png {
-      allow write: if request.auth != null && request.auth.uid == userId
-                   && request.resource.size < 5 * 1024 * 1024
-                   && request.resource.contentType.matches('image/.*');
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Solo el usuario autenticado puede escribir en su propia carpeta de publicaciones
-    match /users/{userId}/posts/{postId} {
-      allow write: if request.auth != null && request.auth.uid == userId
-                   && request.resource.size < 10 * 1024 * 1024
-                   && (request.resource.contentType.matches('image/.*') || request.resource.contentType.matches('video/.*'));
+    // Reglas para las imágenes/videos de las recetas guardadas por los usuarios.
+    // Solo el dueño puede acceder a ellas.
+    match /users/{userId}/recipes/{recipeId} {
+      allow read, write, delete: if request.auth != null && request.auth.uid == userId;
     }
     
-    // Solo el usuario autenticado puede escribir en su propia carpeta de historias
+    // Reglas para los medios de las publicaciones (posts).
+    // Cualquiera puede leerlos. Solo el dueño puede subirlos/actualizarlos o eliminarlos.
+    match /users/{userId}/posts/{postId} {
+      allow read: if true;
+      allow write, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Reglas para las historias.
+    // Cualquiera puede leerlas. Solo el dueño puede subirlas.
     match /users/{userId}/stories/{storyId} {
-        allow write: if request.auth != null && request.auth.uid == userId
-                   && request.resource.size < 10 * 1024 * 1024
-                   && (request.resource.contentType.matches('image/.*') || request.resource.contentType.matches('video/.*'));
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
     }
   }
 }
