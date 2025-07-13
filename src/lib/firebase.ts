@@ -23,9 +23,8 @@ let googleProvider: GoogleAuthProvider;
 
 if (isFirebaseConfigured) {
   app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-  // Explicitly provide the authDomain from the config
+  // This initializes Auth correctly using the config object
   auth = getAuth(app); 
-  auth.tenantId = null; // Ensure single-tenant context
   
   db = getFirestore(app);
   storage = getStorage(app);
