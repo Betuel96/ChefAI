@@ -5,7 +5,6 @@ import { useState, useEffect, createContext, useContext, ReactNode } from 'react
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { doc, onSnapshot, Timestamp } from 'firebase/firestore';
 import { auth, db, isFirebaseConfigured } from '@/lib/firebase';
-import { checkRedirectResult, onSignInSuccess } from '@/lib/users';
 import type { AppUser, UserAccount } from '@/types';
 
 interface AuthContextType {
@@ -23,76 +22,60 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // This effect should only run on the client side where Firebase is available.
     if (!isFirebaseConfigured || typeof window === 'undefined') {
       setLoading(false);
       return;
     }
 
-    // First, check for a redirect result.
-    checkRedirectResult()
-      .then(userCredential => {
-        if (userCredential) {
-          // If there's a result, it means the user has just signed in.
-          // Handle document creation.
-          return onSignInSuccess(userCredential);
-        }
-      })
-      .catch(error => {
-        console.error("Error processing redirect result:", error);
-      })
-      .finally(() => {
-        // After processing the redirect (or if there was none), set up the auth state listener.
-        const unsubscribeAuth = onAuthStateChanged(auth, (authUser: User | null) => {
-          if (authUser) {
-            // User is logged in. Get their profile from Firestore.
-            const userDocRef = doc(db, 'users', authUser.uid);
-            
-            const unsubscribeSnapshot = onSnapshot(userDocRef, (docSnapshot) => {
-              if (docSnapshot.exists()) {
-                const docData = docSnapshot.data();
-                const createdAtTimestamp = docData.createdAt as Timestamp;
-                const serializableAccountData: UserAccount = {
-                    name: docData.name,
-                    username: docData.username,
-                    email: docData.email,
-                    photoURL: docData.photoURL,
-                    isPremium: docData.isPremium,
-                    subscriptionTier: docData.subscriptionTier,
-                    profileType: docData.profileType || 'public',
-                    isVerified: docData.isVerified,
-                    badges: docData.badges || [],
-                    notificationSettings: docData.notificationSettings || { publicFeed: true, followingFeed: true },
-                    lastVisitedFeeds: docData.lastVisitedFeeds || null,
-                    canMonetize: docData.canMonetize || false,
-                    stripeConnectAccountId: docData.stripeConnectAccountId || null,
-                    verificationRequestStatus: docData.verificationRequestStatus || null,
-                    createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
-                };
-                setUser({ ...authUser, ...serializableAccountData });
-              } else {
-                // This might happen briefly if the user document hasn't been created yet after a redirect.
-                // The onSignInSuccess should handle it, but we can set the base user here.
-                setUser(authUser as AppUser);
-              }
-              setLoading(false);
-            }, (error) => {
-              console.error("Error fetching user profile:", error);
-              setUser(authUser as AppUser); // Fallback to authUser
-              setLoading(false);
-            });
-
-            return () => unsubscribeSnapshot();
+    const unsubscribeAuth = onAuthStateChanged(auth, (authUser: User | null) => {
+      if (authUser) {
+        // User is logged in. Get their profile from Firestore.
+        const userDocRef = doc(db, 'users', authUser.uid);
+        
+        const unsubscribeSnapshot = onSnapshot(userDocRef, (docSnapshot) => {
+          if (docSnapshot.exists()) {
+            const docData = docSnapshot.data();
+            const createdAtTimestamp = docData.createdAt as Timestamp;
+            const serializableAccountData: UserAccount = {
+                name: docData.name,
+                username: docData.username,
+                email: docData.email,
+                photoURL: docData.photoURL,
+                isPremium: docData.isPremium,
+                subscriptionTier: docData.subscriptionTier,
+                profileType: docData.profileType || 'public',
+                isVerified: docData.isVerified,
+                badges: docData.badges || [],
+                notificationSettings: docData.notificationSettings || { publicFeed: true, followingFeed: true },
+                lastVisitedFeeds: docData.lastVisitedFeeds || null,
+                canMonetize: docData.canMonetize || false,
+                stripeConnectAccountId: docData.stripeConnectAccountId || null,
+                verificationRequestStatus: docData.verificationRequestStatus || null,
+                createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
+            };
+            setUser({ ...authUser, ...serializableAccountData });
           } else {
-            // User is logged out.
-            setUser(null);
-            setLoading(false);
+            // This might happen briefly if the user document hasn't been created yet.
+            // onSignInSuccess in the login flow will handle it.
+            setUser(authUser as AppUser);
           }
+          setLoading(false);
+        }, (error) => {
+          console.error("Error fetching user profile:", error);
+          setUser(authUser as AppUser); // Fallback to authUser
+          setLoading(false);
         });
 
-        // Cleanup the auth state listener when the component unmounts.
-        return () => unsubscribeAuth();
-      });
+        return () => unsubscribeSnapshot();
+      } else {
+        // User is logged out.
+        setUser(null);
+        setLoading(false);
+      }
+    });
+
+    // Cleanup the auth state listener when the component unmounts.
+    return () => unsubscribeAuth();
   }, []);
 
   return (

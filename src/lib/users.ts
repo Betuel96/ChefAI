@@ -15,10 +15,6 @@ import {
   sendEmailVerification,
   updateProfile,
   type UserCredential,
-  signInWithRedirect,
-  getRedirectResult,
-  setPersistence,
-  browserLocalPersistence,
 } from 'firebase/auth';
 import { db, auth, googleProvider, storage } from './firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -41,8 +37,6 @@ export async function createUserDocument(userId: string, name: string, username:
   
   const batch = writeBatch(db);
 
-  // TODO: Add Firestore rule to ensure usernames collection documents can't be overwritten.
-  // This client-side check is a good first step.
   const usernameSnap = await getDoc(usernameDocRef);
   if (usernameSnap.exists()) {
     throw new Error('Este nombre de usuario ya está en uso.');
@@ -54,7 +48,7 @@ export async function createUserDocument(userId: string, name: string, username:
     email,
     photoURL,
     isPremium: false,
-    profileType: 'public', // Default to public profile
+    profileType: 'public',
     isVerified: false,
     badges: [],
     createdAt: serverTimestamp(),
@@ -101,7 +95,6 @@ export async function updateUserProfile(
     let finalPhotoURL = oldUserData.photoURL;
     const updatedData: Partial<UserAccount> = { name: data.name };
 
-    // Handle username change with uniqueness check
     if (data.username && data.username !== oldUserData.username) {
         const newUsernameRef = doc(db, 'usernames', data.username);
         
@@ -110,32 +103,27 @@ export async function updateUserProfile(
             throw new Error('Este nombre de usuario ya está en uso. Por favor, elige otro.');
         }
 
-        // If there was an old username, delete its document.
         if (oldUserData.username) {
             const oldUsernameRef = doc(db, 'usernames', oldUserData.username);
             batch.delete(oldUsernameRef);
         }
 
-        // Create the new username document and update the user's profile.
         batch.set(newUsernameRef, { userId });
         batch.update(userDocRef, { username: data.username });
         updatedData.username = data.username;
     }
 
-    // Handle image upload
     if (newImageFile && storage) {
         const imageRef = ref(storage, `users/${userId}/profile.png`);
         await uploadBytes(imageRef, newImageFile);
         finalPhotoURL = await getDownloadURL(imageRef);
     }
 
-    // Update Auth profile
     await updateProfile(currentUser, {
         displayName: data.name,
         photoURL: finalPhotoURL,
     });
 
-    // Update Firestore document
     batch.update(userDocRef, { name: data.name, photoURL: finalPhotoURL });
     updatedData.name = data.name;
     updatedData.photoURL = finalPhotoURL;
@@ -176,42 +164,16 @@ export async function onSignInSuccess(userCredential: UserCredential): Promise<v
 }
 
 /**
- * Initiates the Google Sign-In popup flow.
- * @returns A promise that resolves with the UserCredential on success.
+ * Initiates the Google Sign-In popup flow and handles user document creation.
  */
-export async function signInWithGooglePopup(): Promise<UserCredential> {
+export async function signInWithGoogle(): Promise<UserCredential> {
     if (!auth || !googleProvider) {
         throw new Error('Firebase Auth no está configurado.');
     }
-    return signInWithPopup(auth, googleProvider);
-}
-
-/**
- * Initiates the Google Sign-In redirect flow.
- */
-export async function signInWithGoogleRedirect(): Promise<void> {
-    if (!auth || !googleProvider) {
-        throw new Error('Firebase Auth no está configurado.');
-    }
-    await setPersistence(auth, browserLocalPersistence);
-    await signInWithRedirect(auth, googleProvider);
-}
-
-/**
- * Checks for a redirect result from Google Sign-In.
- * To be called on app initialization.
- */
-export async function checkRedirectResult(): Promise<UserCredential | null> {
-    if (!auth) {
-        return null;
-    }
-    try {
-        const result = await getRedirectResult(auth);
-        return result;
-    } catch (error) {
-        console.error("Error getting redirect result:", error);
-        return null;
-    }
+    const userCredential = await signInWithPopup(auth, googleProvider);
+    // After a successful sign-in, ensure the user document exists.
+    await onSignInSuccess(userCredential);
+    return userCredential;
 }
 
 
@@ -248,11 +210,9 @@ export async function updateProfileSettings(userId: string, settings: { profileT
 
   const batch = writeBatch(db);
 
-  // 1. Update the user's main profile document
   const userDocRef = doc(db, 'users', userId);
   batch.update(userDocRef, settings);
 
-  // 2. Find all posts by this user and update their profileType to match
   const postsCollection = collection(db, 'published_recipes');
   const userPostsQuery = query(postsCollection, where('publisherId', '==', userId));
   
@@ -263,7 +223,6 @@ export async function updateProfileSettings(userId: string, settings: { profileT
         batch.update(postRef, { profileType: settings.profileType });
     });
 
-    // 3. Commit all updates to the user profile and all their posts at once
     await batch.commit();
 
   } catch (error) {
@@ -286,7 +245,6 @@ export async function updateNotificationPreferences(
     }
     const userDocRef = doc(db, 'users', userId);
     
-    // Use dot notation for updating nested objects
     const updateData: { [key: string]: boolean } = {};
     if (preferences.publicFeed !== undefined) {
         updateData['notificationSettings.publicFeed'] = preferences.publicFeed;

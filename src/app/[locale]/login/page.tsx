@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { isFirebaseConfigured } from '@/lib/firebase';
-import { signInWithGoogleRedirect } from '@/lib/users';
+import { signInWithGoogle } from '@/lib/users';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -21,7 +21,7 @@ export default function LoginPage() {
   const params = useParams();
   const locale = params.locale as Locale;
   const { toast } = useToast();
-  const [isRedirecting, setIsRedirecting] = useState(false);
+  const [isSigningIn, setIsSigningIn] = useState(false);
 
   async function handleGoogleSignIn() {
     if (!isFirebaseConfigured) {
@@ -32,19 +32,23 @@ export default function LoginPage() {
         });
         return;
     }
-    setIsRedirecting(true);
+    setIsSigningIn(true);
     try {
-      await signInWithGoogleRedirect();
-      // Note: The page will redirect to Google. Code below this point
-      // may not execute if the redirect is successful. The redirect result
-      // is handled by the AuthProvider.
+      await signInWithGoogle();
+      // The auth state listener in useAuth will handle the redirect.
+      toast({
+        title: '¡Sesión Iniciada!',
+        description: 'Bienvenido/a a ChefAI.',
+      });
+      router.push(`/${locale}/dashboard`);
     } catch (error: any) {
       toast({
         title: 'Error de inicio de sesión',
         description: error.message || 'No se pudo iniciar sesión con Google.',
         variant: 'destructive',
       });
-      setIsRedirecting(false);
+    } finally {
+        setIsSigningIn(false);
     }
   }
   
@@ -62,14 +66,14 @@ export default function LoginPage() {
             variant="outline" 
             className="w-full" 
             onClick={handleGoogleSignIn} 
-            disabled={!isFirebaseConfigured || isRedirecting}
+            disabled={!isFirebaseConfigured || isSigningIn}
           >
-            {isRedirecting ? (
+            {isSigningIn ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               <GoogleIcon className="mr-2 h-4 w-4"/>
             )}
-             {isRedirecting ? 'Redirigiendo...' : 'Continuar con Google'}
+             {isSigningIn ? 'Iniciando sesión...' : 'Continuar con Google'}
           </Button>
         </CardContent>
       </Card>
