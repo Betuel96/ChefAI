@@ -55,8 +55,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             };
             setUser({ ...authUser, ...serializableAccountData });
           } else {
-            // This might happen briefly if the user document hasn't been created yet.
-            // onSignInSuccess in the login flow will handle it.
+            // Document might not exist yet due to the race condition on first sign-up.
+            // The listener will pick up the change once createUserDocument completes.
+            // We set the basic auth user for now so the UI doesn't think they are logged out.
             setUser(authUser as AppUser);
           }
           setLoading(false);

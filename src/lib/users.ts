@@ -1,3 +1,4 @@
+
 import {
   doc,
   setDoc,
@@ -63,7 +64,7 @@ export async function createUserDocument(userId: string, name: string, username:
     stripeConnectAccountId: null,
     canMonetize: false,
     verificationRequestStatus: null,
-  }, { merge: true });
+  });
 
   batch.set(usernameDocRef, { userId });
 
