@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getAuth, Auth, GoogleAuthProvider, setPersistence, browserLocalPersistence, connectAuthEmulator } from 'firebase/auth';
+import { getAuth, Auth, GoogleAuthProvider, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
@@ -23,8 +23,10 @@ let googleProvider: GoogleAuthProvider;
 
 if (isFirebaseConfigured) {
   app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-  // Use getAuth for standard initialization
+  // Explicitly provide the authDomain from the config
   auth = getAuth(app); 
+  auth.tenantId = null; // Ensure single-tenant context
+  
   db = getFirestore(app);
   storage = getStorage(app);
   googleProvider = new GoogleAuthProvider();
