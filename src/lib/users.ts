@@ -152,14 +152,13 @@ export async function signInWithGoogle(): Promise<UserCredential> {
             const sanitizedEmail = (user.email?.split('@')[0] || 'user').replace(/[^a-zA-Z0-9]/g, '');
             const defaultUsername = `${sanitizedEmail}${Math.floor(1000 + Math.random() * 9000)}`;
             
-            // Using setDoc with merge: true to safely create or update the document.
-            await setDoc(userDocRef, {
-                name: user.displayName || 'Usuario de Google',
-                username: defaultUsername,
-                email: user.email,
-                photoURL: user.photoURL,
-                createdAt: serverTimestamp(),
-            }, { merge: true });
+            await createUserDocument(
+                user.uid,
+                user.displayName || 'Usuario de Google',
+                defaultUsername,
+                user.email,
+                user.photoURL
+            );
         }
     } catch (error: any) {
         console.error("Error ensuring user document exists:", error);
