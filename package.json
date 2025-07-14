@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "health-check": "npm run typecheck && npm run lint"
   },
   "dependencies": {
     "@formatjs/intl-localematcher": "^0.5.4",
