@@ -15,6 +15,8 @@ import {
   sendEmailVerification,
   updateProfile,
   type UserCredential,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword
 } from 'firebase/auth';
 import { db, auth, googleProvider, storage } from './firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -172,15 +174,6 @@ export async function signInWithGoogle(): Promise<UserCredential> {
         user.email,
         user.photoURL
       );
-      
-      // Send verification email ONLY to new users
-      try {
-        await sendEmailVerification(user);
-        console.log("Correo de verificación enviado a:", user.email);
-      } catch (verificationError) {
-          console.error("No se pudo enviar el correo de verificación:", verificationError);
-          // Don't block login if this fails, just log it.
-      }
     }
   } catch (error: any) {
     console.error('Error ensuring user document exists:', error);
@@ -191,6 +184,43 @@ export async function signInWithGoogle(): Promise<UserCredential> {
 
   return userCredential;
 }
+
+
+/**
+ * Registers a new user with email and password.
+ * @param email The user's email.
+ * @param password The user's password.
+ * @param name The user's full name.
+ * @returns The user credential.
+ */
+export async function registerWithEmailAndPassword(email: string, password: string, name: string): Promise<UserCredential> {
+    if (!auth || !db) {
+        throw new Error('Firebase no está configurado.');
+    }
+
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+    
+    // Update Firebase Auth profile
+    await updateProfile(user, { displayName: name });
+    
+    // Create user document in Firestore
+    const sanitizedEmail = (email.split('@')[0]).replace(/[^a-zA-Z0-9]/g, '');
+    const defaultUsername = `${sanitizedEmail}${Math.floor(1000 + Math.random() * 9000)}`;
+    
+    await createUserDocument(user.uid, name, defaultUsername, email, null);
+
+    // Send verification email
+    try {
+        await sendEmailVerification(user);
+    } catch (verificationError) {
+        console.error("No se pudo enviar el correo de verificación:", verificationError);
+        // Do not block the registration process if this fails, just log it.
+    }
+
+    return userCredential;
+}
+
 
 /**
  * Resends the verification email to the currently signed-in user.
