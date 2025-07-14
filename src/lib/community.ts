@@ -461,41 +461,47 @@ export async function toggleCommentLike(postId: string, commentId: string, userI
 export async function getProfileData(userId: string): Promise<ProfileDataType | null> {
     if (!db) throw new Error("Firestore not initialized.");
     
-    const userDocRef = doc(db, 'users', userId);
-    const followersRef = collection(db, 'users', userId, 'followers');
-    const followingRef = collection(db, 'users', userId, 'following');
+    try {
+        const userDocRef = doc(db, 'users', userId);
+        const followersRef = collection(db, 'users', userId, 'followers');
+        const followingRef = collection(db, 'users', userId, 'following');
 
-    const [userDoc, followersSnap, followingSnap] = await Promise.all([
-        getDoc(userDocRef),
-        getDocs(followersRef),
-        getDocs(followingRef)
-    ]);
+        const [userDoc, followersSnap, followingSnap] = await Promise.all([
+            getDoc(userDocRef),
+            getDocs(followersRef),
+            getDocs(followingRef)
+        ]);
 
-    if (!userDoc.exists()) {
+        if (!userDoc.exists()) {
+            console.warn(`Profile not found for userId: ${userId}`);
+            return null;
+        }
+        
+        const data = userDoc.data();
+        const createdAtTimestamp = data.createdAt as Timestamp;
+
+        return {
+            id: userDoc.id,
+            name: data.name,
+            username: data.username,
+            photoURL: data.photoURL,
+            isPremium: data.isPremium,
+            subscriptionTier: data.subscriptionTier,
+            isVerified: data.isVerified || false,
+            badges: data.badges || [],
+            profileType: data.profileType || 'public',
+            notificationSettings: data.notificationSettings || { publicFeed: true, followingFeed: true },
+            lastVisitedFeeds: data.lastVisitedFeeds || null,
+            canMonetize: data.canMonetize || false,
+            stripeConnectAccountId: data.stripeConnectAccountId || null,
+            followersCount: followersSnap.size,
+            followingCount: followingSnap.size,
+            createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
+        } as ProfileDataType;
+    } catch (error) {
+        console.error("Error fetching profile data for user:", userId, error);
         return null;
     }
-    
-    const data = userDoc.data();
-    const createdAtTimestamp = data.createdAt as Timestamp;
-
-    return {
-        id: userDoc.id,
-        name: data.name,
-        username: data.username,
-        photoURL: data.photoURL,
-        isPremium: data.isPremium,
-        subscriptionTier: data.subscriptionTier,
-        isVerified: data.isVerified || false,
-        badges: data.badges || [],
-        profileType: data.profileType || 'public',
-        notificationSettings: data.notificationSettings || { publicFeed: true, followingFeed: true },
-        lastVisitedFeeds: data.lastVisitedFeeds || null,
-        canMonetize: data.canMonetize || false,
-        stripeConnectAccountId: data.stripeConnectAccountId || null,
-        followersCount: followersSnap.size,
-        followingCount: followingSnap.size,
-        createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
-    } as ProfileDataType;
 }
 
 
@@ -988,3 +994,5 @@ export async function getSavedPosts(userId: string): Promise<PublishedPost[]> {
 
   return sortedPosts;
 }
+
+    
