@@ -17,6 +17,5 @@
   },
   "storage": {
     "rules": "storage.rules"
-  },
-  "project": "chefai-cfo4t"
+  }
 }
