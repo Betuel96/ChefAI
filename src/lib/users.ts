@@ -1,3 +1,4 @@
+
 import {
   doc,
   setDoc,
@@ -21,7 +22,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import type { UserAccount } from '@/types';
 
 /**
- * Creates a user document in Firestore upon signup.
+ * Creates a user document in Firestore upon signup using a robust batch write.
  * @param userId The ID of the user from Firebase Auth.
  * @param name The user's display name.
  * @param username The user's unique username.
