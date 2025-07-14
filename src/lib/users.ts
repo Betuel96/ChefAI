@@ -12,6 +12,7 @@ import {
 } from 'firebase/firestore';
 import {
   signInWithPopup,
+  signInWithRedirect,
   sendEmailVerification,
   updateProfile,
   type UserCredential,
@@ -149,7 +150,23 @@ export async function signInWithGoogle(): Promise<UserCredential> {
   if (!auth || !googleProvider || !db) {
     throw new Error('Firebase no está configurado.');
   }
-  const userCredential = await signInWithPopup(auth, googleProvider);
+
+  let userCredential: UserCredential;
+  try {
+      userCredential = await signInWithPopup(auth, googleProvider);
+  } catch(error: any) {
+    // If the popup was blocked, fall back to redirect method
+    if (error.code === 'auth/popup-blocked' || error.code === 'auth/cancelled-popup-request') {
+        await signInWithRedirect(auth, googleProvider);
+        // This will navigate away, so we need to get the result on return
+        // The rest of the logic will run when the page reloads after redirect
+        // We can't return a value here, so we throw an error to stop execution
+        throw new Error('Redirecting for sign-in...');
+    }
+    // Re-throw other errors
+    throw error;
+  }
+  
   const user = userCredential.user;
 
   // Ensure the user document exists after sign-in.
