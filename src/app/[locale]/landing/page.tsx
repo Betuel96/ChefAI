@@ -77,7 +77,7 @@ export default function LandingPage() {
                     </p>
                     <div className="mt-8 flex justify-center">
                         <Button size="lg" asChild className="text-lg h-14 px-10">
-                            <a href="#kickstarter-signup">Apoya Nuestra Misión</a>
+                            <a href="#kickstarter-mission">Apoya Nuestra Misión</a>
                         </Button>
                     </div>
                 </section>
@@ -120,8 +120,8 @@ export default function LandingPage() {
                     </div>
                 </section>
 
-                {/* Kickstarter Signup Section */}
-                <section id="kickstarter-signup" className="py-24 px-6 bg-secondary/30">
+                {/* Kickstarter Mission Section */}
+                <section id="kickstarter-mission" className="py-24 px-6 bg-secondary/30">
                     <div className="max-w-3xl mx-auto text-center">
                         <h3 className="text-4xl md:text-5xl font-bold font-headline text-primary">Más Allá de la Cocina</h3>
                         <p className="mt-6 text-muted-foreground text-lg leading-relaxed">
@@ -142,19 +142,8 @@ export default function LandingPage() {
                             </div>
                         </div>
                         <p className="mt-10 text-foreground font-semibold text-xl">
-                           Al apoyarnos, no estás comprando una suscripción. Estás invirtiendo en un futuro donde la tecnología nos cuida. Únete a nuestra lista de espera y sé el primero en saber cuándo lanzaremos nuestra campaña.
+                           Al apoyarnos, no estás comprando una suscripción. Estás invirtiendo en un futuro donde la tecnología nos cuida.
                         </p>
-                        <form onSubmit={handleSubmit} className="mt-8 flex flex-col sm:flex-row gap-2 max-w-md mx-auto">
-                            <Input 
-                                type="email"
-                                placeholder="Tu correo electrónico"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                                className="h-12 text-base"
-                            />
-                            <Button type="submit" size="lg" className="h-12 text-base">Quiero Ser Parte del Futuro</Button>
-                        </form>
                     </div>
                 </section>
             </main>
