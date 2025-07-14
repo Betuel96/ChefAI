@@ -37,6 +37,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             const docData = docSnapshot.data();
             const createdAtTimestamp = docData.createdAt as Timestamp;
             const serializableAccountData: UserAccount = {
+                id: docSnapshot.id,
                 name: docData.name,
                 username: docData.username,
                 email: docData.email,

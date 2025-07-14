@@ -1,11 +1,20 @@
+
 'use client';
 import { useEffect, useState, useRef } from 'react';
 
 // This is a simplified hook for the prototype. A production implementation would be more robust.
+// Extend the Window interface to include SpeechRecognition and webkitSpeechRecognition
+declare global {
+    interface Window {
+        SpeechRecognition: typeof SpeechRecognition;
+        webkitSpeechRecognition: typeof SpeechRecognition;
+    }
+}
 
-let recognition: any = null;
+
+let recognition: SpeechRecognition | null = null;
 if (typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
-  const SpeechRecognition = window.SpeechRecognition || (window as any).webkitSpeechRecognition;
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   try {
     recognition = new SpeechRecognition();
     recognition.continuous = false; // We want to capture single commands/queries
@@ -60,12 +69,14 @@ export const useSpeechRecognition = ({ onResult }: UseSpeechRecognitionProps) =>
     recognition.addEventListener('end', handleEnd);
 
     return () => {
-      recognition.removeEventListener('result', handleResult);
-      recognition.removeEventListener('error', handleError);
-      recognition.removeEventListener('end', handleEnd);
-      if (recognition && typeof recognition.abort === 'function') {
-        recognition.abort();
-      }
+        if (recognition) {
+            recognition.removeEventListener('result', handleResult);
+            recognition.removeEventListener('error', handleError);
+            recognition.removeEventListener('end', handleEnd);
+            if (typeof recognition.abort === 'function') {
+                recognition.abort();
+            }
+        }
     };
   }, []); // Empty dependency array ensures this effect runs only once.
 

@@ -1,3 +1,4 @@
+
 // src/app/[locale]/settings/page.tsx
 'use client';
 
@@ -23,7 +24,7 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { ArrowLeft, CheckCircle, Gem, LogIn, Mail, VenetianMask, Terminal, ShieldQuestion, BellRing, Sparkles, Banknote, Loader2, UserCheck, Send } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 
@@ -291,6 +292,7 @@ const AccountSettings = ({ profile, onProfileUpdate }: { profile: ProfileData, o
   };
   
   const handleProfileTypeChange = async (isPrivate: boolean) => {
+    if (!user) return;
     const newType = isPrivate ? 'private' : 'public';
     setIsPrivacySaving(true);
     try {
@@ -312,12 +314,14 @@ const AccountSettings = ({ profile, onProfileUpdate }: { profile: ProfileData, o
   };
 
   const handleNotificationChange = async (key: 'publicFeed' | 'followingFeed', value: boolean) => {
+    if (!user) return;
     setIsNotificationSaving(true);
     try {
+      const currentSettings = profile.notificationSettings || { publicFeed: true, followingFeed: true };
       await updateNotificationPreferences(user.uid, { [key]: value });
       onProfileUpdate({
         notificationSettings: {
-          ...profile.notificationSettings,
+          ...currentSettings,
           [key]: value,
         },
       });
@@ -383,11 +387,11 @@ const AccountSettings = ({ profile, onProfileUpdate }: { profile: ProfileData, o
                 <CardContent className="space-y-4">
                      <div className='flex items-center gap-3 text-sm text-muted-foreground'>
                         <Mail className='w-4 h-4' />
-                        <span>{user.email}</span>
+                        <span>{user?.email}</span>
                      </div>
                      <div className='flex items-center justify-between gap-3 text-sm'>
                         <div className='flex items-center gap-3 text-muted-foreground'>
-                            {user.emailVerified ? (
+                            {user?.emailVerified ? (
                                 <>
                                     <CheckCircle className='w-4 h-4 text-green-500' />
                                     <span>Correo verificado</span>
@@ -399,7 +403,7 @@ const AccountSettings = ({ profile, onProfileUpdate }: { profile: ProfileData, o
                                 </>
                             )}
                         </div>
-                         {!user.emailVerified && (
+                         {!user?.emailVerified && (
                             <Button variant="secondary" size="sm" onClick={handleResend} disabled={isSending}>
                                 {isSending ? 'Enviando...' : 'Reenviar'}
                             </Button>
@@ -647,7 +651,7 @@ function SettingsPageContent() {
                 ...prevProfile,
                 ...newData,
                 notificationSettings: {
-                    ...prevProfile.notificationSettings,
+                    ...(prevProfile.notificationSettings || { publicFeed: true, followingFeed: true }),
                     ...newData.notificationSettings,
                 },
             };

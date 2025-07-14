@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -84,13 +85,13 @@ export default function EditPostPage() {
             schema = z.object({
               content: z.string().min(5, 'El nombre debe tener al menos 5 caracteres.'),
               instructions: z.string().min(20, 'Las instrucciones deben tener al menos 20 caracteres.'),
-              additionalIngredients: z.string().min(10, 'Por favor, enumera algunos ingredientes.'),
+              ingredients: z.string().min(10, 'Por favor, enumera algunos ingredientes.'),
               equipment: z.string().min(3, 'Enumera al menos un equipo.'),
             });
             defaultValues = {
               content: postData.content,
               instructions: Array.isArray(postData.instructions) ? postData.instructions.join('\n') : '',
-              additionalIngredients: Array.isArray(postData.ingredients) ? postData.ingredients.join('\n') : '',
+              ingredients: Array.isArray(postData.ingredients) ? postData.ingredients.join('\n') : '',
               equipment: Array.isArray(postData.equipment) ? postData.equipment.join('\n') : '',
             };
           }
@@ -134,7 +135,7 @@ export default function EditPostPage() {
     }
   };
 
-  const submitUpdate = async (updateData: Partial<PublishedPost>) => {
+  const submitUpdate = async (updateData: Partial<PublishedPost> & { ingredients?: string; }) => {
     if (!post || !user) return;
     setIsUpdating(true);
 
@@ -149,11 +150,9 @@ export default function EditPostPage() {
     // For recipe, convert textareas back to arrays
     if (post.type === 'recipe') {
       updateData.instructions = (updateData.instructions as any as string).split('\n').filter(Boolean);
-      updateData.ingredients = (updateData.additionalIngredients as any as string).split('\n').filter(Boolean);
+      updateData.ingredients = (updateData.ingredients as string).split('\n').filter(Boolean);
       updateData.equipment = (updateData.equipment as any as string).split('\n').filter(Boolean);
-      delete (updateData as any).additionalIngredients;
     }
-
 
     try {
         await updatePost(post.id, user.uid, updateData, mediaAction);
@@ -250,7 +249,7 @@ export default function EditPostPage() {
                     />
                     <FormField
                         control={form.control}
-                        name="additionalIngredients"
+                        name="ingredients"
                         render={({ field }) => (
                         <FormItem>
                             <FormLabel>Ingredientes</FormLabel>

@@ -42,7 +42,7 @@ const normalizePostData = (doc: any): PublishedPost => {
             name: recipe.name || '',
             instructions: normalizeField(recipe.instructions),
             ingredients: normalizeField(recipe.ingredients),
-            equipment: normalizeField(recipe.equipment),
+            equipment: normalizeField(recipe.equipment || []),
             benefits: recipe.benefits || undefined,
             nutritionalTable: recipe.nutritionalTable || undefined,
         };
@@ -50,7 +50,7 @@ const normalizePostData = (doc: any): PublishedPost => {
 
     let processedPlan: DailyMealPlan[] | null = null;
     if (data.type === 'menu' && Array.isArray(data.weeklyMealPlan)) {
-        processedPlan = data.weeklyMealPlan.map((day: any) => {
+        processedPlan = data.weeklyMealPlan.map((day: any): DailyMealPlan | null => {
             if (!day) return null;
             return {
                 day: day.day || '',
@@ -541,9 +541,11 @@ export async function getFollowingStatus(currentUserId: string, targetUserId: st
         return 'following';
     }
 
-    const requestRef = doc(db, 'users', targetUserId, 'notifications', currentUserId);
-    const requestSnap = await getDoc(requestRef);
-    if (requestSnap.exists() && requestSnap.data().type === 'follow_request') {
+    // Check if a follow request exists from the current user to the target user
+    const requestRef = doc(db, 'users', targetUserId, 'notifications');
+    const q = query(collection(requestRef, currentUserId), where('type', '==', 'follow_request'));
+    const requestSnap = await getDocs(q);
+    if (!requestSnap.empty) {
         return 'requested';
     }
 
@@ -552,7 +554,7 @@ export async function getFollowingStatus(currentUserId: string, targetUserId: st
 
 export async function sendFollowRequest(currentUserId: string, currentUserProfile: ProfileListItem, targetUserId: string): Promise<void> {
     if (!db) throw new Error("Firestore not initialized.");
-    const notificationRef = doc(db, 'users', targetUserId, 'notifications', currentUserId);
+    const notificationRef = doc(collection(db, 'users', targetUserId, 'notifications'));
     await setDoc(notificationRef, {
         type: 'follow_request',
         fromUser: currentUserProfile,

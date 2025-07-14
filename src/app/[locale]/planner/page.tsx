@@ -16,7 +16,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter, useParams } from 'next/navigation';
 import type { DailyMealPlan, ShoppingListCategory, WeeklyPlan, Recipe } from '@/types';
-import { createWeeklyMealPlan } from '@/ai/flows/create-weekly-meal-plan';
+import { createWeeklyMealPlan, CreateWeeklyMealPlanOutput } from '@/ai/flows/create-weekly-meal-plan';
 import { addMenu, publishMenuAsPost } from '@/lib/menus';
 import { generateShoppingList } from '@/ai/flows/generate-shopping-list';
 import { useLocalStorage } from '@/hooks/use-local-storage';
@@ -91,14 +91,14 @@ export default function MealPlannerPage() {
     setMealPlan(null);
     try {
       const cuisine = values.cuisineSelection === 'otra' ? values.customCuisine : (values.cuisineSelection === 'aleatoria' ? '' : values.cuisineSelection);
-      const result = await createWeeklyMealPlan({
+      const result: CreateWeeklyMealPlanOutput = await createWeeklyMealPlan({
         ...values,
         cuisine: cuisine || undefined,
       });
       if (!result || !result.weeklyMealPlan) {
         throw new Error('La IA no pudo generar un plan de comidas.');
       }
-      setMealPlan({ ...result, ...values });
+      setMealPlan({ ...values, weeklyMealPlan: result.weeklyMealPlan });
     } catch(error: any) {
         toast({
             title: 'Error de Generación',

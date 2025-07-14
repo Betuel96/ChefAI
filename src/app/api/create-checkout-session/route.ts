@@ -2,12 +2,11 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { headers } from 'next/headers';
-import { auth } from '@/lib/firebase';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
 
 export async function POST(req: Request) {
-  const origin = headers().get('origin') || 'http://localhost:3000';
+  const origin = new Headers(req.headers).get('origin') || 'http://localhost:3000';
   
   const { userId, priceId, locale } = await req.json();
 
