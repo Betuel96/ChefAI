@@ -1,3 +1,4 @@
+
 // src/app/[locale]/landing/page.tsx
 'use client';
 
@@ -145,6 +146,27 @@ export default function LandingPage() {
                            Al apoyarnos, no estás comprando una suscripción. Estás invirtiendo en un futuro donde la tecnología nos cuida.
                         </p>
                     </div>
+                </section>
+
+                {/* Join Waitlist Section */}
+                <section className="py-24 px-6 text-center">
+                    <h2 className="text-4xl font-bold font-headline">Únete a la Lista de Espera</h2>
+                    <p className="mt-4 max-w-xl mx-auto text-lg text-muted-foreground">
+                        Sé el primero en saber cuándo lanzamos nuestra campaña en Kickstarter y obtén acceso anticipado y recompensas exclusivas.
+                    </p>
+                    <form onSubmit={handleSubmit} className="mt-8 max-w-md mx-auto flex flex-col sm:flex-row gap-4">
+                        <Input
+                            type="email"
+                            placeholder="Tu correo electrónico"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                            className="h-12 text-base"
+                        />
+                        <Button type="submit" size="lg" className="h-12">
+                            Quiero Ser Parte del Futuro
+                        </Button>
+                    </form>
                 </section>
             </main>
 
