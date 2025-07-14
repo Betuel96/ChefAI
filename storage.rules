@@ -1,10 +1,12 @@
+
 rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // AVISO: Esto permite que cualquiera pueda subir, leer y eliminar archivos.
-    // Solo debe usarse para pruebas y depuración inicial.
     match /{allPaths=**} {
+      // Allow read and write access to all files
+      // for development purposes.
+      // WARNING: THIS IS INSECURE FOR PRODUCTION.
       allow read, write: if true;
     }
   }
