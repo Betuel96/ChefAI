@@ -1,4 +1,3 @@
-
 import {
   doc,
   setDoc,
@@ -157,6 +156,7 @@ export async function signInWithGoogle(): Promise<UserCredential> {
     const docSnap = await getDoc(userDocRef);
 
     if (!docSnap.exists()) {
+      // This is a new user registration.
       const sanitizedEmail = (user.email?.split('@')[0] || 'user').replace(
         /[^a-zA-Z0-9]/g,
         ''
@@ -173,7 +173,7 @@ export async function signInWithGoogle(): Promise<UserCredential> {
         user.photoURL
       );
       
-      // Send verification email for new users
+      // Send verification email ONLY to new users
       try {
         await sendEmailVerification(user);
         console.log("Correo de verificación enviado a:", user.email);
