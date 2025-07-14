@@ -1,10 +1,9 @@
-
 rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-  
-    // Regla de seguridad abierta para desarrollo
+    // AVISO: Esto permite que cualquiera pueda subir, leer y eliminar archivos.
+    // Solo debe usarse para pruebas y depuración inicial.
     match /{allPaths=**} {
       allow read, write: if true;
     }
