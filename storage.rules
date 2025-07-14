@@ -3,17 +3,11 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    
-    // Rules for user-specific files (profiles, recipes, etc.)
-    match /users/{userId}/{allPaths=**} {
-      // Allow reads by anyone (for public profile pictures, post images).
-      allow read;
-      
-      // Allow writes only if the user is authenticated and is the owner of the folder.
-      // This prevents users from writing to other users' folders.
-      // 2MB limit for uploads.
-      allow write: if request.auth != null && request.auth.uid == userId && request.resource.size < 2 * 1024 * 1024;
+
+    // Reglas completamente abiertas para desarrollo
+    // ADVERTENCIA: No uses estas reglas en producción.
+    match /{allPaths=**} {
+      allow read, write: if true;
     }
-    
   }
 }

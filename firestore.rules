@@ -4,67 +4,10 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Allows admin users full access for management purposes.
-    // The user's UID must exist in the 'admins' collection.
-    function isAdmin() {
-      return exists(/databases/$(database)/documents/admins/$(request.auth.uid));
-    }
-
-    // Usernames must be unique.
-    // This prevents one user from taking another's username.
-    match /usernames/{username} {
-      allow read;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-      allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
-    }
-
-    // User profile data.
-    match /users/{userId} {
-      // Anyone can read a user's public profile data.
-      allow read;
-      
-      // Users can only create their own profile.
-      allow create: if request.auth.uid == userId;
-      
-      // Users can only update their own profile.
-      allow update: if request.auth.uid == userId || isAdmin();
-      
-      // Secure user-specific subcollections.
-      match /{allSubcollections=**} {
-        allow read, write: if request.auth.uid == userId || isAdmin();
-      }
-    }
-
-    // Published recipes, text posts, menus.
-    match /published_recipes/{postId} {
-      // Allow public read access to all posts.
-      allow read;
-      
-      // Allow create/update/delete only for the owner or an admin.
-      allow create, update, delete: if request.auth.uid == request.resource.data.publisherId || isAdmin();
-      
-      // Comments and Likes subcollections.
-      match /{allSubcollections=**} {
-        // Any authenticated user can interact (comment, like).
-        allow read, write: if request.auth != null || isAdmin();
-      }
-    }
-    
-    // Stories subcollection.
-    match /stories/{storyId} {
-        // Anyone can read stories. The 24-hour logic is handled by the application code.
-        allow read;
-        // Only the publisher can create or delete their own stories.
-        allow create: if request.auth.uid == request.resource.data.publisherId;
-        allow delete: if request.auth.uid == resource.data.publisherId;
-    }
-    
-    // Verification requests (Admin-focused)
-    match /verification_requests/{requestId} {
-        // Only admins can read/write/delete requests.
-        allow read, write, delete: if isAdmin();
-        // Users can create their own request.
-        allow create: if request.auth.uid == request.resource.data.userId;
+    // Reglas completamente abiertas para desarrollo
+    // ADVERTENCIA: No uses estas reglas en producción.
+    match /{document=**} {
+      allow read, write: if true;
     }
   }
 }
