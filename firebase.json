@@ -12,6 +12,9 @@
       "name": "chefai-backend"
     }
   },
+  "functions": {
+    "source": "functions"
+  },
   "firestore": {
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
