@@ -1,80 +1,10 @@
-
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Perfiles de Usuario: Los usuarios pueden leer cualquier perfil público,
-    // pero solo pueden crear y modificar su propio perfil.
-    match /users/{userId} {
-      allow read: if request.auth != null && (resource.data.profileType == 'public' || request.auth.uid == userId);
-      allow create, update: if request.auth != null && request.auth.uid == userId;
-      
-      // Reglas para subcolecciones de usuarios
-      match /recipes/{recipeId} {
-        allow read, write, delete: if request.auth != null && request.auth.uid == userId;
-      }
-      match /menus/{menuId} {
-        allow read, write, delete: if request.auth != null && request.auth.uid == userId;
-      }
-      match /savedPosts/{postId} {
-        allow read, write, delete: if request.auth != null && request.auth.uid == userId;
-      }
-      match /notifications/{notificationId} {
-        allow read, write, delete: if request.auth != null && request.auth.uid == userId;
-      }
-      match /followers/{followerId} {
-          allow read: if true; // Cualquiera puede ver quién sigue a quién
-          allow write, delete: if request.auth != null && (request.auth.uid == userId || request.auth.uid == followerId);
-      }
-       match /following/{followingId} {
-          allow read: if true;
-          allow write, delete: if request.auth != null && request.auth.uid == userId;
-      }
-    }
-
-    // Solicitudes de Verificación: Solo los usuarios autenticados pueden crear una.
-    // Nadie más puede leerlas o modificarlas (solo los administradores a través del backend).
-    match /verification_requests/{requestId} {
-        allow create: if request.auth != null;
-        allow read, update, delete: if false;
-    }
-    
-    // Publicaciones: Los usuarios autenticados pueden leer todo y crear/actualizar/eliminar sus propias publicaciones.
-    match /published_recipes/{postId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null;
-      allow update: if request.auth != null && resource.data.publisherId == request.auth.uid;
-      allow delete: if request.auth != null && resource.data.publisherId == request.auth.uid;
-      
-      // Reglas para subcolecciones de publicaciones (comentarios, me gusta)
-      match /comments/{commentId} {
-        allow read, create: if request.auth != null;
-        match /likes/{likeId} {
-            allow read, create, delete: if request.auth != null && request.auth.uid == likeId;
-        }
-      }
-      match /likes/{likeId} {
-        allow read, create, delete: if request.auth != null && request.auth.uid == likeId;
-      }
-    }
-
-    // Historias: Los usuarios autenticados pueden leer/crear/eliminar las suyas.
-    match /stories/{storyId} {
-        allow read, create: if request.auth != null;
-        allow delete: if request.auth.uid == resource.data.publisherId;
-    }
-    
-    // Nombres de Usuario: Asegura la unicidad. Solo se pueden crear si el usuario es el dueño.
-    match /usernames/{username} {
-      allow read: if true;
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
-    }
-    
-    // Admins: Solo los administradores (desde el backend) pueden leer esta colección.
-    match /admins/{adminId} {
-        allow read, write: if false; // Proteger por defecto desde el cliente.
+    // Permite el acceso total de lectura y escritura a toda la base de datos.
+    // ¡ADVERTENCIA! Inseguro para producción. Solo para fines de prueba.
+    match /{document=**} {
+      allow read, write: if true;
     }
   }
 }

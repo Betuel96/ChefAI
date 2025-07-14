@@ -1,33 +1,11 @@
-
 rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Reglas para las imágenes de perfil de los usuarios.
-    // Cualquiera puede leerlas. Solo el dueño puede subirlas/actualizarlas.
-    match /users/{userId}/profile.png {
-      allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == userId;
-    }
-
-    // Reglas para las imágenes/videos de las recetas guardadas por los usuarios.
-    // Solo el dueño puede acceder a ellas.
-    match /users/{userId}/recipes/{recipeId} {
-      allow read, write, delete: if request.auth != null && request.auth.uid == userId;
-    }
-    
-    // Reglas para los medios de las publicaciones (posts).
-    // Cualquiera puede leerlos. Solo el dueño puede subirlos/actualizarlos o eliminarlos.
-    match /users/{userId}/posts/{postId} {
-      allow read: if true;
-      allow write, delete: if request.auth != null && request.auth.uid == userId;
-    }
-
-    // Reglas para las historias.
-    // Cualquiera puede leerlas. Solo el dueño puede subirlas.
-    match /users/{userId}/stories/{storyId} {
-      allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == userId;
+    // Permite la lectura y escritura de cualquier archivo por cualquier persona.
+    // ¡ADVERTENCIA! Inseguro para producción. Solo para fines de prueba.
+    match /{allPaths=**} {
+      allow read, write: if true;
     }
   }
 }
