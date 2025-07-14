@@ -1,8 +1,10 @@
+
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Permite el acceso total de lectura y escritura a toda la base de datos.
-    // ¡ADVERTENCIA! Inseguro para producción. Solo para fines de prueba.
+
+    // Regla de seguridad abierta para desarrollo
     match /{document=**} {
       allow read, write: if true;
     }

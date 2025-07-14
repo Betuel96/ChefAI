@@ -1,9 +1,10 @@
+
 rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Permite la lectura y escritura de cualquier archivo por cualquier persona.
-    // ¡ADVERTENCIA! Inseguro para producción. Solo para fines de prueba.
+  
+    // Regla de seguridad abierta para desarrollo
     match /{allPaths=**} {
       allow read, write: if true;
     }
