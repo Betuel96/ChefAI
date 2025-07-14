@@ -188,7 +188,7 @@ export async function publishRecipeAsPost(
     const newPostData = {
         publisherId: userId,
         publisherName: userName,
-        publisherPhotoURL,
+        userPhotoURL,
         type: 'recipe' as const,
         profileType: userData.profileType || 'public',
         canMonetize: userData.canMonetize || false,
@@ -532,7 +532,7 @@ export async function unfollowUser(currentUserId: string, targetUserId:string) {
     await batch.commit();
 }
 
-export async function getFollowingStatus(currentUserId: string, targetUserId: string): Promise<any> {
+export async function getFollowingStatus(currentUserId: string, targetUserId: string): Promise<FollowStatus> {
     if (!db) throw new Error("Firestore not initialized.");
     
     const followingRef = doc(db, 'users', currentUserId, 'following', targetUserId);
@@ -542,8 +542,13 @@ export async function getFollowingStatus(currentUserId: string, targetUserId: st
     }
 
     // Check if a follow request exists from the current user to the target user
-    const requestRef = doc(db, 'users', targetUserId, 'notifications');
-    const q = query(collection(requestRef, currentUserId), where('type', '==', 'follow_request'));
+    const notificationsRef = collection(db, 'users', targetUserId, 'notifications');
+    const q = query(
+        notificationsRef, 
+        where('type', '==', 'follow_request'),
+        where('fromUser.id', '==', currentUserId)
+    );
+
     const requestSnap = await getDocs(q);
     if (!requestSnap.empty) {
         return 'requested';
