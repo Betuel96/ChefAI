@@ -20,13 +20,29 @@ let db: Firestore;
 let storage: FirebaseStorage;
 let googleProvider: GoogleAuthProvider;
 
-if (isFirebaseConfigured) {
-  app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-  auth = getAuth(app); 
-  
-  db = getFirestore(app);
-  storage = getStorage(app);
-  googleProvider = new GoogleAuthProvider();
+if (isFirebaseConfigured && typeof window !== 'undefined') {
+    app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    
+    // Set session persistence
+    setPersistence(auth, browserLocalPersistence)
+        .catch((error) => {
+            console.error("Error setting auth persistence:", error);
+        });
+    
+    db = getFirestore(app);
+    storage = getStorage(app);
+    googleProvider = new GoogleAuthProvider();
 }
+
+// Fallback for server-side rendering where window is not defined
+if (isFirebaseConfigured && typeof window === 'undefined') {
+    app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    db = getFirestore(app);
+    storage = getStorage(app);
+    googleProvider = new GoogleAuthProvider();
+}
+
 
 export { app, auth, db, storage, googleProvider };
