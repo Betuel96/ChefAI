@@ -2,7 +2,6 @@ import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth, GoogleAuthProvider, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
-import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
 
 const firebaseConfig = {
   apiKey: "AIzaSyCcQfmMqyXJbke-kfDIwFdI25jRGa6PItw",
@@ -28,19 +27,6 @@ if (isFirebaseConfigured) {
   db = getFirestore(app);
   storage = getStorage(app);
   googleProvider = new GoogleAuthProvider();
-
-  if (typeof window !== 'undefined') {
-    // This token is for local development only.
-    (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = "1f7f1210-522e-44af-b882-6c3ab85ec0e5";
-    
-    // The reCAPTCHA v3 site key for your project.
-    const reCaptchaSiteKey = "6LfxcH8rAAAAANML0gfeakQctNe98reY_Cl_UjMl";
-
-    initializeAppCheck(app, {
-      provider: new ReCaptchaV3Provider(reCaptchaSiteKey),
-      isTokenAutoRefreshEnabled: true
-    });
-  }
 }
 
 export { app, auth, db, storage, googleProvider };
