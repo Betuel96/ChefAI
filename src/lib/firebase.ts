@@ -23,7 +23,6 @@ let googleProvider: GoogleAuthProvider;
 
 if (isFirebaseConfigured) {
   app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-  // This initializes Auth correctly using the config object
   auth = getAuth(app); 
   
   db = getFirestore(app);

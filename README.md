@@ -1,6 +1,7 @@
 
 
 
+
 # ChefAI: Inteligencia Artificial para la Vida Real
 
 **Menos estrés en la cocina. Más tiempo para vivir. Y una misión que va más allá de la comida.**
