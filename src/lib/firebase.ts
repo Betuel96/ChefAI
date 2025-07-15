@@ -7,7 +7,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyCcQfmMqyXJbke-kfDIwFdI25jRGa6PItw",
   authDomain: "chefai-cfo4t.firebaseapp.com",
   projectId: "chefai-cfo4t",
-  storageBucket: "chefai-cfo4t.appspot.com",
+  storageBucket: "chefai-cfo4t.firebasestorage.app",
   messagingSenderId: "50145465999",
   appId: "1:50145465999:web:1b842c2e50a4da7f9e02fa"
 };

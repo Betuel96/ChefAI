@@ -32,7 +32,7 @@ export function middleware(request: NextRequest) {
     [
       '/manifest.json',
       '/favicon.ico',
-      '/logo.png', // Assuming logo is in /public
+      '/logo.png',
     ].includes(pathname) ||
     pathname.startsWith('/api/') ||
     pathname.startsWith('/admin')
