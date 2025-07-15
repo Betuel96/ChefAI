@@ -5,7 +5,6 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import Image from 'next/image';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { updateUserProfile } from '@/lib/users';
@@ -16,12 +15,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Save, UserCircle, Image as ImageIcon } from 'lucide-react';
+import { Save, UserCircle } from 'lucide-react';
 
 const profileFormSchema = z.object({
   name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres.'),
   username: z.string().min(3, 'El nombre de usuario debe tener al menos 3 caracteres.').regex(/^[a-zA-Z0-9_]+$/, 'Solo letras, números y guiones bajos.'),
-  image: z.instanceof(File).optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
@@ -36,6 +34,7 @@ export const EditProfileForm = ({ profile, onProfileUpdate }: EditProfileFormPro
     const { toast } = useToast();
     const [isSaving, setIsSaving] = useState(false);
     const [imagePreview, setImagePreview] = useState<string | null>(profile.photoURL);
+    const [newImageDataUri, setNewImageDataUri] = useState<string | null>(null);
 
     const form = useForm<ProfileFormValues>({
         resolver: zodResolver(profileFormSchema),
@@ -48,10 +47,11 @@ export const EditProfileForm = ({ profile, onProfileUpdate }: EditProfileFormPro
     const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
-            form.setValue('image', file);
             const reader = new FileReader();
             reader.onloadend = () => {
-                setImagePreview(reader.result as string);
+                const result = reader.result as string;
+                setImagePreview(result);
+                setNewImageDataUri(result);
             };
             reader.readAsDataURL(file);
         }
@@ -61,7 +61,7 @@ export const EditProfileForm = ({ profile, onProfileUpdate }: EditProfileFormPro
         if (!user) return;
         setIsSaving(true);
         try {
-            const { updatedData } = await updateUserProfile(user.uid, values, values.image);
+            const { updatedData } = await updateUserProfile(user.uid, values, newImageDataUri);
             
             toast({
                 title: '¡Perfil Actualizado!',
@@ -94,23 +94,17 @@ export const EditProfileForm = ({ profile, onProfileUpdate }: EditProfileFormPro
                                 <AvatarImage src={imagePreview || undefined} />
                                 <AvatarFallback><UserCircle className="w-10 h-10" /></AvatarFallback>
                             </Avatar>
-                            <FormField
-                                control={form.control}
-                                name="image"
-                                render={() => (
-                                    <FormItem className="flex-grow">
-                                        <FormLabel>Foto de Perfil</FormLabel>
-                                        <FormControl>
-                                            <Input 
-                                                type="file" 
-                                                accept="image/png, image/jpeg" 
-                                                onChange={handleImageChange}
-                                            />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                            <FormItem className="flex-grow">
+                                <FormLabel>Foto de Perfil</FormLabel>
+                                <FormControl>
+                                    <Input 
+                                        type="file" 
+                                        accept="image/png, image/jpeg" 
+                                        onChange={handleImageChange}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
                         </div>
                         <FormField
                             control={form.control}

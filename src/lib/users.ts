@@ -20,8 +20,16 @@ import {
   signInWithEmailAndPassword
 } from 'firebase/auth';
 import { db, auth, googleProvider, storage } from './firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import type { UserAccount } from '@/types';
+
+
+async function uploadProfileImage(userId: string, imageDataUri: string): Promise<string> {
+    if (!storage) throw new Error('Storage is not initialized.');
+    const imageRef = ref(storage, `users/${userId}/profile.png`);
+    const snapshot = await uploadString(imageRef, imageDataUri, 'data_url');
+    return await getDownloadURL(snapshot.ref);
+}
 
 /**
  * Creates a user document in Firestore upon signup using a robust batch write.
@@ -83,12 +91,12 @@ export async function createUserDocument(
  * Updates a user's profile information in Auth, Firestore, and optionally Storage.
  * @param userId The ID of the user to update.
  * @param data The new profile data (name, username).
- * @param newImageFile The new image file to upload.
+ * @param newImageDataUri The base64 data URI of the new image to upload.
  */
 export async function updateUserProfile(
   userId: string,
   data: { name: string; username: string },
-  newImageFile?: File | null
+  newImageDataUri?: string | null
 ): Promise<{ updatedData: Partial<UserAccount> }> {
   if (!auth || !db) throw new Error('Firebase no está inicializado.');
   if (auth.currentUser?.uid !== userId) throw new Error('No autorizado.');
@@ -123,10 +131,8 @@ export async function updateUserProfile(
     updatedData.username = data.username;
   }
 
-  if (newImageFile && storage) {
-    const imageRef = ref(storage, `users/${userId}/profile.png`);
-    await uploadBytes(imageRef, newImageFile);
-    finalPhotoURL = await getDownloadURL(imageRef);
+  if (newImageDataUri) {
+    finalPhotoURL = await uploadProfileImage(userId, newImageDataUri);
   }
 
   await updateProfile(currentUser, {

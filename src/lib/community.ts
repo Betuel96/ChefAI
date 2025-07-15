@@ -24,6 +24,20 @@ import { db, storage } from './firebase';
 import type { PublishedPost, ProfileData as ProfileDataType, Comment, Mention, ProfileListItem, Notification, UserAccount, Story, StoryGroup, SavedWeeklyPlan, Recipe, DailyMealPlan, SavedRecipe } from '@/types';
 import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
 
+// Helper function to upload a Data URI to Firebase Storage and get the URL
+async function uploadMedia(userId: string, path: string, mediaDataUri: string): Promise<string> {
+    if (!storage) throw new Error('Storage is not initialized.');
+    const storageRef = ref(storage, `users/${userId}/${path}`);
+    try {
+        const snapshot = await uploadString(storageRef, mediaDataUri, 'data_url');
+        return await getDownloadURL(snapshot.ref);
+    } catch (error) {
+        console.error('Error uploading media:', error);
+        throw new Error('La subida del medio falló. Por favor, comprueba tus reglas de Storage.');
+    }
+}
+
+
 // Helper function to normalize recipe-like data within a post
 const normalizePostData = (doc: any): PublishedPost => {
     const data = doc.data();
@@ -95,7 +109,7 @@ export async function createPost(
   postData: Omit<PublishedPost, 'id' | 'createdAt' | 'publisherId' | 'publisherName' | 'publisherPhotoURL' | 'mediaUrl' | 'likesCount' | 'commentsCount' | 'profileType'>,
   mediaDataUri: string | null
 ): Promise<string> {
-    if (!db || !storage) throw new Error('Firestore or Storage is not initialized.');
+    if (!db) throw new Error('Firestore is not initialized.');
 
     const userRef = doc(db, 'users', userId);
     const userSnap = await getDoc(userRef);
@@ -110,14 +124,7 @@ export async function createPost(
     let mediaUrl: string | null = null;
     
     if (mediaDataUri) {
-        const storageRef = ref(storage, `users/${userId}/posts/${newPostRef.id}`);
-        try {
-            const snapshot = await uploadString(storageRef, mediaDataUri, 'data_url');
-            mediaUrl = await getDownloadURL(snapshot.ref);
-        } catch (error) {
-             console.error('Error uploading post media:', error);
-             throw new Error('La subida del medio falló. Por favor, comprueba tus reglas de Storage.');
-        }
+        mediaUrl = await uploadMedia(userId, `posts/${newPostRef.id}`, mediaDataUri);
     }
 
     let finalPostData: any = {
@@ -159,7 +166,7 @@ export async function createPost(
     } catch (error) {
         console.error('Error creating post document:', error);
         
-        if (mediaUrl) {
+        if (mediaUrl && storage) {
             // Attempt to clean up orphaned image if Firestore write fails
             const orphanRef = ref(storage, mediaUrl);
             await deleteObject(orphanRef).catch(e => console.error("Cleanup failed for orphaned media:", e));
@@ -236,8 +243,6 @@ export async function updatePost(
   }
 
   if (newMediaDataUri !== null && newMediaDataUri !== undefined) {
-    const storageRef = ref(storage, `users/${currentUserId}/posts/${postId}`);
-
     if (newMediaDataUri === 'DELETE') {
       if (postData.mediaUrl) {
         try {
@@ -252,15 +257,9 @@ export async function updatePost(
       updateData.mediaUrl = null;
       updateData.mediaType = null;
     } else {
-      try {
-        const snapshot = await uploadString(storageRef, newMediaDataUri, 'data_url');
-        const downloadURL = await getDownloadURL(snapshot.ref);
-        updateData.mediaUrl = downloadURL;
-        // mediaType should be included in updateData from the client
-      } catch (error) {
-        console.error("Error al subir el medio:", error);
-        throw new Error("No se pudo subir el medio. Comprueba tu conexión o los permisos de almacenamiento.");
-      }
+      const downloadURL = await uploadMedia(currentUserId, `posts/${postId}`, newMediaDataUri);
+      updateData.mediaUrl = downloadURL;
+      // mediaType should be included in updateData from the client
     }
   }
 
@@ -835,7 +834,7 @@ export async function markNotificationsAsRead(userId: string): Promise<void> {
 // --- STORIES ---
 
 export async function createStory(userId: string, mediaDataUri: string, mediaType: 'image' | 'video'): Promise<string> {
-    if (!db || !storage) throw new Error('Firestore or Storage is not initialized.');
+    if (!db) throw new Error('Firestore is not initialized.');
 
     const userRef = doc(db, 'users', userId);
     const userSnap = await getDoc(userRef);
@@ -846,12 +845,9 @@ export async function createStory(userId: string, mediaDataUri: string, mediaTyp
 
     const storiesCollection = collection(db, 'stories');
     const docRef = doc(storiesCollection); // Create a reference first to get the ID
+    const mediaUrl = await uploadMedia(userId, `stories/${docRef.id}`, mediaDataUri);
 
     try {
-        const storageRef = ref(storage, `users/${userId}/stories/${docRef.id}`);
-        const snapshot = await uploadString(storageRef, mediaDataUri, 'data_url');
-        const mediaUrl = await getDownloadURL(snapshot.ref);
-
         await setDoc(docRef, {
             publisherId: userId,
             publisherName: userData.name,
@@ -860,11 +856,14 @@ export async function createStory(userId: string, mediaDataUri: string, mediaTyp
             mediaType,
             createdAt: serverTimestamp(),
         });
-
         return docRef.id;
     } catch (error) {
-        console.error('Error creating story:', error);
-        throw new Error('No se pudo crear la historia. Por favor, revisa tus reglas de seguridad de Firebase Storage.');
+         console.error('Error creating story:', error);
+        if (mediaUrl && storage) {
+            const orphanRef = ref(storage, mediaUrl);
+            await deleteObject(orphanRef).catch(e => console.error("Cleanup failed for orphaned story media:", e));
+        }
+        throw new Error('No se pudo crear la historia.');
     }
 }
 
@@ -1006,5 +1005,3 @@ export async function getSavedPosts(userId: string): Promise<PublishedPost[]> {
 
   return sortedPosts;
 }
-
-    

@@ -10,10 +10,23 @@ import {
   orderBy,
   Timestamp,
   getDoc,
+  setDoc
 } from 'firebase/firestore';
 import { db, storage } from './firebase';
 import type { Recipe, SavedRecipe } from '@/types';
 import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
+
+async function uploadRecipeMedia(userId: string, recipeId: string, mediaDataUri: string): Promise<string> {
+    if (!storage) throw new Error('Storage is not initialized.');
+    const storageRef = ref(storage, `users/${userId}/recipes/${recipeId}`);
+    try {
+        const snapshot = await uploadString(storageRef, mediaDataUri, 'data_url');
+        return await getDownloadURL(snapshot.ref);
+    } catch (error) {
+        console.error('Error uploading media for new recipe:', error);
+        throw new Error('No se pudo subir la imagen. Comprueba las reglas de Storage y la conexión.');
+    }
+}
 
 /**
  * Adds a new recipe to a user's collection in Firestore, optionally uploading an image.
@@ -32,23 +45,15 @@ export async function addRecipe(
   if (!db) {
     throw new Error('Firestore is not initialized.');
   }
-  const recipesCollection = collection(db, 'users', userId, 'recipes');
+  
+  const newRecipeDocRef = doc(collection(db, 'users', userId, 'recipes')); 
   
   let mediaUrl: string | null = null;
-  const newRecipeDocRef = doc(recipesCollection); // Generate ID beforehand
-
-  if (mediaDataUri && storage) {
-      const storageRef = ref(storage, `users/${userId}/recipes/${newRecipeDocRef.id}`);
-      try {
-          const snapshot = await uploadString(storageRef, mediaDataUri, 'data_url');
-          mediaUrl = await getDownloadURL(snapshot.ref);
-      } catch (error) {
-          console.error('Error uploading media for new recipe:', error);
-          throw new Error('No se pudo subir la imagen. Comprueba las reglas de Storage y la conexión.');
-      }
+  if (mediaDataUri) {
+      mediaUrl = await uploadRecipeMedia(userId, newRecipeDocRef.id, mediaDataUri);
   }
 
-  await addDoc(recipesCollection, {
+  await setDoc(newRecipeDocRef, {
     ...recipe,
     mediaUrl: mediaUrl,
     mediaType: mediaType,
