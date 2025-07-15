@@ -4,8 +4,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BookHeart, MenuSquare, ShoppingCart, Bookmark } from 'lucide-react';
 import { MyRecipesView } from '@/components/recipes/my-recipes-view';
 import { MyMenusView } from '@/components/menus/my-menus-view';
-import { ShoppingListView } from '@/app/[locale]/shopping-list/page';
-import { SavedPostsView } from '@/app/[locale]/saved/page';
+import { ShoppingListView } from '@/components/shopping-list/shopping-list-view';
+import { SavedPostsView } from '@/components/saved/saved-posts-view';
 
 export default function LibraryPage() {
   return (
