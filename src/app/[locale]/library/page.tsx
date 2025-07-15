@@ -2,8 +2,8 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BookHeart, MenuSquare, ShoppingCart, Bookmark } from 'lucide-react';
-import { MyRecipesView } from '@/app/[locale]/my-recipes/page';
-import { MyMenusView } from '@/app/[locale]/my-menus/page';
+import { MyRecipesView } from '@/components/recipes/my-recipes-view';
+import { MyMenusView } from '@/components/menus/my-menus-view';
 import { ShoppingListView } from '@/app/[locale]/shopping-list/page';
 import { SavedPostsView } from '@/app/[locale]/saved/page';
 
