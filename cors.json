@@ -1,0 +1,14 @@
+[
+  {
+    "origin": [
+      "http://localhost:3000",
+      "https://chefai-cfo4t.web.app"
+    ],
+    "method": ["GET", "POST", "PUT", "DELETE", "HEAD"],
+    "responseHeader": [
+      "Content-Type",
+      "Access-Control-Allow-Origin"
+    ],
+    "maxAgeSeconds": 3600
+  }
+]
