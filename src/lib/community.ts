@@ -105,14 +105,27 @@ export async function createPost(
     const userData = userSnap.data() as UserAccount;
 
     const postsCollection = collection(db, 'published_recipes');
-    const docRef = doc(postsCollection); // Create a reference first to get the ID
+    const newPostRef = doc(postsCollection); // Create a reference first to get the ID
 
     let mediaUrl: string | null = null;
+    
+    if (mediaDataUri) {
+        const storageRef = ref(storage, `users/${userId}/posts/${newPostRef.id}`);
+        try {
+            const snapshot = await uploadString(storageRef, mediaDataUri, 'data_url');
+            mediaUrl = await getDownloadURL(snapshot.ref);
+        } catch (error) {
+             console.error('Error uploading post media:', error);
+             throw new Error('La subida del medio falló. Por favor, comprueba tus reglas de Storage.');
+        }
+    }
+
     let finalPostData: any = {
         ...postData,
         publisherId: userId,
         publisherName: userName,
         publisherPhotoURL: userPhotoURL,
+        mediaUrl: mediaUrl,
         profileType: userData.profileType || 'public', // Save the user's privacy setting at time of post
         canMonetize: userData.canMonetize || false, // Save monetization status at time of post
         createdAt: serverTimestamp(),
@@ -122,14 +135,7 @@ export async function createPost(
     };
 
     try {
-        if (mediaDataUri) {
-            const storageRef = ref(storage, `users/${userId}/posts/${docRef.id}`);
-            const snapshot = await uploadString(storageRef, mediaDataUri, 'data_url');
-            mediaUrl = await getDownloadURL(snapshot.ref);
-            finalPostData.mediaUrl = mediaUrl;
-        }
-
-        await setDoc(docRef, finalPostData);
+        await setDoc(newPostRef, finalPostData);
         
         if (finalPostData.mentions && finalPostData.mentions.length > 0) {
             const fromUser: ProfileListItem = { id: userId, name: userName, username: userData.username, photoURL: userPhotoURL };
@@ -141,7 +147,7 @@ export async function createPost(
                 await setDoc(notificationRef, {
                     type: 'mention_post',
                     fromUser,
-                    postId: docRef.id,
+                    postId: newPostRef.id,
                     contentSnippet,
                     read: false,
                     createdAt: serverTimestamp()
@@ -149,19 +155,17 @@ export async function createPost(
             }
         }
 
-        return docRef.id;
+        return newPostRef.id;
     } catch (error) {
-        console.error('Error creating post:', error);
+        console.error('Error creating post document:', error);
         
-        if (docRef.id) {
-            try {
-                await deleteDoc(docRef);
-            } catch (delErr) {
-                console.error("Cleanup failed: could not delete post doc.", delErr)
-            }
+        if (mediaUrl) {
+            // Attempt to clean up orphaned image if Firestore write fails
+            const orphanRef = ref(storage, mediaUrl);
+            await deleteObject(orphanRef).catch(e => console.error("Cleanup failed for orphaned media:", e));
         }
         
-        throw new Error('La publicación no se pudo crear. Esto puede deberse a las reglas de seguridad de Firebase Storage. Asegúrate de que los usuarios autenticados tengan permiso de escritura.');
+        throw new Error('La publicación no se pudo crear. Esto puede deberse a las reglas de seguridad de Firestore.');
     }
 }
 
@@ -237,7 +241,8 @@ export async function updatePost(
     if (newMediaDataUri === 'DELETE') {
       if (postData.mediaUrl) {
         try {
-          await deleteObject(storageRef);
+          const mediaToDeleteRef = ref(storage, postData.mediaUrl);
+          await deleteObject(mediaToDeleteRef);
         } catch (e: any) {
           if (e.code !== 'storage/object-not-found') {
             console.error('Could not delete old media:', e);
@@ -304,7 +309,7 @@ export async function deletePost(postId: string): Promise<void> {
         const postSnap = await getDoc(postRef);
         if (postSnap.exists()) {
             const postData = postSnap.data();
-            if (postData.mediaUrl && postData.publisherId) {
+            if (postData.mediaUrl) {
                 try {
                     const mediaRef = ref(storage, postData.mediaUrl);
                     await deleteObject(mediaRef);

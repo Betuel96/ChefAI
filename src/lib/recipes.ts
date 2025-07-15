@@ -34,29 +34,28 @@ export async function addRecipe(
   }
   const recipesCollection = collection(db, 'users', userId, 'recipes');
   
-  const docRef = await addDoc(recipesCollection, {
-    ...recipe,
-    createdAt: serverTimestamp(),
-    mediaUrl: null,
-    mediaType: null,
-  });
+  let mediaUrl: string | null = null;
+  const newRecipeDocRef = doc(recipesCollection); // Generate ID beforehand
 
   if (mediaDataUri && storage) {
-    const storageRef = ref(storage, `users/${userId}/recipes/${docRef.id}`);
-    try {
-      const snapshot = await uploadString(storageRef, mediaDataUri, 'data_url');
-      const downloadURL = await getDownloadURL(snapshot.ref);
-
-      await updateDoc(docRef, {
-        mediaUrl: downloadURL,
-        mediaType: mediaType,
-      });
-    } catch (error) {
-      console.error('Error uploading media and updating recipe:', error);
-    }
+      const storageRef = ref(storage, `users/${userId}/recipes/${newRecipeDocRef.id}`);
+      try {
+          const snapshot = await uploadString(storageRef, mediaDataUri, 'data_url');
+          mediaUrl = await getDownloadURL(snapshot.ref);
+      } catch (error) {
+          console.error('Error uploading media for new recipe:', error);
+          throw new Error('No se pudo subir la imagen. Comprueba las reglas de Storage y la conexión.');
+      }
   }
 
-  return docRef.id;
+  await addDoc(recipesCollection, {
+    ...recipe,
+    mediaUrl: mediaUrl,
+    mediaType: mediaType,
+    createdAt: serverTimestamp(),
+  });
+
+  return newRecipeDocRef.id;
 }
 
 /**
