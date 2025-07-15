@@ -25,7 +25,7 @@ if (isFirebaseConfigured && typeof window !== 'undefined') {
     app = getApps().length ? getApp() : initializeApp(firebaseConfig);
     auth = getAuth(app);
     
-    // Set session persistence
+    // Set session persistence to be local, which is more durable.
     setPersistence(auth, browserLocalPersistence)
         .catch((error) => {
             console.error("Error setting auth persistence:", error);
@@ -34,16 +34,13 @@ if (isFirebaseConfigured && typeof window !== 'undefined') {
     db = getFirestore(app);
     storage = getStorage(app);
     googleProvider = new GoogleAuthProvider();
-}
-
-// Fallback for server-side rendering where window is not defined
-if (isFirebaseConfigured && typeof window === 'undefined') {
+} else if (isFirebaseConfigured) {
+    // Fallback for server-side rendering or environments without window
     app = getApps().length ? getApp() : initializeApp(firebaseConfig);
     auth = getAuth(app);
     db = getFirestore(app);
     storage = getStorage(app);
     googleProvider = new GoogleAuthProvider();
 }
-
 
 export { app, auth, db, storage, googleProvider };
