@@ -18,9 +18,18 @@ import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storag
 
 async function uploadRecipeMedia(userId: string, recipeId: string, mediaDataUri: string): Promise<string> {
     if (!storage) throw new Error('Storage is not initialized.');
+    
+    // Extract content type and base64 data from Data URI
+    const match = mediaDataUri.match(/^data:(.+);base64,(.+)$/);
+    if (!match) {
+        throw new Error('Invalid Data URI format.');
+    }
+    const contentType = match[1];
+    const base64Data = match[2];
+    
     const storageRef = ref(storage, `users/${userId}/recipes/${recipeId}`);
     try {
-        const snapshot = await uploadString(storageRef, mediaDataUri, 'data_url');
+        const snapshot = await uploadString(storageRef, base64Data, 'base64', { contentType });
         return await getDownloadURL(snapshot.ref);
     } catch (error) {
         console.error('Error uploading media for new recipe:', error);

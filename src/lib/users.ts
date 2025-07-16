@@ -26,8 +26,17 @@ import type { UserAccount } from '@/types';
 
 async function uploadProfileImage(userId: string, imageDataUri: string): Promise<string> {
     if (!storage) throw new Error('Storage is not initialized.');
+    
+    // Extract content type and base64 data from Data URI
+    const match = imageDataUri.match(/^data:(.+);base64,(.+)$/);
+    if (!match) {
+        throw new Error('Invalid Data URI format.');
+    }
+    const contentType = match[1];
+    const base64Data = match[2];
+
     const imageRef = ref(storage, `users/${userId}/profile.png`);
-    const snapshot = await uploadString(imageRef, imageDataUri, 'data_url');
+    const snapshot = await uploadString(imageRef, base64Data, 'base64', { contentType });
     return await getDownloadURL(snapshot.ref);
 }
 

@@ -23,13 +23,24 @@ import {
 import { db, storage } from './firebase';
 import type { PublishedPost, ProfileData as ProfileDataType, Comment, Mention, ProfileListItem, Notification, UserAccount, Story, StoryGroup, SavedWeeklyPlan, Recipe, DailyMealPlan, SavedRecipe } from '@/types';
 import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
+import { Buffer } from 'buffer';
 
 // Helper function to upload a Data URI to Firebase Storage and get the URL
 async function uploadMedia(userId: string, path: string, mediaDataUri: string): Promise<string> {
     if (!storage) throw new Error('Storage is not initialized.');
+    
+    // Extract content type and base64 data from Data URI
+    const match = mediaDataUri.match(/^data:(.+);base64,(.+)$/);
+    if (!match) {
+        throw new Error('Invalid Data URI format.');
+    }
+    const contentType = match[1];
+    const base64Data = match[2];
+
     const storageRef = ref(storage, `users/${userId}/${path}`);
+    
     try {
-        const snapshot = await uploadString(storageRef, mediaDataUri, 'data_url');
+        const snapshot = await uploadString(storageRef, base64Data, 'base64', { contentType });
         return await getDownloadURL(snapshot.ref);
     } catch (error) {
         console.error('Error uploading media:', error);
@@ -999,10 +1010,35 @@ export async function publishMenuAsPost(
   caption: string,
   menu: WeeklyPlan
 ): Promise<string> {
-    const postData = {
-        type: 'menu' as const,
-        content: caption,
-        weeklyMealPlan: menu.weeklyMealPlan
-    };
-    return createPost(userId, userName, userPhotoURL, postData, null);
+  if (!db) throw new Error('Firestore is not initialized.');
+
+  const userRef = doc(db, 'users', userId);
+  const userSnap = await getDoc(userRef);
+  if (!userSnap.exists()) {
+    throw new Error('User profile not found.');
+  }
+  const userData = userSnap.data() as UserAccount;
+
+  const postsCollection = collection(db, 'published_recipes');
+  
+  const newPost: Omit<PublishedPost, 'id' | 'createdAt'> = {
+    publisherId: userId,
+    publisherName: userName,
+    publisherPhotoURL: userPhotoURL,
+    type: 'menu',
+    profileType: userData.profileType || 'public',
+    canMonetize: userData.canMonetize || false,
+    content: caption,
+    weeklyMealPlan: menu.weeklyMealPlan,
+    likesCount: 0,
+    commentsCount: 0,
+    mentions: [],
+  };
+
+  const docRef = await addDoc(postsCollection, {
+    ...newPost,
+    createdAt: serverTimestamp(),
+  });
+
+  return docRef.id;
 }
