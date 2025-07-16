@@ -185,40 +185,17 @@ export async function publishRecipeAsPost(
   userPhotoURL: string | null,
   recipe: SavedRecipe
 ): Promise<string> {
-    if (!db) throw new Error('Firestore is not initialized.');
-
-    const userRef = doc(db, 'users', userId);
-    const userSnap = await getDoc(userRef);
-    if (!userSnap.exists()) {
-        throw new Error('User profile not found.');
+    const postData = {
+      type: 'recipe' as const,
+      content: recipe.name,
+      instructions: recipe.instructions,
+      ingredients: recipe.ingredients,
+      equipment: recipe.equipment,
+      benefits: recipe.benefits,
+      nutritionalTable: recipe.nutritionalTable,
+      mediaType: recipe.mediaType
     }
-    const userData = userSnap.data() as UserAccount;
-
-    const postsCollection = collection(db, 'published_recipes');
-  
-    const newPostData = {
-        publisherId: userId,
-        publisherName: userName,
-        userPhotoURL,
-        type: 'recipe' as const,
-        profileType: userData.profileType || 'public',
-        canMonetize: userData.canMonetize || false,
-        content: recipe.name,
-        instructions: recipe.instructions,
-        ingredients: recipe.ingredients,
-        equipment: recipe.equipment,
-        benefits: recipe.benefits,
-        nutritionalTable: recipe.nutritionalTable,
-        mediaUrl: recipe.mediaUrl,
-        mediaType: recipe.mediaType,
-        likesCount: 0,
-        commentsCount: 0,
-        mentions: [],
-        createdAt: serverTimestamp(),
-    };
-
-    const docRef = await addDoc(postsCollection, newPostData);
-    return docRef.id;
+    return createPost(userId, userName, userPhotoURL, postData, recipe.mediaUrl || null);
 }
 
 
@@ -1004,4 +981,28 @@ export async function getSavedPosts(userId: string): Promise<PublishedPost[]> {
   const sortedPosts = postIds.map(id => postsMap.get(id)).filter(p => p) as PublishedPost[];
 
   return sortedPosts;
+}
+
+/**
+ * Publishes a saved weekly menu as a new post in the community feed.
+ * @param userId The ID of the user publishing the menu.
+ * @param userName The display name of the user.
+ * @param userPhotoURL The photo URL of the user.
+ * @param caption A caption or title for the post.
+ * @param menu The weekly plan to publish.
+ * @returns The ID of the newly created post document.
+ */
+export async function publishMenuAsPost(
+  userId: string,
+  userName: string,
+  userPhotoURL: string | null,
+  caption: string,
+  menu: WeeklyPlan
+): Promise<string> {
+    const postData = {
+        type: 'menu' as const,
+        content: caption,
+        weeklyMealPlan: menu.weeklyMealPlan
+    };
+    return createPost(userId, userName, userPhotoURL, postData, null);
 }

@@ -134,11 +134,14 @@ export async function updateUserProfile(
   if (newImageDataUri) {
     finalPhotoURL = await uploadProfileImage(userId, newImageDataUri);
   }
+  
+  if(currentUser) {
+    await updateProfile(currentUser, {
+      displayName: data.name,
+      photoURL: finalPhotoURL,
+    });
+  }
 
-  await updateProfile(currentUser, {
-    displayName: data.name,
-    photoURL: finalPhotoURL,
-  });
 
   batch.update(userDocRef, { name: data.name, photoURL: finalPhotoURL });
   updatedData.name = data.name;
